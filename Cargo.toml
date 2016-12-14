@@ -1,0 +1,9 @@
+[package]
+name = "geos"
+version = "0.0.1"
+authors = ["<matthieu.viry@ums-riate.fr>"]
+license = "MIT"
+repository = "https://github.com/mthh/rust-geos"
+
+[dependencies]
+libc = "*"
