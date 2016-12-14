@@ -16,5 +16,5 @@ before_install:
 script:
 #  - cargo test
   - cargo run --example verbose_example
-  - cargo run --example prepared_geoms
+  - cargo run --example prepared_geom
   - cargo run --example coords_seq
