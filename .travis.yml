@@ -1,0 +1,20 @@
+language: rust
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  allow_failures:
+    - rust: nightly
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install libgeos-dev
+
+script:
+#  - cargo test
+  - cargo run --example verbose_example
+  - cargo run --example prepared_geoms
+  - cargo run --example coords_seq
