@@ -11,5 +11,16 @@ fn main() {
     let result2 = pg1.contains(&g2.get_centroid());
     println!("Prepared geometry intersects test polygon : {:?}", result);
     println!("Prepared geometry contains centroid other polygon : {:?}", result2);
+    println!("Prepared geometry intersects each geometry from a vec of GeosGeometry :");
+    let vec_geoms = vec![
+        GeosGeom::new("POINT (1.3 2.4)"),
+        GeosGeom::new("POINT (2.1 0.3)"),
+        GeosGeom::new("POINT (3.1 4.7)"),
+        GeosGeom::new("POINT (0.4 4.1)")
+        ];
+    for geom in &vec_geoms {
+        print!("{:?} ", pg1.intersects(&geom));
+    }
+    println!("");
     finish();
 }

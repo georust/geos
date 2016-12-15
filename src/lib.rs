@@ -16,9 +16,12 @@ extern {
 
     fn GEOSCoordSeq_create(size: c_uint, dims: c_uint) -> *mut c_void;
     fn GEOSCoordSeq_destroy(s: *mut c_void);
+    fn GEOSCoordSeq_clone(s: *const c_void) -> *mut c_void;
     fn GEOSCoordSeq_setX(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
     fn GEOSCoordSeq_setY(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
     fn GEOSCoordSeq_setZ(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
+
+    fn GEOSGeom_getCoordSeq(g: *const c_void) -> *const c_void;
     // Geometry constructor :
     fn GEOSGeom_createPoint(s: *const c_void) -> *const c_void;
     fn GEOSGeom_createLineString(s: *const c_void) -> *const c_void;
@@ -56,7 +59,7 @@ extern {
     fn GEOSDifference(g1: *const c_void, g2: *const c_void) -> *const c_void;
     fn GEOSClipByRect(g: *const c_void, xmin: c_double, ymin: c_double, xmax: c_double, ymax: c_double) -> *const c_void;
     fn GEOSSnap(g1: *const c_void, g2: *const c_void, tolerance: c_double) -> *const c_void;
-
+    fn GEOSGeom_extractUniquePoints(g: *const c_void) -> *const c_void;
     // Functions acting on GEOSPreparedGeometry :
     fn GEOSPreparedContains(pg1: *const c_void, g2: *const c_void) -> c_int;
     fn GEOSPreparedContainsProperly(pg1: *const c_void, g2: *const c_void) -> c_int;
@@ -71,12 +74,24 @@ extern {
     fn GEOSPreparedGeom_destroy(g: *mut c_void);
 }
 
+#[derive(Debug)]
+pub enum GEOSGeomTypes {
+    GEOS_POINT,
+    GEOS_LINESTRING,
+    GEOS_LINEARRING,
+    GEOS_POLYGON,
+    GEOS_MULTIPOINT,
+    GEOS_MULTILINESTRING,
+    GEOS_MULTIPOLYGON,
+    GEOS_GEOMETRYCOLLECTION
+}
+
 pub fn _string(raw_ptr: *const c_char) -> String {
     let c_str = unsafe { CStr::from_ptr(raw_ptr) };
     return str::from_utf8(c_str.to_bytes()).unwrap().to_string();
 }
 
-pub fn Point(s: &CoordSeq) -> GeosGeom {
+pub fn _Point(s: &CoordSeq) -> GeosGeom {
     GeosGeom(unsafe { GEOSGeom_createPoint(s.0 as *const c_void) })
 }
 
@@ -120,16 +135,26 @@ impl Drop for CoordSeq {
     }
 }
 
+impl Clone for CoordSeq {
+    fn clone(&self) -> CoordSeq {
+        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0 as *const c_void) })
+    }
+}
+
 impl CoordSeq {
     pub fn new(size: u32, dims: u32) -> CoordSeq {
         CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
     }
-    pub fn set_x(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_x(&mut self, idx: u32, val: f64) -> i32 {
         let ret_val = unsafe { GEOSCoordSeq_setX(self.0, idx as c_uint, val as c_double) };
         return ret_val;
     }
-    pub fn set_y(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_y(&mut self, idx: u32, val: f64) -> i32 {
         let ret_val = unsafe { GEOSCoordSeq_setY(self.0, idx as c_uint, val as c_double) };
+        return ret_val;
+    }
+    pub fn set_z(&mut self, idx: u32, val: f64) -> i32 {
+        let ret_val = unsafe { GEOSCoordSeq_setZ(self.0, idx as c_uint, val as c_double) };
         return ret_val;
     }
 }
@@ -156,7 +181,7 @@ impl GeosGeom {
     }
 
     pub fn to_wkt(&self) -> CString {
-        unsafe { CStr::from_ptr(GEOSGeomToWKT(self.0)).to_owned() }
+        unsafe { CStr::from_ptr(GEOSGeomToWKT(self.0 as *const c_void)).to_owned() }
     }
 
     pub fn area(&self) -> f64 {
@@ -230,11 +255,13 @@ impl GeosGeom {
 
     pub fn is_empty(&self) -> bool {
         let ret_val = unsafe { GEOSisEmpty(self.0) };
+        println!("{}", ret_val);
         return if ret_val == 1 { true } else { false };
     }
 
     pub fn is_simple(&self) -> bool {
         let ret_val = unsafe { GEOSisSimple(self.0) };
+        println!("{}", ret_val);
         return if ret_val == 1 { true } else { false };
     }
 
@@ -268,7 +295,7 @@ impl GeosGeom {
         GeosGeom(unsafe { GEOSDifference(self.0, g2.0) })
     }
 
-    pub fn symb_difference(&self, g2: &GeosGeom) -> GeosGeom {
+    pub fn sym_difference(&self, g2: &GeosGeom) -> GeosGeom {
         GeosGeom(unsafe { GEOSSymDifference(self.0, g2.0) })
     }
 }
@@ -332,5 +359,61 @@ impl GeosPrepGeom {
     pub fn within(&self, g2: &GeosGeom) -> bool {
         let ret_val = unsafe { GEOSPreparedWithin(self.0 as *const c_void, g2.0) };
         if ret_val == 1 { true } else { false }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::{init, GeosGeom, finish};
+
+    #[test]
+    fn test_new_geometry_from_wkt() {
+        init();
+        let pt_wkt = "POINT (2.5 2.5)";
+        let geom = GeosGeom::new(pt_wkt);
+        assert_eq!(true, geom.is_simple());
+        assert_eq!(false, geom.is_empty());
+        finish();
+    }
+
+    #[test]
+    fn test_relationship(){
+        init();
+        let pt_wkt = "POINT (2.5 2.5)";
+        let pt_geom = GeosGeom::new(pt_wkt);
+        let polygon_geom = GeosGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
+
+        assert_eq!(true, polygon_geom.covers(&pt_geom));
+        assert_eq!(true, polygon_geom.intersects(&pt_geom));
+        assert_eq!(false, polygon_geom.covered_by(&pt_geom));
+        assert_eq!(false, polygon_geom.equals(&pt_geom));
+
+        assert_eq!(false, pt_geom.covers(&polygon_geom));
+        assert_eq!(true, pt_geom.intersects(&polygon_geom));
+        assert_eq!(true, pt_geom.covered_by(&polygon_geom));
+        assert_eq!(false, pt_geom.equals(&polygon_geom));
+        finish();
+    }
+
+    #[test]
+    fn test_geom_creation_from_geoms(){
+        init();
+        let polygon_geom = GeosGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
+        let new_geom = polygon_geom.buffer(100.0, 12);
+        assert!(new_geom.area() > polygon_geom.area());
+        assert_eq!(true, polygon_geom.covered_by(&new_geom));
+
+        let g1 = new_geom.difference(&polygon_geom);
+        let g2 = polygon_geom.sym_difference(&new_geom);
+        let g3 = new_geom.sym_difference(&polygon_geom);
+        assert_almost_eq(g1.area(), g2.area());
+        assert_almost_eq(g2.area(), g3.area());
+    }
+
+    fn assert_almost_eq(a: f64, b: f64) {
+        let f: f64 = a / b;
+        assert!(f < 1.0001);
+        assert!(f > 0.9999);
     }
 }

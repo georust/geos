@@ -14,7 +14,7 @@ before_install:
   - sudo apt-get install libgeos-dev
 
 script:
-#  - cargo test
+  - cargo test
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
   - cargo run --example coords_seq
