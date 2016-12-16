@@ -47,7 +47,7 @@ extern {
     fn GEOSGeomFromWKT(wkt: *const c_char) -> *mut c_void;
     fn GEOSGeomToWKT(g: *const c_void) -> *const c_char;
     fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut c_void;
-    fn GEOSGeomToWKB_buf(g: *const c_void, size: *mut size_t) -> *const c_char;
+    fn GEOSGeomToWKB_buf(g: *const c_void, size: *mut size_t) -> *const u8;
     fn GEOSGeomTypeId(g: *const c_void) -> c_int;
     fn GEOSArea(g: *const c_void, area: *mut c_double) -> c_int;
     fn GEOSLength(g: *const c_void, distance: *mut c_double) -> c_int;
@@ -223,13 +223,13 @@ impl GGeom {
         GGeom::new_from_c_obj(obj)
     }
 
-    // pub fn new_from_wkb(wkb: &[u8]) -> GGeom {
-    //     initialize();
-    //     let strr = CString::new(wkb).unwrap();
-    //     let t = strr.as_bytes();
-    //     let obj = unsafe { GEOSGeomFromWKB_buf(t.as_ptr(), t.len() as size_t) };
-    //     GGeom::new_from_c_obj(obj)
-    // }
+    pub fn new_from_wkb(wkb: *const u8, size: size_t) -> GGeom {
+        initialize();
+        // let strr = CString::new(wkb).unwrap();
+        // let t = strr.as_bytes();
+        let obj = unsafe { GEOSGeomFromWKB_buf(wkb as *const u8, size as size_t) };
+        GGeom::new_from_c_obj(obj)
+    }
 
     fn new_from_c_obj(g: *mut c_void) -> GGeom {
         if g.is_null(){ panic!("Invalid geometry"); }
@@ -253,9 +253,9 @@ impl GGeom {
         unsafe { CStr::from_ptr(GEOSGeomToWKT(self.c_obj as *const c_void)).to_owned() }
     }
 
-    pub fn to_wkb(&self) -> CString {
+    pub fn to_wkb(&self) -> (*const u8, size_t) {
         let mut dstlen: size_t = 0 as size_t;
-        unsafe { CStr::from_ptr(GEOSGeomToWKB_buf(self.c_obj as *const c_void, &mut dstlen)).to_owned() }
+        (unsafe { (GEOSGeomToWKB_buf(self.c_obj as *const c_void, &mut dstlen)) }, dstlen)
     }
 
     pub fn intersects(&self, g2: &GGeom) -> bool {
@@ -387,13 +387,16 @@ mod test {
     use super::{GGeom, GeosPrepGeom, GEOSGeomTypes};
 
     #[test]
-    fn test_new_geometry_from_wkt() {
+    fn test_new_geometry_from_wkt_wkb() {
         let geom = GGeom::new("POINT (2.5 2.5)");
         assert_eq!(GEOSGeomTypes::GEOS_POINT as i32, geom._type);
         assert_eq!(true, geom.is_simple());
         assert_eq!(false, geom.is_empty());
         let line_geom = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
         assert_eq!(GEOSGeomTypes::GEOS_LINESTRING as i32, line_geom._type);
+        let (wkb_geom, size) = geom.to_wkb();
+        let g3 = GGeom::new_from_wkb(wkb_geom, size);
+        assert_eq!(true, g3.equals(&geom));
     }
 
     #[test]
@@ -440,7 +443,7 @@ mod test {
     }
 
     #[test]
-    fn rest_preapred_geoms() {
+    fn rest_prepared_geoms() {
         let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
         let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))");
         let pg1 = GeosPrepGeom::new(&g1);
