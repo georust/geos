@@ -1,9 +1,7 @@
 #![cfg(not(test))]
 extern crate geos;
-use geos::{version, init, finish};
+use geos::version;
 
 fn main() {
-    init();
     println!("geos_c version: {}", version());
-    finish();
 }

@@ -11,10 +11,11 @@ matrix:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install libgeos-dev
+  - sudo apt-get install libgeos-dev libgdal-dev
 
 script:
   - cargo test
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
   - cargo run --example coords_seq
+  - cargo run --example with_gdal
