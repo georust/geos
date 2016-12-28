@@ -6,7 +6,7 @@ extern crate libc;
 use libc::{c_char, c_void, c_int, c_uint, c_double, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CString, CStr};
-use std::{str, ptr};
+use std::{result, str, ptr};
 
 
 #[link(name = "geos_c")]
@@ -15,27 +15,28 @@ extern {
     fn GEOSversion() -> *const c_char;
     fn finishGEOS() -> *mut c_void;
 
-    fn GEOSPrepare(g: *const c_void) -> *mut c_void;
+    fn GEOSPrepare(g: *const c_void) -> *mut GEOSPreparedGeometry;
     fn GEOSGeom_destroy(g: *mut c_void);
     fn GEOSGeom_clone(g: *const c_void) -> *mut c_void;
 
-    fn GEOSCoordSeq_create(size: c_uint, dims: c_uint) -> *mut c_void;
-    fn GEOSCoordSeq_destroy(s: *mut c_void);
-    fn GEOSCoordSeq_clone(s: *const c_void) -> *mut c_void;
-    fn GEOSCoordSeq_setX(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
-    fn GEOSCoordSeq_setY(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
-    fn GEOSCoordSeq_setZ(s: *mut c_void, idx: c_uint, val: c_double) -> c_int;
-    fn GEOSCoordSeq_getX(s: *const c_void, idx: c_uint, val: *mut c_double) -> c_int;
-    fn GEOSCoordSeq_getY(s: *const c_void, idx: c_uint, val: *mut c_double) -> c_int;
-    fn GEOSCoordSeq_getZ(s: *const c_void, idx: c_uint, val: *mut c_double) -> c_int;
+    fn GEOSCoordSeq_create(size: c_uint, dims: c_uint) -> *mut GEOSCoordSequence;
+    fn GEOSCoordSeq_destroy(s: *mut GEOSCoordSequence);
+    fn GEOSCoordSeq_clone(s: *const GEOSCoordSequence) -> *mut GEOSCoordSequence;
+    fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
+    fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
+    fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
+    fn GEOSCoordSeq_getX(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
+    fn GEOSCoordSeq_getY(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
+    fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
 
     // Geometry must be a LineString, LinearRing or Point :
-    fn GEOSGeom_getCoordSeq(g: *const c_void) -> *mut c_void;
+    fn GEOSGeom_getCoordSeq(g: *const c_void) -> *mut GEOSCoordSequence;
 
     // Geometry constructor :
-    fn GEOSGeom_createPoint(s: *const c_void) -> *mut c_void;
-    fn GEOSGeom_createLineString(s: *const c_void) -> *mut c_void;
-    fn GEOSGeom_createLinearRing(s: *const c_void) -> *mut c_void;
+    fn GEOSGeom_createPoint(s: *const GEOSCoordSequence) -> *mut c_void;
+    fn GEOSGeom_createLineString(s: *const GEOSCoordSequence) -> *mut c_void;
+    fn GEOSGeom_createLinearRing(s: *const GEOSCoordSequence) -> *mut c_void;
+    fn GEOSGeom_createPolygon(shell: *mut c_void, holes: &[*mut c_void], nholes: c_uint) -> *mut c_void;
 
     // Functions acting on GEOSGeometry :
     fn GEOSisEmpty(g: *const c_void) -> c_int;
@@ -75,18 +76,21 @@ extern {
     fn GEOSGeom_extractUniquePoints(g: *const c_void) -> *mut c_void;
 
     // Functions acting on GEOSPreparedGeometry :
-    fn GEOSPreparedContains(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedContainsProperly(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedCoveredBy(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedCovers(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedCrosses(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedDisjoint(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedIntersects(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedOverlaps(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedTouches(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedWithin(pg1: *const c_void, g2: *const c_void) -> c_int;
-    fn GEOSPreparedGeom_destroy(g: *mut c_void);
+    fn GEOSPreparedContains(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedContainsProperly(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedCoveredBy(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedCovers(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedCrosses(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedDisjoint(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedIntersects(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedOverlaps(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedTouches(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedWithin(pg1: *const GEOSPreparedGeometry, g2: *const c_void) -> c_int;
+    fn GEOSPreparedGeom_destroy(g: *mut GEOSPreparedGeometry);
 }
+
+enum GEOSPreparedGeometry {}
+enum GEOSCoordSequence {}
 
 #[derive(Debug)]
 pub enum GEOSGeomTypes {
@@ -100,19 +104,36 @@ pub enum GEOSGeomTypes {
     GEOS_GEOMETRYCOLLECTION
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct GeosError {
+    pub desc: &'static str,
+}
+
 pub fn _string(raw_ptr: *const c_char) -> String {
     let c_str = unsafe { CStr::from_ptr(raw_ptr) };
     return str::from_utf8(c_str.to_bytes()).unwrap().to_string();
 }
 
 pub fn _Point(s: &CoordSeq) -> GGeom {
-    GGeom::new_from_c_obj(unsafe {GEOSGeom_createPoint(s.0 as *const c_void) })
+    GGeom::new_from_c_obj(unsafe {GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence)) })
 }
 
 pub fn _LineString(s: &CoordSeq) -> GGeom {
-    GGeom::new_from_c_obj(unsafe {GEOSGeom_createLineString(s.0 as *const c_void) })
+    GGeom::new_from_c_obj(unsafe {GEOSGeom_createLineString(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence)) })
 }
 
+pub fn _LinearRing(s: &CoordSeq) -> GGeom {
+    GGeom::new_from_c_obj(unsafe {GEOSGeom_createLinearRing(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence)) })
+}
+
+pub fn _Polygon(shell: &GGeom, holes: &[&GGeom], nholes: u32) -> GGeom {
+    let mut vec_holes = Vec::new();
+    for h in holes {
+        vec_holes.push(unsafe { GEOSGeom_clone(h.c_obj as *const c_void) } );
+    }
+    let t = unsafe { GEOSGeom_createPolygon(GEOSGeom_clone(shell.c_obj as *const c_void), &vec_holes[..], nholes as c_uint) };
+    GGeom::new_from_c_obj(t)
+}
 // pub fn Snap(g1: &GGeom, g2: &GGeom, tolerance: f64) -> GGeom {
 //     GGeom::new_from_c_obj(unsafe { GEOSSnap(g1.0, g2.0, tolerance as c_double) })
 // }
@@ -139,19 +160,18 @@ fn initialize() {
     }
 }
 
-pub struct CoordSeq(*mut c_void);
+pub struct CoordSeq(*mut GEOSCoordSequence);
 
 impl Drop for CoordSeq {
     fn drop(&mut self) {
-        if self.0.is_null() { return; }
-        unsafe { GEOSCoordSeq_destroy(self.0)};
+        unsafe { GEOSCoordSeq_destroy(self.0 as *mut GEOSCoordSequence)};
         self.0 = ptr::null_mut();
     }
 }
 
 impl Clone for CoordSeq {
     fn clone(&self) -> CoordSeq {
-        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0 as *const c_void) })
+        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0 as *const GEOSCoordSequence) })
     }
 }
 
@@ -160,37 +180,40 @@ impl CoordSeq {
         initialize();
         CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
     }
+    fn new_from_c_obj(c_obj: *mut GEOSCoordSequence) -> CoordSeq {
+        CoordSeq(c_obj)
+    }
     pub fn set_x(&self, idx: u32, val: f64) -> i32 {
-        let ret_val = unsafe { GEOSCoordSeq_setX(self.0 as *mut c_void, idx as c_uint, val as c_double) };
+        let ret_val = unsafe { GEOSCoordSeq_setX(self.0 as *mut GEOSCoordSequence, idx as c_uint, val as c_double) };
         return ret_val;
     }
     pub fn set_y(&self, idx: u32, val: f64) -> i32 {
-        let ret_val = unsafe { GEOSCoordSeq_setY(self.0 as *mut c_void, idx as c_uint, val as c_double) };
+        let ret_val = unsafe { GEOSCoordSeq_setY(self.0 as *mut GEOSCoordSequence, idx as c_uint, val as c_double) };
         return ret_val;
     }
     pub fn set_z(&self, idx: u32, val: f64) -> i32 {
-        let ret_val = unsafe { GEOSCoordSeq_setZ(self.0 as *mut c_void, idx as c_uint, val as c_double) };
+        let ret_val = unsafe { GEOSCoordSeq_setZ(self.0 as *mut GEOSCoordSequence, idx as c_uint, val as c_double) };
         return ret_val;
     }
 
     pub fn get_x(&self, idx: u32) -> f64 {
         let n_mut_ref = &mut 0.0;
-        let ret_val = unsafe { GEOSCoordSeq_getX(self.0 as *const c_void, idx as c_uint, n_mut_ref as *mut c_double) };
-        if ret_val == 0 {panic!("Error when get coordinates from CoordSeq");}
+        let ret_val = unsafe { GEOSCoordSeq_getX(self.0 as *const GEOSCoordSequence, idx as c_uint, n_mut_ref as *mut c_double) };
+        if ret_val == 0 {panic!("Error when getting coordinates from CoordSeq");}
         return *n_mut_ref;
     }
 
     pub fn get_y(&self, idx: u32) -> f64 {
         let n_mut_ref = &mut 0.0;
-        let ret_val = unsafe { GEOSCoordSeq_getY(self.0 as *const c_void, idx as c_uint, n_mut_ref as *mut c_double) };
-        if ret_val == 0 {panic!("Error when get coordinates from CoordSeq");}
+        let ret_val = unsafe { GEOSCoordSeq_getY(self.0 as *const GEOSCoordSequence, idx as c_uint, n_mut_ref as *mut c_double) };
+        if ret_val == 0 {panic!("Error when getting coordinates from CoordSeq");}
         return *n_mut_ref;
     }
 
     pub fn get_z(&self, idx: u32) -> f64 {
         let n_mut_ref = &mut 0.0;
-        let ret_val = unsafe { GEOSCoordSeq_getZ(self.0 as *const c_void, idx as c_uint, n_mut_ref as *mut c_double) };
-        if ret_val == 0 {panic!("Error when get coordinates from CoordSeq");}
+        let ret_val = unsafe { GEOSCoordSeq_getZ(self.0 as *const GEOSCoordSequence, idx as c_uint, n_mut_ref as *mut c_double) };
+        if ret_val == 0 {panic!("Error when getting coordinates from CoordSeq");}
         return *n_mut_ref;
     }
 }
@@ -238,16 +261,22 @@ impl GGeom {
         GGeom {c_obj: g, area: area, _type: type_geom}
     }
 
+    pub fn get_coord_seq(&self) -> Result<CoordSeq, &'static str> {
+        match self._type {
+            0 | 1 | 2 => {
+                let t = unsafe { GEOSGeom_getCoordSeq(self.c_obj as *const c_void) };
+                if t.is_null() { return Err("Error retrieving Coordinates Sequence"); }
+                Ok(CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence))
+            },
+            _ => Err("Not implemented - Geometry must be a Point, LineString or LinearRing")
+        }
+    }
+
     fn _area(obj: *const c_void) -> f64 {
         let n_mut_ref = &mut 0.0;
         let ret_val = unsafe { GEOSArea(obj, n_mut_ref as *mut c_double) };
         return *n_mut_ref;
     }
-
-    // pub fn get_type(&self) -> GEOSGeomTypes {
-    //     match(self._type){
-    //         }
-    //     }
 
     pub fn to_wkt(&self) -> CString {
         unsafe { CStr::from_ptr(GEOSGeomToWKT(self.c_obj as *const c_void)).to_owned() }
@@ -319,7 +348,7 @@ impl GGeom {
     }
 }
 
-pub struct GeosPrepGeom(*mut c_void);
+pub struct GeosPrepGeom(*mut GEOSPreparedGeometry);
 
 impl Clone for GeosPrepGeom {
     fn clone(&self) -> GeosPrepGeom {
@@ -340,43 +369,43 @@ impl GeosPrepGeom {
         GeosPrepGeom(unsafe { GEOSPrepare(g.c_obj)})
     }
     pub fn contains(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedContains(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedContains(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn contains_properly(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedContainsProperly(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedContainsProperly(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn covered_by(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedCoveredBy(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedCoveredBy(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn covers(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedCovers(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedCovers(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn crosses(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedCrosses(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedCrosses(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn disjoint(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedDisjoint(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedDisjoint(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn intersects(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedIntersects(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedIntersects(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn overlaps(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedOverlaps(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedOverlaps(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn touches(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedTouches(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedTouches(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
     pub fn within(&self, g2: &GGeom) -> bool {
-        let ret_val = unsafe { GEOSPreparedWithin(self.0 as *const c_void, g2.c_obj as *const c_void) };
+        let ret_val = unsafe { GEOSPreparedWithin(self.0 as *const GEOSPreparedGeometry, g2.c_obj as *const c_void) };
         if ret_val == 1 { true } else { false }
     }
 }
@@ -384,7 +413,19 @@ impl GeosPrepGeom {
 
 #[cfg(test)]
 mod test {
-    use super::{GGeom, GeosPrepGeom, GEOSGeomTypes};
+    use super::{GGeom, GeosPrepGeom, GEOSGeomTypes, CoordSeq, _Point, _LineString, _LinearRing, _Polygon};
+
+    fn Ring(pts: &[(f64, f64)]) -> GGeom {
+        let nb_pts = pts.len();
+        let sequence = CoordSeq::new(nb_pts as u32, 2);
+        for i in 0..nb_pts {
+            let j = i as u32;
+            sequence.set_x(j, pts[i].0);
+            sequence.set_y(j, pts[i].1);
+        }
+        _LinearRing(&sequence).clone()
+    }
+
 
     #[test]
     fn test_new_geometry_from_wkt_wkb() {
@@ -443,7 +484,7 @@ mod test {
     }
 
     #[test]
-    fn rest_prepared_geoms() {
+    fn test_prepared_geoms() {
         let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
         let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))");
         let pg1 = GeosPrepGeom::new(&g1);
@@ -460,6 +501,32 @@ mod test {
         }
     }
 
+    #[test]
+    fn test_geom_from_coord_seq(){
+        let sequence = CoordSeq::new(1, 2);
+        sequence.set_x(0, 12.36);
+        sequence.set_y(0, 43.21);
+
+        let geom_point = _Point(&sequence);
+        assert_eq!(GEOSGeomTypes::GEOS_POINT as i32, geom_point._type);
+
+        let sequence2 = CoordSeq::new(2, 2);
+        sequence2.set_x(0, 12.36);
+        sequence2.set_y(0, 43.21);
+        sequence2.set_x(1, 12.78);
+        sequence2.set_y(1, 42.80);
+
+        let geom_line = _LineString(&sequence2);
+        assert_eq!(GEOSGeomTypes::GEOS_LINESTRING as i32, geom_line._type);
+
+        let x2 = sequence2.get_x(0);
+        assert_almost_eq(12.36, x2);
+
+        let exterior_ring = Ring(&[(0.0, 0.0), (0.0, 8.0), (8.0, 8.0), (8.0, 0.0), (0.0, 0.0)]);
+        let interior = Ring(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]);
+        let poly_geom = _Polygon(&exterior_ring, &[&interior], 1 as u32);
+        assert_eq!(GEOSGeomTypes::GEOS_POLYGON as i32, poly_geom._type);
+    }
 
     fn assert_almost_eq(a: f64, b: f64) {
         let f: f64 = a / b;
