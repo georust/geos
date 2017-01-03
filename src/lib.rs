@@ -175,11 +175,13 @@ impl Clone for CoordSeq {
     }
 }
 
+
 impl CoordSeq {
     pub fn new(size: u32, dims: u32) -> CoordSeq {
         initialize();
         CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
     }
+
     fn new_from_c_obj(c_obj: *mut GEOSCoordSequence) -> CoordSeq {
         CoordSeq(c_obj)
     }
@@ -234,9 +236,40 @@ impl Drop for GGeom {
 impl Clone for GGeom {
     fn clone(&self) -> GGeom {
         let n_obj = unsafe { GEOSGeom_clone(self.c_obj as *const c_void)};
-        GGeom {c_obj: n_obj, area: self.area, _type: self._type}
+        GGeom {
+            c_obj: n_obj,
+            area: self.area,
+            _type: self._type
+        }
     }
 }
+
+pub struct Point;
+
+impl Point {
+    pub fn new(coords: (f64, f64)) -> GGeom {
+        let sequence = CoordSeq::new(1, 2);
+        sequence.set_x(0, coords.0);
+        sequence.set_y(0, coords.1);
+        _Point(&sequence)
+    }
+}
+
+pub struct LineString;
+
+impl LineString {
+    pub fn new(coords: &[(f64, f64)]) -> GGeom {
+        let nb_pts = coords.len();
+        let sequence = CoordSeq::new(nb_pts as u32, 2);
+        for i in 0..nb_pts {
+            let j = i as u32;
+            sequence.set_x(j, coords[i].0);
+            sequence.set_y(j, coords[i].1);
+        }
+        _LineString(&sequence)
+    }
+}
+
 
 impl GGeom {
     pub fn new(wkt: &str) -> GGeom {
@@ -275,11 +308,12 @@ impl GGeom {
     fn _area(obj: *const c_void) -> f64 {
         let n_mut_ref = &mut 0.0;
         let ret_val = unsafe { GEOSArea(obj, n_mut_ref as *mut c_double) };
+        assert!(ret_val != 0);
         return *n_mut_ref;
     }
 
-    pub fn to_wkt(&self) -> CString {
-        unsafe { CStr::from_ptr(GEOSGeomToWKT(self.c_obj as *const c_void)).to_owned() }
+    pub fn to_wkt(&self) -> String {
+        unsafe { _string(GEOSGeomToWKT(self.c_obj as *const c_void)) }
     }
 
     pub fn to_wkb(&self) -> (*const u8, size_t) {
@@ -425,7 +459,6 @@ mod test {
         }
         _LinearRing(&sequence).clone()
     }
-
 
     #[test]
     fn test_new_geometry_from_wkt_wkb() {

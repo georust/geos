@@ -12,7 +12,7 @@ trait ToGdal {
 
 impl ToGdal for GGeom {
     fn to_gdal(&self) -> gdal::vector::Geometry {
-        Geometry::from_wkt(&self.to_wkt().to_str().unwrap())
+        Geometry::from_wkt(&self.to_wkt())
     }
 }
 
@@ -44,10 +44,4 @@ fn main() {
     println!("{} features in layer A - {} features in layer B", count_a, count_b);
     println!("{} intersections", intersections);
 
-    for geom in &stack {
-        println!("{:?}", geom.to_wkt());
-    }
-    for geom in &stack2 {
-        println!("{:?}", geom.wkt());
-    }
 }
