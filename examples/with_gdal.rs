@@ -2,9 +2,8 @@ extern crate geos;
 extern crate gdal;
 
 use std::path::Path;
-use std::fmt::Display;
 use gdal::vector::{Dataset, Geometry};
-use geos::{GGeom};
+use geos::GGeom;
 
 trait ToGdal {
     fn to_gdal(&self) -> gdal::vector::Geometry;
