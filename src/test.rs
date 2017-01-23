@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use lib::*;
+    use ffi::{GGeom, GEOSGeomTypes, CoordSeq, PreparedGGeom, _point, _lineString, _linearRing};
 	use types_geom::*;
 
     #[test]
@@ -84,7 +84,7 @@ mod test {
         sequence.set_x(0, 12.36);
         sequence.set_y(0, 43.21);
 
-        let geom_point = _Point(&sequence);
+        let geom_point = _point(&sequence);
         assert_eq!(GEOSGeomTypes::GEOS_POINT as i32, geom_point._type);
 
         let sequence2 = CoordSeq::new(2, 2);
@@ -94,7 +94,7 @@ mod test {
         sequence2.set_x(1, 12.78);
         sequence2.set_y(1, 42.80);
 
-        let geom_line = _LineString(&sequence2);
+        let geom_line = _lineString(&sequence2);
         assert_eq!(GEOSGeomTypes::GEOS_LINESTRING as i32, geom_line._type);
 
         let x2 = sequence2.get_x(0);

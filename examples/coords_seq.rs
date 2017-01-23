@@ -42,20 +42,15 @@ fn main() {
     assert_eq!(y, 2.4);
     let l_geom = LineString::new(&[(12.78, 78.08), (55.77, 77.55), (22.77, 88.99)]);
     println!("GeosGeom Linestring from coordinates : {:?}", l_geom.to_wkt());
-
-    let exterior_ring = Ring::new(&[(0.0, 0.0), (0.0, 8.0), (8.0, 8.0), (8.0, 0.0), (0.0, 0.0)]);
-    println!("Exterior constructed");
-    let interior = Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]);
-    println!("Interior constructed");
-    let poly_geom = Polygon::new(&exterior_ring, &[interior]);
-    println!("Polygon constructed");
-    println!("GeosGeom Polygons from ring coordinates : {:?}", poly_geom.to_wkt());
+    // let exterior_ring = Ring::new(&[(0.0, 0.0), (0.0, 8.0), (8.0, 8.0), (8.0, 0.0), (0.0, 0.0)]);
+    // let interior = Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]);
+    // let poly_geom = Polygon::new(&exterior_ring, &[interior]);
+    // println!("GeosGeom Polygon from ring coordinates : {:?}", poly_geom.to_wkt());
 
     let poly_geom = Polygon::new(
         &Ring::new(&[(0.0, 0.0), (0.0, 8.0), (8.0, 8.0), (8.0, 0.0), (0.0, 0.0)]),
         &[Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]), Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)])]);
-    println!("Polygon constructed");
-    println!("GeosGeom Polygons from ring coordinates : {:?}", poly_geom.to_wkt());
+    println!("GeosGeom Polygon from ring coordinates : {:?}", poly_geom.to_wkt());
 	assert!(!poly_geom.contains(&pt));
 	assert!(!l_geom.intersects(&poly_geom));
 }

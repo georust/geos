@@ -65,8 +65,8 @@ extern {
     fn GEOSGetCentroid(g: *const c_void) -> *mut c_void;
     fn GEOSSymDifference(g1: *const c_void, g2: *const c_void) -> *mut c_void;
     fn GEOSDifference(g1: *const c_void, g2: *const c_void) -> *mut c_void;
-    // fn GEOSClipByRect(g: *const c_void, xmin: c_double, ymin: c_double, xmax: c_double, ymax: c_double) -> *mut c_void;
-    // fn GEOSSnap(g1: *const c_void, g2: *const c_void, tolerance: c_double) -> *mut c_void;
+    fn GEOSClipByRect(g: *const c_void, xmin: c_double, ymin: c_double, xmax: c_double, ymax: c_double) -> *mut c_void;
+    fn GEOSSnap(g1: *const c_void, g2: *const c_void, tolerance: c_double) -> *mut c_void;
     fn GEOSGeom_extractUniquePoints(g: *const c_void) -> *mut c_void;
 
     // Functions acting on GEOSPreparedGeometry :
@@ -88,6 +88,7 @@ pub enum GEOSCoordSequence {}
 
 #[derive(Debug)]
 #[repr(C)]
+#[allow(dead_code)]
 pub enum GEOSGeomTypes {
     GEOS_POINT = 0,
     GEOS_LINESTRING,
@@ -120,31 +121,16 @@ pub fn _lineString(s: &CoordSeq) -> GGeom {
 pub fn _linearRing(s: &CoordSeq) -> GGeom {
     GGeom::new_from_c_obj(unsafe {GEOSGeom_createLinearRing(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence)) })
 }
-// pub fn _Polygon(shell: &GGeom, holes: &[&GGeom], nholes: u32) -> GGeom {
-//     let mut vec_holes = Vec::new();
-//     for h in holes {
-//             vec_holes.push(unsafe { GEOSGeom_clone(h.c_obj as *const c_void) } );
-//      }
-//     let t = unsafe { GEOSGeom_createPolygon(GEOSGeom_clone(shell.c_obj as *const c_void), &vec_holes[..], nholes as c_uint) };
-//     GGeom::new_from_c_obj(t)
-// }
-// fn _Ring(pts: &[(f64, f64)]) -> GGeom {
-//     let nb_pts = pts.len();
-//     let sequence = CoordSeq::new(nb_pts as u32, 2);
-//     for i in 0..nb_pts {
-//         let j = i as u32;
-//         sequence.set_x(j, pts[i].0);
-//         sequence.set_y(j, pts[i].1);
-//     }
-//     _LinearRing(&sequence).clone()
-// }
-// pub fn Snap(g1: &GGeom, g2: &GGeom, tolerance: f64) -> GGeom {
-//     GGeom::new_from_c_obj(unsafe { GEOSSnap(g1.0, g2.0, tolerance as c_double) })
-// }
-//
-// pub fn ClipByRect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GGeom {
-//     GGeom::new_from_c_obj(unsafe { GEOSClipByRect(g.0, xmin as c_double, ymin as c_double, xmax as c_double, ymax as c_double)})
-// }
+
+#[allow(dead_code)]
+pub fn snap(g1: &GGeom, g2: &GGeom, tolerance: f64) -> GGeom {
+    GGeom::new_from_c_obj(unsafe { GEOSSnap(g1.c_obj, g2.c_obj, tolerance as c_double) })
+}
+
+#[allow(dead_code)]
+pub fn clip_by_rect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GGeom {
+    GGeom::new_from_c_obj(unsafe { GEOSClipByRect(g.c_obj, xmin as c_double, ymin as c_double, xmax as c_double, ymax as c_double)})
+}
 
 pub fn version() -> String {
     unsafe {
