@@ -20,6 +20,8 @@ extern {
     fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const c_void) -> *const c_char;
     fn GEOSWKTWriter_setRoundingPrecision(writer: *mut GEOSWKTWriter, precision: c_int);
 
+    fn GEOSFree(buffer: *mut c_void);
+
 
     fn GEOSPrepare(g: *const c_void) -> *mut GEOSPreparedGeometry;
     fn GEOSGeom_destroy(g: *mut c_void);
@@ -306,9 +308,11 @@ impl GGeom {
         if let Some(x) = precision {
             unsafe { GEOSWKTWriter_setRoundingPrecision(writer, x as c_int) }
         };
-        let result = unsafe { GEOSWKTWriter_write(writer, self.c_obj as *const c_void) };
+        let c_result = unsafe { GEOSWKTWriter_write(writer, self.c_obj as *const c_void) };
+        let result = _string(c_result);
         unsafe { GEOSWKTWriter_destroy(writer) };
-        _string(result)
+        unsafe { GEOSFree(c_result as *mut c_void) };
+        result
     }
 
     pub fn to_wkb(&self) -> (*const u8, size_t) {
