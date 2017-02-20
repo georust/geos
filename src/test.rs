@@ -8,6 +8,7 @@ mod test {
         let geom = GGeom::new("POINT (2.5 2.5)");
         assert_eq!(GEOSGeomTypes::GEOS_POINT as i32, geom._type);
         assert_eq!(true, geom.is_simple());
+        assert_eq!(true, geom.is_valid());
         assert_eq!(false, geom.is_empty());
         let line_geom = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
         assert_eq!(GEOSGeomTypes::GEOS_LINESTRING as i32, line_geom._type);
@@ -79,6 +80,15 @@ mod test {
     }
 
     #[test]
+    fn test_wkt_rounding_precision(){
+        let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
+        let wkt = g.to_wkt_precison(Some(0));
+        assert_eq!(true, wkt == "LINESTRING (0 0, 7 7, 45 50, 100 100)");
+        let wkt2 = g.to_wkt();
+        assert!(wkt2 != wkt);
+    }
+
+    #[test]
     fn test_geom_from_coord_seq(){
         let sequence = CoordSeq::new(1, 2);
         sequence.set_x(0, 12.36);
@@ -104,6 +114,7 @@ mod test {
         let interior = Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]);
         let poly_geom = Polygon::new(&exterior_ring, &[interior]);
         assert_eq!(GEOSGeomTypes::GEOS_POLYGON as i32, poly_geom._type);
+        assert_eq!(true, poly_geom.is_valid());
     }
 
     fn assert_almost_eq(a: f64, b: f64) {

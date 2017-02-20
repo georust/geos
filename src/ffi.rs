@@ -9,6 +9,18 @@ extern {
     fn GEOSversion() -> *const c_char;
     fn finishGEOS() -> *mut c_void;
 
+    // API for reading WKT :
+    fn GEOSWKTReader_create() -> *mut GEOSWKTReader;
+    fn GEOSWKTReader_destroy(reader: *mut GEOSWKTReader);
+    fn GEOSWKTReader_read(reader: *mut GEOSWKTReader, wkt: *const c_char) -> *mut c_void;
+
+    // API for writing WKT :
+    fn GEOSWKTWriter_create() -> *mut GEOSWKTWriter;
+    fn GEOSWKTWriter_destroy(writer: *mut GEOSWKTWriter);
+    fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const c_void) -> *const c_char;
+    fn GEOSWKTWriter_setRoundingPrecision(writer: *mut GEOSWKTWriter, precision: c_int);
+
+
     fn GEOSPrepare(g: *const c_void) -> *mut GEOSPreparedGeometry;
     fn GEOSGeom_destroy(g: *mut c_void);
     pub fn GEOSGeom_clone(g: *const c_void) -> *mut c_void;
@@ -38,8 +50,8 @@ extern {
     fn GEOSisRing(g: *const c_void) -> c_int;
     fn GEOSHasZ(g: *const c_void) -> c_int;
     fn GEOSisClosed(g: *const c_void) -> c_int;
+    fn GEOSisValid(g: *const c_void) -> c_int;
 
-    fn GEOSGeomFromWKT(wkt: *const c_char) -> *mut c_void;
     fn GEOSGeomToWKT(g: *const c_void) -> *const c_char;
     fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut c_void;
     fn GEOSGeomToWKB_buf(g: *const c_void, size: *mut size_t) -> *const u8;
@@ -83,6 +95,8 @@ extern {
     fn GEOSPreparedGeom_destroy(g: *mut GEOSPreparedGeometry);
 }
 
+pub enum GEOSWKTReader {}
+pub enum GEOSWKTWriter {}
 pub enum GEOSPreparedGeometry {}
 pub enum GEOSCoordSequence {}
 
@@ -238,7 +252,10 @@ impl GGeom {
     pub fn new(wkt: &str) -> GGeom {
         initialize();
         let c_str = CString::new(wkt).unwrap();
-        let obj = unsafe { GEOSGeomFromWKT(c_str.as_ptr()) };
+        let reader = unsafe { GEOSWKTReader_create() };
+        let obj = unsafe { GEOSWKTReader_read(reader, c_str.as_ptr()) };
+        if obj.is_null(){ panic!("Invalid geometry"); }
+        unsafe { GEOSWKTReader_destroy(reader) };
         GGeom::new_from_c_obj(obj)
     }
 
@@ -255,6 +272,11 @@ impl GGeom {
         let area = GGeom::_area(g as *const c_void);
         let type_geom = unsafe { GEOSGeomTypeId(g as *const c_void) as i32};
         GGeom {c_obj: g, area: area, _type: type_geom}
+    }
+
+    pub fn is_valid(&self) -> bool {
+        let rv = unsafe { GEOSisValid(self.c_obj as *const c_void) };
+        return if rv == 1 { true } else { false };
     }
 
     pub fn get_coord_seq(&self) -> Result<CoordSeq, &'static str> {
@@ -277,6 +299,16 @@ impl GGeom {
 
     pub fn to_wkt(&self) -> String {
         unsafe { _string(GEOSGeomToWKT(self.c_obj as *const c_void)) }
+    }
+
+    pub fn to_wkt_precison(&self, precision: Option<u32>) -> String {
+        let writer = unsafe { GEOSWKTWriter_create() };
+        if let Some(x) = precision {
+            unsafe { GEOSWKTWriter_setRoundingPrecision(writer, x as c_int) }
+        };
+        let result = unsafe { GEOSWKTWriter_write(writer, self.c_obj as *const c_void) };
+        unsafe { GEOSWKTWriter_destroy(writer) };
+        _string(result)
     }
 
     pub fn to_wkb(&self) -> (*const u8, size_t) {

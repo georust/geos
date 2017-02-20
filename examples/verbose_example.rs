@@ -29,5 +29,6 @@ fn main() {
     println!("Geom6 (polygon) : {:?}", g6._type);
     let g4 = g1.get_centroid();
     println!("Centroid of g1 : {:?}", g4.to_wkt());
+    println!("Centroid of g1 with round precision of 1: {:?}", g4.to_wkt_precison(Some(1)));
     println!("Geom4 contains centroid of geom1 : {:?}", g3.contains(&g4));
 }
