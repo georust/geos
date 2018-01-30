@@ -11,7 +11,7 @@ trait ToGdal {
 
 impl ToGdal for GGeom {
     fn to_gdal(&self) -> gdal::vector::Geometry {
-        Geometry::from_wkt(&self.to_wkt())
+        Geometry::from_wkt(&self.to_wkt()).unwrap()
     }
 }
 
@@ -26,9 +26,9 @@ fn main() {
     let mut stack = Vec::new();
     let mut stack2 = Vec::new();
     for feature_a in layer_a.features() {
-        let ggeom_a = GGeom::new(&feature_a.geometry().wkt());
+        let ggeom_a = GGeom::new(&feature_a.geometry().wkt().unwrap());
         for feature_b in layer_b.features() {
-            let ggeom_b = GGeom::new(&feature_b.geometry().wkt());
+            let ggeom_b = GGeom::new(&feature_b.geometry().wkt().unwrap());
             if ggeom_b.intersects(&ggeom_a) {
                 let new_geom = ggeom_b.difference(&ggeom_a);
                 let new_geom2 = new_geom.to_gdal();
