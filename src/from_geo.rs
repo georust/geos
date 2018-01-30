@@ -4,7 +4,6 @@ use libc::{c_int, c_uint};
 use self::geo::{LineString, MultiPolygon, Polygon};
 use ffi::{CoordSeq, GEOSGeomTypes, GEOSGeom_clone, GEOSGeom_createCollection,
           GEOSGeom_createPolygon, GGeom, _linearRing};
-use std::convert::From;
 
 impl<'a> From<&'a LineString<f64>> for GGeom {
     fn from(ls: &LineString<f64>) -> Self {
