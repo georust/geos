@@ -1,15 +1,13 @@
-#![crate_name="geos"]
-#![crate_type="lib"]
+#![crate_name = "geos"]
+#![crate_type = "lib"]
 
+extern crate geo;
 extern crate libc;
 extern crate num;
-extern crate geo;
 
+mod from_geo;
 mod ffi;
-pub use ffi::{GGeom, CoordSeq, PreparedGGeom, _point, _lineString, _linearRing, version};
-pub mod types_geom;
+pub use ffi::{_point, version, CoordSeq, GGeom, PreparedGGeom, _lineString, _linearRing};
 
 #[cfg(test)]
 mod test;
-#[cfg(test)]
-mod conversion_test;

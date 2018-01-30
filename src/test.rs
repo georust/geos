@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod test {
-    use ffi::{GGeom, GEOSGeomTypes, CoordSeq, PreparedGGeom, _point, _lineString, _linearRing};
-	use types_geom::*;
+    use ffi::{_point, CoordSeq, GEOSGeomTypes, GGeom, PreparedGGeom, _lineString, _linearRing};
 
     #[test]
     fn test_new_geometry_from_wkt_wkb() {
@@ -18,7 +17,7 @@ mod test {
     }
 
     #[test]
-    fn test_relationship(){
+    fn test_relationship() {
         let pt_geom = GGeom::new("POINT (2.5 2.5)");
         let line_geom = GGeom::new("LINESTRING(1 1,10 50,20 25)");
         let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
@@ -45,7 +44,7 @@ mod test {
     }
 
     #[test]
-    fn test_geom_creation_from_geoms(){
+    fn test_geom_creation_from_geoms() {
         let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
         let new_geom = polygon_geom.buffer(100.0, 12);
         let g1 = new_geom.difference(&polygon_geom);
@@ -72,49 +71,20 @@ mod test {
             GGeom::new("POINT (1.3 2.4)"),
             GGeom::new("POINT (2.1 0.3)"),
             GGeom::new("POINT (3.1 4.7)"),
-            GGeom::new("POINT (0.4 4.1)")
-            ];
+            GGeom::new("POINT (0.4 4.1)"),
+        ];
         for geom in &vec_geoms {
             assert_eq!(true, pg1.intersects(&geom));
         }
     }
 
     #[test]
-    fn test_wkt_rounding_precision(){
+    fn test_wkt_rounding_precision() {
         let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
         let wkt = g.to_wkt_precison(Some(0));
         assert_eq!(true, wkt == "LINESTRING (0 0, 7 7, 45 50, 100 100)");
         let wkt2 = g.to_wkt();
         assert!(wkt2 != wkt);
-    }
-
-    #[test]
-    fn test_geom_from_coord_seq(){
-        let sequence = CoordSeq::new(1, 2);
-        sequence.set_x(0, 12.36);
-        sequence.set_y(0, 43.21);
-
-        let geom_point = _point(&sequence);
-        assert_eq!(GEOSGeomTypes::GEOS_POINT as i32, geom_point._type);
-
-        let sequence2 = CoordSeq::new(2, 2);
-        sequence2.set_x(0, 12.36);
-        sequence2.set_y(0, 43.21);
-
-        sequence2.set_x(1, 12.78);
-        sequence2.set_y(1, 42.80);
-
-        let geom_line = _lineString(&sequence2);
-        assert_eq!(GEOSGeomTypes::GEOS_LINESTRING as i32, geom_line._type);
-
-        let x2 = sequence2.get_x(0);
-        assert_almost_eq(12.36, x2);
-
-        let exterior_ring = Ring::new(&[(0.0, 0.0), (0.0, 8.0), (8.0, 8.0), (8.0, 0.0), (0.0, 0.0)]);
-        let interior = Ring::new(&[(1.0, 1.0), (4.0, 1.0), (4.0, 4.0), (1.0, 4.0), (1.0, 1.0)]);
-        let poly_geom = Polygon::new(&exterior_ring, &[interior]);
-        assert_eq!(GEOSGeomTypes::GEOS_POLYGON as i32, poly_geom._type);
-        assert_eq!(true, poly_geom.is_valid());
     }
 
     fn assert_almost_eq(a: f64, b: f64) {
