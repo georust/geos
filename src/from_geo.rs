@@ -6,8 +6,8 @@ use ffi::{CoordSeq, GEOSGeomTypes, GEOSGeom_clone, GEOSGeom_createCollection,
           GEOSGeom_createPolygon, GGeom, _linearRing};
 use std::convert::From;
 
-impl From<LineString<f64>> for GGeom {
-    fn from(ls: LineString<f64>) -> Self {
+impl<'a> From<&'a LineString<f64>> for GGeom {
+    fn from(ls: &LineString<f64>) -> Self {
         let nb_pts = ls.0.len();
         let coord_seq_ext = CoordSeq::new(nb_pts as u32, 2);
         for i in 0..nb_pts {
@@ -19,19 +19,21 @@ impl From<LineString<f64>> for GGeom {
     }
 }
 
-impl From<Polygon<f64>> for GGeom {
-    fn from(p: Polygon<f64>) -> Self {
-        let geom_exterior: GGeom = p.exterior.into();
+impl<'a> From<&'a Polygon<f64>> for GGeom {
+    fn from(p: &Polygon<f64>) -> Self {
+        let geom_exterior: GGeom = (&p.exterior).into();
         let nb_interiors = p.interiors.len();
-        let mut rings = Vec::with_capacity(nb_interiors);
-        for i in p.interiors {
-            let i_ggeom: GGeom = i.into();
-            rings.push(unsafe { GEOSGeom_clone(i_ggeom.c_obj) });
-        }
+
+        let interiors: Vec<_> = p.interiors
+            .iter()
+            .map(|i| i.into())
+            .map(|i: GGeom| unsafe { GEOSGeom_clone(i.c_obj) })
+            .collect();
+
         let t = unsafe {
             GEOSGeom_createPolygon(
                 GEOSGeom_clone(geom_exterior.c_obj),
-                &rings[..],
+                &interiors[..],
                 nb_interiors as c_uint,
             )
         };
@@ -39,11 +41,11 @@ impl From<Polygon<f64>> for GGeom {
     }
 }
 
-impl From<MultiPolygon<f64>> for GGeom {
-    fn from(mp: MultiPolygon<f64>) -> Self {
+impl<'a> From<&'a MultiPolygon<f64>> for GGeom {
+    fn from(mp: &MultiPolygon<f64>) -> Self {
         let nb_polygons = mp.0.len();
         let polygons: Vec<_> = mp.0
-            .into_iter()
+            .iter()
             .map(|p| p.into())
             .map(|g: GGeom| unsafe { GEOSGeom_clone(g.c_obj) })
             .collect();
@@ -87,13 +89,13 @@ mod test {
         assert_eq!(p.exterior, exterior);
         assert_eq!(p.interiors, interiors);
 
-        let geom: GGeom = p.into();
+        let geom: GGeom = (&p).into();
 
         assert!(geom.contains(&geom));
-        assert!(!geom.contains(&exterior.clone().into()));
+        assert!(!geom.contains(&(&exterior).into()));
 
-        assert!(geom.covers(&exterior.clone().into()));
-        assert!(geom.touches(&exterior.clone().into()));
+        assert!(geom.covers((&(&exterior).into())));
+        assert!(geom.touches(&(&exterior).into()));
     }
 
     #[test]
@@ -117,9 +119,9 @@ mod test {
         let p = Polygon::new(exterior.clone(), interiors.clone());
         let mp = MultiPolygon(vec![p.clone()]);
 
-        let geom: GGeom = mp.into();
+        let geom: GGeom = (&mp).into();
 
         assert!(geom.contains(&geom));
-        assert!(geom.contains(&p.into()));
+        assert!(geom.contains(&(&p).into()));
     }
 }

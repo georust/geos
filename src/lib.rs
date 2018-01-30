@@ -5,9 +5,9 @@ extern crate geo;
 extern crate libc;
 extern crate num;
 
-mod from_geo;
 mod ffi;
 pub use ffi::{_point, version, CoordSeq, GGeom, PreparedGGeom, _lineString, _linearRing};
+pub mod from_geo;
 
 #[cfg(test)]
 mod test;
