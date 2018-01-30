@@ -8,7 +8,4 @@ repository = "https://github.com/mthh/rust-geos"
 [dependencies]
 libc = "*"
 num = "*"
-geo = "0.7"
-
-[dev-dependencies]
-gdal = "*"
+geo = "*"
