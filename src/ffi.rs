@@ -410,41 +410,41 @@ impl GGeom {
     pub fn intersects(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSIntersects(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn crosses(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSCrosses(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn disjoint(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSDisjoint(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn touches(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSTouches(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn overlaps(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSOverlaps(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn within(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe { GEOSWithin(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn equals(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe { GEOSEquals(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn equals_exact(&self, g2: &GGeom, precision: f64) -> bool {
@@ -455,24 +455,24 @@ impl GGeom {
                 precision as c_double,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn covers(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe { GEOSCovers(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn covered_by(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSCoveredBy(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn contains(&self, g2: &GGeom) -> bool {
         let ret_val =
             unsafe { GEOSContains(self.c_obj as *const c_void, g2.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GGeom {
@@ -487,12 +487,12 @@ impl GGeom {
 
     pub fn is_empty(&self) -> bool {
         let ret_val = unsafe { GEOSisEmpty(self.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 
     pub fn is_simple(&self) -> bool {
         let ret_val = unsafe { GEOSisSimple(self.c_obj as *const c_void) };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn difference(&self, g2: &GGeom) -> GGeom {
         GGeom::new_from_c_obj(unsafe {
@@ -544,7 +544,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn contains_properly(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -553,7 +553,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn covered_by(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -562,7 +562,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn covers(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -571,7 +571,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn crosses(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -580,7 +580,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn disjoint(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -589,7 +589,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn intersects(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -598,7 +598,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn overlaps(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -607,7 +607,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn touches(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -616,7 +616,7 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
     pub fn within(&self, g2: &GGeom) -> bool {
         let ret_val = unsafe {
@@ -625,6 +625,6 @@ impl PreparedGGeom {
                 g2.c_obj as *const c_void,
             )
         };
-        return (ret_val == 1);
+        return ret_val == 1;
     }
 }
