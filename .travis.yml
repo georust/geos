@@ -11,11 +11,16 @@ matrix:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install libgeos-dev libgdal-dev
+  - sudo apt-get install libgeos-dev libgdal-dev valgrind
 
 script:
   - cargo test
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
-  - cargo run --example coords_seq
-  - cargo run --example with_gdal
+  - cargo run --example from_geo
+  # run valgrind to check that there are no memoryleaks
+  # Note: cargo seems to randomly name the executable, so we use find to find all the tests
+  - find ./target/debug/deps -name "geos*"  -type f -executable | xargs -n 1 valgrind --leak-check=full --error-exitcode=42
+  - valgrind --leak-check=full --error-exitcode=42 ./target/debug/examples/from_geo
+  - valgrind --leak-check=full --error-exitcode=42 ./target/debug/examples/verbose_example
+  - valgrind --leak-check=full --error-exitcode=42 ./target/debug/examples/prepared_geom

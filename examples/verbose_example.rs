@@ -15,14 +15,6 @@ fn main() {
     let result = g1.within(&g2);
     println!("Geom1 within geom2 : {:?}\n", result);
     println!("Geom1 to wkt : {:?}", g1.to_wkt());
-    let (wkb_geom, size) = g1.to_wkb();
-    print!("wkb geom : {:?}", wkb_geom);
-    print!("size : {:?}", size);
-    println!("Is geom3 empty ? {:?}", g3.is_empty());
-    println!("Is geom3 simple ? {:?}", g3.is_simple());
-    println!("Geom3 to wkt : {:?}", g3.to_wkt());
-    let g4 = GGeom::new_from_wkb(wkb_geom, size);
-    println!("Geom4 to wkt : {:?}", g4.to_wkt());
     let g5 = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
     println!("Geom5 (linestring) : {:?}", g5._type);
     let g6 = g5.buffer(20.0, 10);
@@ -34,4 +26,5 @@ fn main() {
         g4.to_wkt_precison(Some(1))
     );
     println!("Geom4 contains centroid of geom1 : {:?}", g3.contains(&g4));
+    println!("Geom4 is valid ? : {}", g3.is_valid());
 }
