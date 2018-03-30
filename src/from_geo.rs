@@ -115,7 +115,7 @@ mod test {
         assert!(geom.contains(&geom));
         assert!(!geom.contains(&(&exterior).try_into().unwrap()));
 
-        assert!(geom.covers((&(&exterior).try_into().unwrap())));
+        assert!(geom.covers(&(&exterior).try_into().unwrap()));
         assert!(geom.touches(&(&exterior).try_into().unwrap()));
     }
 
