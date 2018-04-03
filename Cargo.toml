@@ -1,6 +1,6 @@
 [package]
 name = "geos"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Matthieu Viry <matthieu.viry@cnrs.fr>", "Adrien Matissart <a.matissart@qwantresearch.com>", "Antoine Desbordes <antoine.desbordes@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/georust/rust-geos"
