@@ -36,14 +36,14 @@ mod test {
         let g1 = new_geom.difference(&polygon_geom).unwrap();
         let g2 = polygon_geom.sym_difference(&new_geom).unwrap();
         let g3 = new_geom.sym_difference(&polygon_geom).unwrap();
-        assert_almost_eq(g1.area, g2.area);
-        assert_almost_eq(g2.area, g3.area);
+        assert_almost_eq(g1.area().unwrap(), g2.area().unwrap());
+        assert_almost_eq(g2.area().unwrap(), g3.area().unwrap());
         let g4 = g3.get_centroid().unwrap();
-        assert_eq!(GEOSGeomTypes::Point as i32, g4._type);
+        assert_eq!(GEOSGeomTypes::Point, g4.geometry_type().unwrap());
         let g5 = g4.buffer(200.0, 12).unwrap();
 
-        assert!(g5.area > g4.area);
-        assert_eq!(GEOSGeomTypes::Polygon as i32, g5._type);
+        assert!(g5.area().unwrap() > g4.area().unwrap());
+        assert_eq!(GEOSGeomTypes::Polygon, g5.geometry_type().unwrap());
     }
 
     #[test]

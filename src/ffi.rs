@@ -4,6 +4,7 @@ use std::ffi::{CStr, CString};
 use std::{ptr, str};
 use error::{Error, Result as GeosResult};
 use std;
+use num_traits::FromPrimitive;
 
 #[link(name = "geos_c")]
 extern "C" {
@@ -127,18 +128,18 @@ pub enum GEOSWKTWriter {}
 pub enum GEOSPreparedGeometry {}
 pub enum GEOSCoordSequence {}
 
-#[derive(Debug)]
+#[derive(Eq, PartialEq, Debug, Primitive)]
 #[repr(C)]
 #[allow(dead_code)]
 pub enum GEOSGeomTypes {
     Point = 0,
-    LineString,
-    LinearRing,
-    Polygon,
-    MultiPoint,
-    MultiLineString,
-    MultiPolygon,
-    GeometryCollection,
+    LineString = 1,
+    LinearRing = 2,
+    Polygon = 3,
+    MultiPoint = 4,
+    MultiLineString = 5,
+    MultiPolygon = 6,
+    GeometryCollection = 7,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -355,8 +356,6 @@ impl SafeCGeom {
 #[derive(Clone)]
 pub struct GGeom {
     obj: SafeCGeom,
-    pub area: f64,
-    pub _type: i32,
 }
 
 impl GGeom {
@@ -376,12 +375,8 @@ impl GGeom {
         if g.is_null() {
             return Err(Error::NoConstructionFromNullPtr);
         }
-        let area = GGeom::_area(g as *const c_void);
-        let type_geom = unsafe { GEOSGeomTypeId(g as *const c_void) as i32 };
         Ok(GGeom {
             obj: SafeCGeom { c_obj: g },
-            area: area,
-            _type: type_geom,
         })
     }
 
@@ -395,8 +390,9 @@ impl GGeom {
     }
 
     pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
-        match self._type {
-            0 | 1 | 2 => {
+        let type_geom = self.geometry_type()?;
+        match type_geom {
+            GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => {
                 let t = unsafe { GEOSGeom_getCoordSeq(self.c_obj()) };
                 CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence)
             }
@@ -404,11 +400,21 @@ impl GGeom {
         }
     }
 
-    fn _area(obj: *const c_void) -> f64 {
+    pub fn geometry_type(&self) -> GeosResult<GEOSGeomTypes> {
+        let type_geom = unsafe { GEOSGeomTypeId(self.c_obj() ) as i32 };
+
+        GEOSGeomTypes::from_i32(type_geom).ok_or(Error::GeosError(format!("impossible to get geometry type (val={})", type_geom)))
+    }
+
+    pub fn area(&self) -> GeosResult<f64> {
         let n_mut_ref = &mut 0.0;
-        let ret_val = unsafe { GEOSArea(obj, n_mut_ref as *mut c_double) };
-        assert!(ret_val != 0);
-        return *n_mut_ref;
+        let ret_val = unsafe { GEOSArea(self.c_obj(), n_mut_ref as *mut c_double) };
+
+        if ret_val == 0 {
+            Err(Error::GeosError("computing the area".into()))
+        } else {
+            Ok(*n_mut_ref)
+        }
     }
 
     pub fn to_wkt(&self) -> String {
