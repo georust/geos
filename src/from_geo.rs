@@ -27,7 +27,7 @@ impl<'a> TryInto<GGeom> for &'a LineString<f64> {
     fn try_into(self) -> Result<GGeom, Self::Err> {
         let coord_seq = create_coord_seq(&self.0);
 
-        Ok(GGeom::create_line_string(coord_seq))
+        GGeom::create_line_string(coord_seq)
     }
 }
 
@@ -48,7 +48,7 @@ impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
             // the linestring need to be closed else geos will crash
             Err(Error::InvalidGeometry("impossible to create a linering with an unclosed geometry".into()))
         } else {
-            Ok(GGeom::create_linear_ring(coord_seq))
+            GGeom::create_linear_ring(coord_seq)
         }
     }
 }
