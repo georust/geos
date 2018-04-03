@@ -9,8 +9,8 @@ categories = ["external-ffi-bindings", "algorithms"]
 description = "Rust bindings for GEOS C API"
 
 [dependencies]
-libc = "*"
-num = "*"
+libc = "0.2"
+num = "0.1"
 geo = ">=0.4,<=0.6"
 failure = "0.1"
 failure_derive = "0.1"
