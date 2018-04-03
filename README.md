@@ -1,7 +1,7 @@
 rust-geos
 =========
 
-[![Build Status](https://travis-ci.org/mthh/rust-geos.svg?branch=master)](https://travis-ci.org/mthh/rust-geos)
+[![Build Status](https://travis-ci.org/georust/rust-geos.svg?branch=master)](https://travis-ci.org/georust/rust-geos)
 
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
