@@ -1,15 +1,17 @@
 [package]
 name = "geos"
-version = "0.2.0"
-authors = ["<matthieu.viry@cnrs.fr>", "Adrien Matissart <a.matissart@qwantresearch.com>", "Antoine Desbordes <antoine.desbordes@gmail.com"]
+version = "0.2.2"
+authors = ["Matthieu Viry <matthieu.viry@cnrs.fr>", "Adrien Matissart <a.matissart@qwantresearch.com>", "Antoine Desbordes <antoine.desbordes@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/georust/rust-geos"
 keywords = ["geos", "libgeos", "geometry", "geography", "gis"]
 categories = ["external-ffi-bindings", "algorithms"]
+description = "Rust bindings for GEOS C API"
+readme = "README.md"
 
 [dependencies]
-libc = "*"
-num = "*"
+libc = "0.2"
+num = "0.1"
 geo = ">=0.4,<=0.6"
 failure = "0.1"
 failure_derive = "0.1"
