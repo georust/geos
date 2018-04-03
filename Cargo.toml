@@ -6,6 +6,7 @@ license = "MIT"
 repository = "https://github.com/georust/rust-geos"
 keywords = ["geos", "libgeos", "geometry", "geography", "gis"]
 categories = ["external-ffi-bindings", "algorithms"]
+description = "Rust bindings for GEOS C API"
 
 [dependencies]
 libc = "*"
