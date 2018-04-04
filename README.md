@@ -14,7 +14,7 @@ This project is checked with valgrind, but if you stumble on a crash feel free t
 
 ### Usage example
 
-You can check the examples in the `examples/` directorry.
+You can check the examples in the `examples/` directory.
 
 ### Constructing geometries from WKT:
 

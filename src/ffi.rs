@@ -221,7 +221,7 @@ impl CoordSeq {
             Ok(CoordSeq(c_obj))
         }
     }
-    pub fn set_x(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_x(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
                 self.0 as *mut GEOSCoordSequence,
@@ -229,9 +229,13 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set x for coord".into()))
+        } else {
+            Ok(())
+        }
     }
-    pub fn set_y(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_y(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
                 self.0 as *mut GEOSCoordSequence,
@@ -239,9 +243,13 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set y for coord".into()))
+        } else {
+            Ok(())
+        }
     }
-    pub fn set_z(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_z(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
                 self.0 as *mut GEOSCoordSequence,
@@ -249,7 +257,11 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set z for coord".into()))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn get_x(&self, idx: u32) -> GeosResult<f64> {

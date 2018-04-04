@@ -10,22 +10,22 @@ pub trait TryInto<T> {
     fn try_into(self) -> Result<T, Self::Err>;
 }
 
-fn create_coord_seq<'a>(points: &'a Vec<Point<f64>>) -> CoordSeq {
+fn create_coord_seq<'a>(points: &'a Vec<Point<f64>>) -> Result<CoordSeq, Error> {
     let nb_pts = points.len();
     let coord_seq = CoordSeq::new(nb_pts as u32, 2);
     for i in 0..nb_pts {
         let j = i as u32;
-        coord_seq.set_x(j, points[i].x());
-        coord_seq.set_y(j, points[i].y());
+        coord_seq.set_x(j, points[i].x())?;
+        coord_seq.set_y(j, points[i].y())?;
     }
-    coord_seq
+    Ok(coord_seq)
 }
 
 impl<'a> TryInto<GGeom> for &'a LineString<f64> {
     type Err = Error;
 
     fn try_into(self) -> Result<GGeom, Self::Err> {
-        let coord_seq = create_coord_seq(&self.0);
+        let coord_seq = create_coord_seq(&self.0)?;
 
         GGeom::create_line_string(coord_seq)
     }
@@ -40,7 +40,7 @@ impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
 
     fn try_into(self) -> Result<GGeom, Self::Err> {
         let points = &(self.0).0;
-        let coord_seq = create_coord_seq(&points);
+        let coord_seq = create_coord_seq(&points)?;
 
         if points.len() == 1 {
             Err(Error::InvalidGeometry("impossible to create a linering from one point".into()))
