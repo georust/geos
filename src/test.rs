@@ -4,9 +4,9 @@ mod test {
 
     #[test]
     fn test_relationship() {
-        let pt_geom = GGeom::new("POINT (2.5 2.5)");
-        let line_geom = GGeom::new("LINESTRING(1 1,10 50,20 25)");
-        let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
+        let pt_geom = GGeom::new("POINT (2.5 2.5)").unwrap();
+        let line_geom = GGeom::new("LINESTRING(1 1,10 50,20 25)").unwrap();
+        let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
 
         assert_eq!(true, polygon_geom.covers(&pt_geom));
         assert_eq!(true, polygon_geom.intersects(&pt_geom));
@@ -31,16 +31,16 @@ mod test {
 
     #[test]
     fn test_geom_creation_from_geoms() {
-        let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
-        let new_geom = polygon_geom.buffer(100.0, 12);
-        let g1 = new_geom.difference(&polygon_geom);
-        let g2 = polygon_geom.sym_difference(&new_geom);
-        let g3 = new_geom.sym_difference(&polygon_geom);
+        let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
+        let new_geom = polygon_geom.buffer(100.0, 12).unwrap();
+        let g1 = new_geom.difference(&polygon_geom).unwrap();
+        let g2 = polygon_geom.sym_difference(&new_geom).unwrap();
+        let g3 = new_geom.sym_difference(&polygon_geom).unwrap();
         assert_almost_eq(g1.area, g2.area);
         assert_almost_eq(g2.area, g3.area);
-        let g4 = g3.get_centroid();
+        let g4 = g3.get_centroid().unwrap();
         assert_eq!(GEOSGeomTypes::Point as i32, g4._type);
-        let g5 = g4.buffer(200.0, 12);
+        let g5 = g4.buffer(200.0, 12).unwrap();
 
         assert!(g5.area > g4.area);
         assert_eq!(GEOSGeomTypes::Polygon as i32, g5._type);
@@ -48,16 +48,16 @@ mod test {
 
     #[test]
     fn test_prepared_geoms() {
-        let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))");
-        let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))");
+        let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
+        let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").unwrap();
         let pg1 = PreparedGGeom::new(&g1);
         assert_eq!(true, pg1.intersects(&g2));
-        assert_eq!(true, pg1.contains(&g2.get_centroid()));
+        assert_eq!(true, pg1.contains(&g2.get_centroid().unwrap()));
         let vec_geoms = vec![
-            GGeom::new("POINT (1.3 2.4)"),
-            GGeom::new("POINT (2.1 0.3)"),
-            GGeom::new("POINT (3.1 4.7)"),
-            GGeom::new("POINT (0.4 4.1)"),
+            GGeom::new("POINT (1.3 2.4)").unwrap(),
+            GGeom::new("POINT (2.1 0.3)").unwrap(),
+            GGeom::new("POINT (3.1 4.7)").unwrap(),
+            GGeom::new("POINT (0.4 4.1)").unwrap(),
         ];
         for geom in &vec_geoms {
             assert_eq!(true, pg1.intersects(&geom));
@@ -66,7 +66,7 @@ mod test {
 
     #[test]
     fn test_wkt_rounding_precision() {
-        let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)");
+        let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
         let wkt = g.to_wkt_precison(Some(0));
         assert_eq!(true, wkt == "LINESTRING (0 0, 7 7, 45 50, 100 100)");
         let wkt2 = g.to_wkt();

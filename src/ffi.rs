@@ -67,6 +67,7 @@ extern "C" {
     fn GEOSisValid(g: *const c_void) -> c_int;
 
     fn GEOSGeomToWKT(g: *const c_void) -> *const c_char;
+    #[allow(dead_code)]
     fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut c_void;
     #[allow(dead_code)]
     fn GEOSGeomToWKB_buf(g: *const c_void, size: *mut size_t) -> *mut u8;
@@ -162,7 +163,7 @@ fn managed_string(raw_ptr: *const c_char) -> String {
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GGeom {
+pub fn clip_by_rect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GeosResult<GGeom> {
     GGeom::new_from_c_obj(unsafe {
         GEOSClipByRect(
             g.c_obj(),
@@ -213,10 +214,14 @@ impl CoordSeq {
         CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
     }
 
-    pub fn new_from_c_obj(c_obj: *mut GEOSCoordSequence) -> CoordSeq {
-        CoordSeq(c_obj)
+    pub fn new_from_c_obj(c_obj: *mut GEOSCoordSequence) -> GeosResult<CoordSeq> {
+        if c_obj.is_null() {
+            Err(Error::NoConstructionFromNullPtr)
+        } else {
+            Ok(CoordSeq(c_obj))
+        }
     }
-    pub fn set_x(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_x(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
                 self.0 as *mut GEOSCoordSequence,
@@ -224,9 +229,13 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set x for coord".into()))
+        } else {
+            Ok(())
+        }
     }
-    pub fn set_y(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_y(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
                 self.0 as *mut GEOSCoordSequence,
@@ -234,9 +243,13 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set y for coord".into()))
+        } else {
+            Ok(())
+        }
     }
-    pub fn set_z(&self, idx: u32, val: f64) -> i32 {
+    pub fn set_z(&self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
                 self.0 as *mut GEOSCoordSequence,
@@ -244,10 +257,14 @@ impl CoordSeq {
                 val as c_double,
             )
         };
-        return ret_val;
+        if ret_val == 0 {
+            Err(Error::GeosError("impossible to set z for coord".into()))
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn get_x(&self, idx: u32) -> f64 {
+    pub fn get_x(&self, idx: u32) -> GeosResult<f64> {
         let n_mut_ref = &mut 0.0;
         let ret_val = unsafe {
             GEOSCoordSeq_getX(
@@ -257,12 +274,13 @@ impl CoordSeq {
             )
         };
         if ret_val == 0 {
-            panic!("Error when getting coordinates from CoordSeq");
+            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+        } else {
+            Ok(*n_mut_ref)
         }
-        return *n_mut_ref;
     }
 
-    pub fn get_y(&self, idx: u32) -> f64 {
+    pub fn get_y(&self, idx: u32) -> GeosResult<f64> {
         let n_mut_ref = &mut 0.0;
         let ret_val = unsafe {
             GEOSCoordSeq_getY(
@@ -272,12 +290,13 @@ impl CoordSeq {
             )
         };
         if ret_val == 0 {
-            panic!("Error when getting coordinates from CoordSeq");
+            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+        } else {
+            Ok(*n_mut_ref)
         }
-        return *n_mut_ref;
     }
 
-    pub fn get_z(&self, idx: u32) -> f64 {
+    pub fn get_z(&self, idx: u32) -> GeosResult<f64> {
         let n_mut_ref = &mut 0.0;
         let ret_val = unsafe {
             GEOSCoordSeq_getZ(
@@ -287,9 +306,10 @@ impl CoordSeq {
             )
         };
         if ret_val == 0 {
-            panic!("Error when getting coordinates from CoordSeq");
+            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+        } else {
+            Ok(*n_mut_ref)
         }
-        return *n_mut_ref;
     }
 
     /// Release the underlying C ptr (so the ptr is not destroyed when the object is destroyed)
@@ -340,37 +360,29 @@ pub struct GGeom {
 }
 
 impl GGeom {
-    pub fn new(wkt: &str) -> GGeom {
+    pub fn new(wkt: &str) -> GeosResult<GGeom> {
         initialize();
         let c_str = CString::new(wkt).unwrap();
         let reader = unsafe { GEOSWKTReader_create() };
         let obj = unsafe { GEOSWKTReader_read(reader, c_str.as_ptr()) };
         if obj.is_null() {
-            panic!("Invalid geometry");
+            return Err(Error::NoConstructionFromNullPtr);
         }
         unsafe { GEOSWKTReader_destroy(reader) };
         GGeom::new_from_c_obj(obj)
     }
 
-    pub fn new_from_wkb(wkb: &Vec<u8>) -> GGeom {
-        initialize();
-        // let strr = CString::new(wkb).unwrap();
-        // let t = strr.as_bytes();
-        let obj = unsafe { GEOSGeomFromWKB_buf(wkb.as_ptr(), wkb.len()) };
-        GGeom::new_from_c_obj(obj)
-    }
-
-    pub fn new_from_c_obj(g: *mut c_void) -> GGeom {
+    pub fn new_from_c_obj(g: *mut c_void) -> GeosResult<GGeom> {
         if g.is_null() {
-            panic!("Invalid geometry");
+            return Err(Error::NoConstructionFromNullPtr);
         }
         let area = GGeom::_area(g as *const c_void);
         let type_geom = unsafe { GEOSGeomTypeId(g as *const c_void) as i32 };
-        GGeom {
+        Ok(GGeom {
             obj: SafeCGeom { c_obj: g },
             area: area,
             _type: type_geom,
-        }
+        })
     }
 
     fn c_obj(&self) -> *const c_void {
@@ -382,16 +394,13 @@ impl GGeom {
         return if rv == 1 { true } else { false };
     }
 
-    pub fn get_coord_seq(&self) -> Result<CoordSeq, &'static str> {
+    pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
         match self._type {
             0 | 1 | 2 => {
                 let t = unsafe { GEOSGeom_getCoordSeq(self.c_obj()) };
-                if t.is_null() {
-                    return Err("Error retrieving Coordinates Sequence");
-                }
-                Ok(CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence))
+                CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence)
             }
-            _ => Err("Not implemented - Geometry must be a Point, LineString or LinearRing"),
+            _ => Err(Error::ImpossibleOperation("Geometry must be a Point, LineString or LinearRing to extract it's coordinates".into())),
         }
     }
 
@@ -490,7 +499,7 @@ impl GGeom {
         return ret_val == 1;
     }
 
-    pub fn buffer(&self, width: f64, quadsegs: i32) -> GGeom {
+    pub fn buffer(&self, width: f64, quadsegs: i32) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe {
             GEOSBuffer(
                 self.c_obj(),
@@ -509,23 +518,23 @@ impl GGeom {
         let ret_val = unsafe { GEOSisSimple(self.c_obj()) };
         return ret_val == 1;
     }
-    pub fn difference(&self, g2: &GGeom) -> GGeom {
+    pub fn difference(&self, g2: &GGeom) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe {
             GEOSDifference(self.c_obj(), g2.c_obj())
         })
     }
 
-    pub fn envelope(&self) -> GGeom {
+    pub fn envelope(&self) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe { GEOSEnvelope(self.c_obj()) })
     }
 
-    pub fn sym_difference(&self, g2: &GGeom) -> GGeom {
+    pub fn sym_difference(&self, g2: &GGeom) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe {
             GEOSSymDifference(self.c_obj(), g2.c_obj())
         })
     }
 
-    pub fn get_centroid(&self) -> GGeom {
+    pub fn get_centroid(&self) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe { GEOSGetCentroid(self.c_obj()) })
     }
 
@@ -550,17 +559,16 @@ impl GGeom {
                 nb_interiors as c_uint,
             )
         };
-        if t.is_null() {
-            Err(Error::NoConstructionFromNullPtr)
-        } else {
-            // we'll transfert the ownership of the ptr to the new GGeom,
-            // so the old one needs to forget their c ptr to avoid double cleanup
-            external_c_obj.release();
-            for mut i in interiors_ptr {
-                i.release();
-            }
-            Ok(GGeom::new_from_c_obj(t))
+        let res = GGeom::new_from_c_obj(t)?;
+
+        // we'll transfert the ownership of the ptr to the new GGeom,
+        // so the old one needs to forget their c ptr to avoid double cleanup
+        external_c_obj.release();
+        for mut i in interiors_ptr {
+            i.release();
         }
+
+        Ok(res)
     }
 
     pub fn create_multipolygon(polygons: Vec<GGeom>) -> GeosResult<GGeom> {
@@ -578,36 +586,37 @@ impl GGeom {
             )
         };
 
-        if t.is_null() {
-            Err(Error::NoConstructionFromNullPtr)
-        } else {
-            for mut p in polygons {
-                p.release();
-            }
-            Ok(GGeom::new_from_c_obj(t))
+        let res = GGeom::new_from_c_obj(t)?;
+
+        // we'll transfert the ownership of the ptr to the new GGeom,
+        // so the old one needs to forget their c ptr to avoid double cleanup
+        for mut p in polygons {
+            p.release();
         }
+
+        Ok(res)
     }
 
-    pub fn create_point(s: &CoordSeq) -> GGeom {
+    pub fn create_point(s: &CoordSeq) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe {
             GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence))
         })
     }
 
-    pub fn create_line_string(s: CoordSeq) -> GGeom {
+    pub fn create_line_string(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = GGeom::new_from_c_obj(unsafe {
             GEOSGeom_createLineString(s.0 as *const GEOSCoordSequence)
-        });
+        })?;
         s.release();
-        obj
+        Ok(obj)
     }
 
-    pub fn create_linear_ring(s: CoordSeq) -> GGeom {
+    pub fn create_linear_ring(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = GGeom::new_from_c_obj(unsafe {
             GEOSGeom_createLinearRing(s.0 as *const GEOSCoordSequence)
-        });
+        })?;
         s.release();
-        obj
+        Ok(obj)
     }
 }
 
