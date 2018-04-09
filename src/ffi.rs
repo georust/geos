@@ -405,11 +405,16 @@ impl GGeom {
         return if rv == 1 { true } else { false };
     }
 
+    /// get the underlying geos CoordSeq object from the geometry
+    ///
+    /// Note: this clones the underlying CoordSeq not avoid double free
+    /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
+    /// if this method's performance becomes a bottleneck, feel free to open an issue, we could skip this clone with cleaner code
     pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
         let type_geom = self.geometry_type()?;
         match type_geom {
             GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => {
-                let t = unsafe { GEOSGeom_getCoordSeq(self.c_obj()) };
+                let t = unsafe { GEOSCoordSeq_clone(GEOSGeom_getCoordSeq(self.c_obj())) };
                 CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence)
             }
             _ => Err(Error::ImpossibleOperation("Geometry must be a Point, LineString or LinearRing to extract it's coordinates".into())),
