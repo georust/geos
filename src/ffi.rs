@@ -38,6 +38,7 @@ extern "C" {
     fn GEOSCoordSeq_getX(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
     fn GEOSCoordSeq_getY(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
     fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
+    fn GEOSCoordSeq_getSize(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
 
     // Geometry must be a LineString, LinearRing or Point :
     fn GEOSGeom_getCoordSeq(g: *const c_void) -> *mut GEOSCoordSequence;
@@ -310,6 +311,21 @@ impl CoordSeq {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
             Ok(*n_mut_ref)
+        }
+    }
+
+    pub fn len(&self) -> GeosResult<usize> {
+        let n_mut_ref = &mut 0u32;
+        let ret_val = unsafe {
+            GEOSCoordSeq_getSize(
+                self.0 as *const GEOSCoordSequence,
+                n_mut_ref as *mut c_uint,
+            )
+        };
+        if ret_val == 0 {
+            Err(Error::GeosError("getting size from CoordSeq".into()))
+        } else {
+            Ok(*n_mut_ref as usize)
         }
     }
 
