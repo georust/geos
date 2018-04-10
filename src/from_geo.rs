@@ -48,14 +48,14 @@ impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
     fn try_into(self) -> Result<GGeom, Self::Err> {
         let points = &(self.0).0;
         let nb_points = points.len();
-        if nb_points >= 1 && nb_points < 3 {
+        if nb_points > 0 && nb_points < 3 {
             return Err(Error::InvalidGeometry("impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".into()));
         }
 
         // if the geom is not closed we close it
-        let is_closed = nb_points > 1 && points.first() == points.last();
+        let is_closed = nb_points > 0 && points.first() == points.last();
         // Note: we also need to close a 2 points closed linearring, cf test closed_2_points_linear_ring
-        let need_closing = nb_points > 1 && (! is_closed || nb_points == 3);
+        let need_closing = nb_points > 0 && (! is_closed || nb_points == 3);
         let coord_seq = if need_closing {
             create_coord_seq(points.iter().chain(std::iter::once(&points[0])), nb_points + 1)?
         } else {

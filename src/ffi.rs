@@ -407,7 +407,7 @@ impl GGeom {
 
     /// get the underlying geos CoordSeq object from the geometry
     ///
-    /// Note: this clones the underlying CoordSeq not avoid double free
+    /// Note: this clones the underlying CoordSeq to avoid double free
     /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
     /// if this method's performance becomes a bottleneck, feel free to open an issue, we could skip this clone with cleaner code
     pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
