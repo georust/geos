@@ -38,6 +38,7 @@ extern "C" {
     fn GEOSCoordSeq_getX(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
     fn GEOSCoordSeq_getY(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
     fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
+    fn GEOSCoordSeq_getSize(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
 
     // Geometry must be a LineString, LinearRing or Point :
     fn GEOSGeom_getCoordSeq(g: *const c_void) -> *mut GEOSCoordSequence;
@@ -313,6 +314,21 @@ impl CoordSeq {
         }
     }
 
+    pub fn len(&self) -> GeosResult<usize> {
+        let n_mut_ref = &mut 0u32;
+        let ret_val = unsafe {
+            GEOSCoordSeq_getSize(
+                self.0 as *const GEOSCoordSequence,
+                n_mut_ref as *mut c_uint,
+            )
+        };
+        if ret_val == 0 {
+            Err(Error::GeosError("getting size from CoordSeq".into()))
+        } else {
+            Ok(*n_mut_ref as usize)
+        }
+    }
+
     /// Release the underlying C ptr (so the ptr is not destroyed when the object is destroyed)
     /// The C ptr needs to be cleanup afterward!
     /// This method can be thus called only if the C ptr is given to the C API
@@ -389,11 +405,16 @@ impl GGeom {
         return if rv == 1 { true } else { false };
     }
 
+    /// get the underlying geos CoordSeq object from the geometry
+    ///
+    /// Note: this clones the underlying CoordSeq to avoid double free
+    /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
+    /// if this method's performance becomes a bottleneck, feel free to open an issue, we could skip this clone with cleaner code
     pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
         let type_geom = self.geometry_type()?;
         match type_geom {
             GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => {
-                let t = unsafe { GEOSGeom_getCoordSeq(self.c_obj()) };
+                let t = unsafe { GEOSCoordSeq_clone(GEOSGeom_getCoordSeq(self.c_obj())) };
                 CoordSeq::new_from_c_obj(t as *mut GEOSCoordSequence)
             }
             _ => Err(Error::ImpossibleOperation("Geometry must be a Point, LineString or LinearRing to extract it's coordinates".into())),
