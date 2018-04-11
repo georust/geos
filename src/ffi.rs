@@ -455,95 +455,47 @@ impl GGeom {
 
     pub fn is_ring(&self) -> GeosResult<bool> {
         let rv = unsafe { GEOSisRing(self.c_obj()) };
-        if rv == 1 {
-            Ok(true)
-        } else if rv == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing isRing".into()))
-        }
+        check_geos_predicate(rv, PredicateType::IsRing)
     }
 
     pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSIntersects(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing intersects predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Intersects)
     }
 
     pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSCrosses(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing crosses predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Crosses)
     }
 
     pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSDisjoint(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing disjoint predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Disjoint)
     }
 
     pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSTouches(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing touches predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Touches)
     }
 
     pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSOverlaps(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing overlaps predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Overlaps)
     }
 
     pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSWithin(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing within predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Within)
     }
 
     pub fn equals(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSEquals(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing equals predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Equals)
     }
 
     pub fn equals_exact(&self, g2: &GGeom, precision: f64) -> GeosResult<bool> {
@@ -554,48 +506,24 @@ impl GGeom {
                 precision as c_double,
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing equals_exact predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::EqualsExact)
     }
 
     pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSCovers(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing covers predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Covers)
     }
 
     pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSCoveredBy(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing covered_by predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::CoveredBy)
     }
 
     pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSContains(self.c_obj(), g2.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing contains predicate".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::Contains)
     }
 
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GeosResult<GGeom> {
@@ -610,24 +538,12 @@ impl GGeom {
 
     pub fn is_empty(&self) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSisEmpty(self.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing isEmpty".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::IsEmpty)
     }
 
     pub fn is_simple(&self) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSisSimple(self.c_obj()) };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing isSimple".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::IsSimple)
     }
 
     pub fn difference(&self, g2: &GGeom) -> GeosResult<GGeom> {
@@ -761,13 +677,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing contains predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedContains)
     }
     pub fn contains_properly(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -776,13 +686,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing contains_properly predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedContainsProperly)
     }
     pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -791,13 +695,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing covered_by predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedCoveredBy)
     }
     pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -806,13 +704,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing covers predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedCovers)
     }
     pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -821,14 +713,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing crosses predicate on prepared geometry".into()))
-        }
-
+        check_geos_predicate(ret_val, PredicateType::PreparedCrosses)
     }
     pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -837,13 +722,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing disjoint predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedDisjoint)
     }
     pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -852,13 +731,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing intersects predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedIntersects)
     }
     pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -867,13 +740,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing overlaps predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedOverlaps)
     }
     pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -882,13 +749,7 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing touches predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedTouches)
     }
     pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
@@ -897,12 +758,71 @@ impl PreparedGGeom {
                 g2.c_obj(),
             )
         };
-        if ret_val == 1 {
-            Ok(true)
-        } else if ret_val == 0 {
-            Ok(false)
-        } else {
-            Err(Error::GeosError("computing within predicate on prepared geometry".into()))
-        }
+        check_geos_predicate(ret_val, PredicateType::PreparedWithin)
     }
+}
+
+fn check_geos_predicate(val: i32, type_pred: PredicateType) -> GeosResult<bool> {
+    match val {
+        1 => Ok(true),
+        0 => Ok(false),
+        _ => Err(on_error(type_pred))
+    }
+}
+
+enum PredicateType {
+    Intersects,
+    Crosses,
+    Disjoint,
+    Touches,
+    Overlaps,
+    Within,
+    Equals,
+    EqualsExact,
+    Covers,
+    CoveredBy,
+    Contains,
+    IsRing,
+    IsEmpty,
+    IsSimple,
+    PreparedContains,
+    PreparedContainsProperly,
+    PreparedCoveredBy,
+    PreparedCovers,
+    PreparedCrosses,
+    PreparedDisjoint,
+    PreparedIntersects,
+    PreparedOverlaps,
+    PreparedTouches,
+    PreparedWithin
+}
+
+fn on_error(type_pred: PredicateType) -> Error {
+    let name = match type_pred {
+        Intersects => "intersects",
+        Crosses => "crosses",
+        Disjoint => "disjoint",
+        Touches => "touches",
+        Overlaps => "overlaps",
+        Within => "within",
+        Equals => "equals",
+        EqualsExact => "equals_exact",
+        Covers => "covers",
+        CoveredBy => "covered_by",
+        Contains => "contains",
+        IsRing => "is_ring",
+        IsEmpty => "is_empty",
+        IsSimple => "is_simple",
+        PreparedContains => "contains",
+        PreparedContainsProperly => "contains_properly",
+        PreparedCoveredBy => "covered_by",
+        PreparedCovers => "prepared covers",
+        PreparedCrosses => "prepared crosses",
+        PreparedDisjoint => "prepared disjoint",
+        PreparedIntersects => "prepared intersects",
+        PreparedOverlaps => "prepared overlaps",
+        PreparedTouches => "prepared touches",
+        PreparedWithin => "prepared within"
+    };
+    Error::GeosError(format!("computing {} predicate)", name))
 }

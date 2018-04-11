@@ -33,7 +33,7 @@ let g1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
 let g2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
 
 let pg1 = geos::PreparedGGeom::new(&g1);
-let result = pg1.intersects(&g2);
+let result = pg1.intersects(&g2)?;
 assert_eq!(result, true);
 ```
 
