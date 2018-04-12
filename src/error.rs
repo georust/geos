@@ -1,4 +1,4 @@
-use std;
+use std::{self, fmt};
 
 #[derive(Fail, Debug)]
 pub enum Error {
@@ -8,8 +8,44 @@ pub enum Error {
     ImpossibleOperation(String),
     #[fail(display = "error while calling libgeos while {}", _0)]
     GeosError(String),
+    #[fail(display = "error while calling libgeos method {} (error number = {})", _0, _1)]
+    GeosFunctionError(PredicateType, i32),
     #[fail(display = "impossible to build a geometry from a nullptr")]
     NoConstructionFromNullPtr,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug)]
+pub enum PredicateType {
+    Intersects,
+    Crosses,
+    Disjoint,
+    Touches,
+    Overlaps,
+    Within,
+    Equals,
+    EqualsExact,
+    Covers,
+    CoveredBy,
+    Contains,
+    IsRing,
+    IsEmpty,
+    IsSimple,
+    PreparedContains,
+    PreparedContainsProperly,
+    PreparedCoveredBy,
+    PreparedCovers,
+    PreparedCrosses,
+    PreparedDisjoint,
+    PreparedIntersects,
+    PreparedOverlaps,
+    PreparedTouches,
+    PreparedWithin
+}
+
+impl std::fmt::Display for PredicateType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self))
+    }
+}

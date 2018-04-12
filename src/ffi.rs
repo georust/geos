@@ -2,7 +2,7 @@ use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
 use std::{ptr, str};
-use error::{Error, Result as GeosResult};
+use error::{Error, Result as GeosResult, PredicateType};
 use std;
 use num_traits::FromPrimitive;
 
@@ -762,67 +762,33 @@ impl PreparedGGeom {
     }
 }
 
-fn check_geos_predicate(val: i32, type_pred: PredicateType) -> GeosResult<bool> {
+fn check_geos_predicate(val: i32, p: PredicateType) -> GeosResult<bool> {
     match val {
         1 => Ok(true),
         0 => Ok(false),
-        _ => Err(on_error(type_pred))
+        _ => Err(Error::GeosFunctionError(p, val))
     }
 }
 
-enum PredicateType {
-    Intersects,
-    Crosses,
-    Disjoint,
-    Touches,
-    Overlaps,
-    Within,
-    Equals,
-    EqualsExact,
-    Covers,
-    CoveredBy,
-    Contains,
-    IsRing,
-    IsEmpty,
-    IsSimple,
-    PreparedContains,
-    PreparedContainsProperly,
-    PreparedCoveredBy,
-    PreparedCovers,
-    PreparedCrosses,
-    PreparedDisjoint,
-    PreparedIntersects,
-    PreparedOverlaps,
-    PreparedTouches,
-    PreparedWithin
-}
+mod test {
+    use super::{check_geos_predicate};
+    use error::PredicateType;
 
-fn on_error(type_pred: PredicateType) -> Error {
-    let name = match type_pred {
-        Intersects => "intersects",
-        Crosses => "crosses",
-        Disjoint => "disjoint",
-        Touches => "touches",
-        Overlaps => "overlaps",
-        Within => "within",
-        Equals => "equals",
-        EqualsExact => "equals_exact",
-        Covers => "covers",
-        CoveredBy => "covered_by",
-        Contains => "contains",
-        IsRing => "is_ring",
-        IsEmpty => "is_empty",
-        IsSimple => "is_simple",
-        PreparedContains => "contains",
-        PreparedContainsProperly => "contains_properly",
-        PreparedCoveredBy => "covered_by",
-        PreparedCovers => "prepared covers",
-        PreparedCrosses => "prepared crosses",
-        PreparedDisjoint => "prepared disjoint",
-        PreparedIntersects => "prepared intersects",
-        PreparedOverlaps => "prepared overlaps",
-        PreparedTouches => "prepared touches",
-        PreparedWithin => "prepared within"
-    };
-    Error::GeosError(format!("computing {} predicate)", name))
+    #[test]
+    fn check_geos_predicate_ok_test() {
+        assert_eq!(check_geos_predicate(0, PredicateType::Intersects).unwrap(), false);
+    }
+
+    #[test]
+    fn check_geos_predicate_ko_test() {
+        assert_eq!(check_geos_predicate(1, PredicateType::Intersects).unwrap(), true);
+    }
+
+    #[test]
+    fn check_geos_predicate_err_test() {
+        let r = check_geos_predicate(42, PredicateType::Intersects);
+        let e = r.err().unwrap();
+
+        assert_eq!(format!("{}", e), "error while calling libgeos method Intersects (error number = 42)".to_string());
+    }
 }
