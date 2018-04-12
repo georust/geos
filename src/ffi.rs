@@ -2,7 +2,7 @@ use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
 use std::{ptr, str};
-use error::{Error, Result as GeosResult};
+use error::{Error, Result as GeosResult, PredicateType};
 use std;
 use num_traits::FromPrimitive;
 
@@ -453,52 +453,52 @@ impl GGeom {
         result
     }
 
-    pub fn is_ring(&self) -> bool {
+    pub fn is_ring(&self) -> GeosResult<bool> {
         let rv = unsafe { GEOSisRing(self.c_obj()) };
-        return if rv == 1 { true } else { false };
+        check_geos_predicate(rv, PredicateType::IsRing)
     }
 
-    pub fn intersects(&self, g2: &GGeom) -> bool {
+    pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSIntersects(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Intersects)
     }
 
-    pub fn crosses(&self, g2: &GGeom) -> bool {
+    pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSCrosses(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Crosses)
     }
 
-    pub fn disjoint(&self, g2: &GGeom) -> bool {
+    pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSDisjoint(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Disjoint)
     }
 
-    pub fn touches(&self, g2: &GGeom) -> bool {
+    pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSTouches(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Touches)
     }
 
-    pub fn overlaps(&self, g2: &GGeom) -> bool {
+    pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSOverlaps(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Overlaps)
     }
 
-    pub fn within(&self, g2: &GGeom) -> bool {
+    pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSWithin(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Within)
     }
 
-    pub fn equals(&self, g2: &GGeom) -> bool {
+    pub fn equals(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSEquals(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Equals)
     }
 
-    pub fn equals_exact(&self, g2: &GGeom, precision: f64) -> bool {
+    pub fn equals_exact(&self, g2: &GGeom, precision: f64) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSEqualsExact(
                 self.c_obj(),
@@ -506,24 +506,24 @@ impl GGeom {
                 precision as c_double,
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::EqualsExact)
     }
 
-    pub fn covers(&self, g2: &GGeom) -> bool {
+    pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSCovers(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Covers)
     }
 
-    pub fn covered_by(&self, g2: &GGeom) -> bool {
+    pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSCoveredBy(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::CoveredBy)
     }
 
-    pub fn contains(&self, g2: &GGeom) -> bool {
+    pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val =
             unsafe { GEOSContains(self.c_obj(), g2.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::Contains)
     }
 
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GeosResult<GGeom> {
@@ -536,15 +536,16 @@ impl GGeom {
         })
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSisEmpty(self.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::IsEmpty)
     }
 
-    pub fn is_simple(&self) -> bool {
+    pub fn is_simple(&self) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSisSimple(self.c_obj()) };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::IsSimple)
     }
+
     pub fn difference(&self, g2: &GGeom) -> GeosResult<GGeom> {
         GGeom::new_from_c_obj(unsafe {
             GEOSDifference(self.c_obj(), g2.c_obj())
@@ -669,94 +670,125 @@ impl PreparedGGeom {
     pub fn new(g: &GGeom) -> PreparedGGeom {
         PreparedGGeom(unsafe { GEOSPrepare(g.c_obj()) })
     }
-    pub fn contains(&self, g2: &GGeom) -> bool {
+    pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedContains)
     }
-    pub fn contains_properly(&self, g2: &GGeom) -> bool {
+    pub fn contains_properly(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContainsProperly(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedContainsProperly)
     }
-    pub fn covered_by(&self, g2: &GGeom) -> bool {
+    pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCoveredBy(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedCoveredBy)
     }
-    pub fn covers(&self, g2: &GGeom) -> bool {
+    pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCovers(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedCovers)
     }
-    pub fn crosses(&self, g2: &GGeom) -> bool {
+    pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCrosses(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedCrosses)
     }
-    pub fn disjoint(&self, g2: &GGeom) -> bool {
+    pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedDisjoint(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedDisjoint)
     }
-    pub fn intersects(&self, g2: &GGeom) -> bool {
+    pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedIntersects(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedIntersects)
     }
-    pub fn overlaps(&self, g2: &GGeom) -> bool {
+    pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedOverlaps(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedOverlaps)
     }
-    pub fn touches(&self, g2: &GGeom) -> bool {
+    pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedTouches(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedTouches)
     }
-    pub fn within(&self, g2: &GGeom) -> bool {
+    pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedWithin(
                 self.0 as *const GEOSPreparedGeometry,
                 g2.c_obj(),
             )
         };
-        return ret_val == 1;
+        check_geos_predicate(ret_val, PredicateType::PreparedWithin)
+    }
+}
+
+fn check_geos_predicate(val: i32, p: PredicateType) -> GeosResult<bool> {
+    match val {
+        1 => Ok(true),
+        0 => Ok(false),
+        _ => Err(Error::GeosFunctionError(p, val))
+    }
+}
+
+mod test {
+    use super::{check_geos_predicate};
+    use error::PredicateType;
+
+    #[test]
+    fn check_geos_predicate_ok_test() {
+        assert_eq!(check_geos_predicate(0, PredicateType::Intersects).unwrap(), false);
+    }
+
+    #[test]
+    fn check_geos_predicate_ko_test() {
+        assert_eq!(check_geos_predicate(1, PredicateType::Intersects).unwrap(), true);
+    }
+
+    #[test]
+    fn check_geos_predicate_err_test() {
+        let r = check_geos_predicate(42, PredicateType::Intersects);
+        let e = r.err().unwrap();
+
+        assert_eq!(format!("{}", e), "error while calling libgeos method Intersects (error number = 42)".to_string());
     }
 }

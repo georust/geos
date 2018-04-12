@@ -30,11 +30,11 @@ fn fun() -> Result<(), Error> {
 
     let geom: GGeom = (&p).try_into()?;
 
-    assert!(geom.contains(&geom));
-    assert!(!geom.contains(&(&exterior).try_into()?));
+    assert!(geom.contains(&geom)?);
+    assert!(!geom.contains(&(&exterior).try_into()?)?);
 
-    assert!(geom.covers(&(&exterior).try_into()?));
-    assert!(geom.touches(&(&exterior).try_into()?));
+    assert!(geom.covers(&(&exterior).try_into()?)?);
+    assert!(geom.touches(&(&exterior).try_into()?)?);
     Ok(())
 }
 

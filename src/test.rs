@@ -8,25 +8,25 @@ mod test {
         let line_geom = GGeom::new("LINESTRING(1 1,10 50,20 25)").unwrap();
         let polygon_geom = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
 
-        assert_eq!(true, polygon_geom.covers(&pt_geom));
-        assert_eq!(true, polygon_geom.intersects(&pt_geom));
-        assert_eq!(false, polygon_geom.covered_by(&pt_geom));
-        assert_eq!(false, polygon_geom.equals(&pt_geom));
-        assert_eq!(false, polygon_geom.within(&pt_geom));
+        assert_eq!(true, polygon_geom.covers(&pt_geom).unwrap());
+        assert_eq!(true, polygon_geom.intersects(&pt_geom).unwrap());
+        assert_eq!(false, polygon_geom.covered_by(&pt_geom).unwrap());
+        assert_eq!(false, polygon_geom.equals(&pt_geom).unwrap());
+        assert_eq!(false, polygon_geom.within(&pt_geom).unwrap());
 
-        assert_eq!(false, pt_geom.covers(&polygon_geom));
-        assert_eq!(true, pt_geom.intersects(&polygon_geom));
-        assert_eq!(true, pt_geom.covered_by(&polygon_geom));
-        assert_eq!(false, pt_geom.equals(&polygon_geom));
-        assert_eq!(true, pt_geom.within(&polygon_geom));
+        assert_eq!(false, pt_geom.covers(&polygon_geom).unwrap());
+        assert_eq!(true, pt_geom.intersects(&polygon_geom).unwrap());
+        assert_eq!(true, pt_geom.covered_by(&polygon_geom).unwrap());
+        assert_eq!(false, pt_geom.equals(&polygon_geom).unwrap());
+        assert_eq!(true, pt_geom.within(&polygon_geom).unwrap());
 
-        assert_eq!(false, line_geom.covers(&pt_geom));
-        assert_eq!(false, line_geom.intersects(&pt_geom));
-        assert_eq!(false, line_geom.covered_by(&pt_geom));
-        assert_eq!(false, pt_geom.covered_by(&line_geom));
-        assert_eq!(true, line_geom.intersects(&polygon_geom));
-        assert_eq!(true, line_geom.crosses(&polygon_geom));
-        assert_eq!(false, line_geom.equals(&pt_geom));
+        assert_eq!(false, line_geom.covers(&pt_geom).unwrap());
+        assert_eq!(false, line_geom.intersects(&pt_geom).unwrap());
+        assert_eq!(false, line_geom.covered_by(&pt_geom).unwrap());
+        assert_eq!(false, pt_geom.covered_by(&line_geom).unwrap());
+        assert_eq!(true, line_geom.intersects(&polygon_geom).unwrap());
+        assert_eq!(true, line_geom.crosses(&polygon_geom).unwrap());
+        assert_eq!(false, line_geom.equals(&pt_geom).unwrap());
     }
 
     #[test]
@@ -51,8 +51,8 @@ mod test {
         let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
         let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").unwrap();
         let pg1 = PreparedGGeom::new(&g1);
-        assert_eq!(true, pg1.intersects(&g2));
-        assert_eq!(true, pg1.contains(&g2.get_centroid().unwrap()));
+        assert_eq!(true, pg1.intersects(&g2).unwrap());
+        assert_eq!(true, pg1.contains(&g2.get_centroid().unwrap()).unwrap());
         let vec_geoms = vec![
             GGeom::new("POINT (1.3 2.4)").unwrap(),
             GGeom::new("POINT (2.1 0.3)").unwrap(),
@@ -60,7 +60,7 @@ mod test {
             GGeom::new("POINT (0.4 4.1)").unwrap(),
         ];
         for geom in &vec_geoms {
-            assert_eq!(true, pg1.intersects(&geom));
+            assert_eq!(true, pg1.intersects(&geom).unwrap());
         }
     }
 

@@ -15,7 +15,7 @@ fn create_coord_seq_from_vec<'a>(points: &'a[Point<f64>]) -> Result<CoordSeq, Er
     create_coord_seq(points.iter(), points.len())
 }
 
-fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error> 
+fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where It: Iterator<Item = &'a Point<f64>> {
     let coord_seq = CoordSeq::new(len as u32, 2);
     for (i, p) in points.enumerate() {
@@ -36,7 +36,7 @@ impl<'a> TryInto<GGeom> for &'a LineString<f64> {
     }
 }
 
-// rust geo does not have the distinction LineString/LineRing, so we create a wrapper 
+// rust geo does not have the distinction LineString/LineRing, so we create a wrapper
 
 struct LineRing<'a>(&'a LineString<f64>);
 
@@ -125,11 +125,11 @@ mod test {
 
         let geom: GGeom = (&p).try_into().unwrap();
 
-        assert!(geom.contains(&geom));
-        assert!(!geom.contains(&(&exterior).try_into().unwrap()));
+        assert!(geom.contains(&geom).unwrap());
+        assert!(!geom.contains(&(&exterior).try_into().unwrap()).unwrap());
 
-        assert!(geom.covers(&(&exterior).try_into().unwrap()));
-        assert!(geom.touches(&(&exterior).try_into().unwrap()));
+        assert!(geom.covers(&(&exterior).try_into().unwrap()).unwrap());
+        assert!(geom.touches(&(&exterior).try_into().unwrap()).unwrap());
     }
 
     #[test]
@@ -155,8 +155,8 @@ mod test {
 
         let geom: GGeom = (&mp).try_into().unwrap();
 
-        assert!(geom.contains(&geom));
-        assert!(geom.contains(&(&p).try_into().unwrap()));
+        assert!(geom.contains(&geom).unwrap());
+        assert!(geom.contains(&(&p).try_into().unwrap()).unwrap());
     }
 
     #[test]
@@ -171,8 +171,8 @@ mod test {
         let geom = (&mp).try_into();
 
         assert!(geom.is_err());
-    }    
-    
+    }
+
     #[test]
     fn incorrect_polygon_not_closed() {
         // even if the polygon is not closed we can convert it to geos (we close it)
@@ -205,7 +205,7 @@ mod test {
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
-        assert!(geom.is_ring());
+        assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 0);
     }
 
@@ -243,7 +243,7 @@ mod test {
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
-        assert!(geom.is_ring());
+        assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
     }
 
@@ -269,7 +269,7 @@ mod test {
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
-        assert!(geom.is_ring());
+        assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
     }
 
@@ -285,7 +285,7 @@ mod test {
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
-        assert!(geom.is_ring());
+        assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
     }
 }
