@@ -7,15 +7,15 @@ use std;
 use num_traits::FromPrimitive;
 
 #[repr(C)]
-pub struct GEOSWKTReader { private: [u8; 0]}
+struct GEOSWKTReader { private: [u8; 0]}
 #[repr(C)]
-pub struct GEOSWKTWriter { private: [u8; 0]}
+struct GEOSWKTWriter { private: [u8; 0]}
 #[repr(C)]
-pub struct GEOSPreparedGeometry { private: [u8; 0]}
+struct GEOSPreparedGeometry { private: [u8; 0]}
 #[repr(C)]
-pub struct GEOSCoordSequence { private: [u8; 0]}
+struct GEOSCoordSequence { private: [u8; 0]}
 #[repr(C)]
-pub struct GEOSGeometry { private: [u8; 0]}
+struct GEOSGeometry { private: [u8; 0]}
 
 #[link(name = "geos_c")]
 extern "C" {
@@ -38,7 +38,7 @@ extern "C" {
 
     fn GEOSPrepare(g: *const GEOSGeometry) -> *mut GEOSPreparedGeometry;
     fn GEOSGeom_destroy(g: *mut GEOSGeometry);
-    pub fn GEOSGeom_clone(g: *const GEOSGeometry) -> *mut GEOSGeometry;
+    fn GEOSGeom_clone(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 
     fn GEOSCoordSeq_create(size: c_uint, dims: c_uint) -> *mut GEOSCoordSequence;
     fn GEOSCoordSeq_destroy(s: *mut GEOSCoordSequence);
@@ -55,9 +55,9 @@ extern "C" {
     fn GEOSGeom_getCoordSeq(g: *const GEOSGeometry) -> *mut GEOSCoordSequence;
 
     // Geometry constructor :
-    pub fn GEOSGeom_createPoint(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
-    pub fn GEOSGeom_createLineString(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
-    pub fn GEOSGeom_createLinearRing(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
+    fn GEOSGeom_createPoint(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
+    fn GEOSGeom_createLineString(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
+    fn GEOSGeom_createLinearRing(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
     fn GEOSGeom_createPolygon(
         shell: *mut GEOSGeometry,
         holes: *mut *mut GEOSGeometry,
@@ -137,7 +137,6 @@ extern "C" {
 
 #[derive(Eq, PartialEq, Debug, Primitive)]
 #[repr(C)]
-#[allow(dead_code)]
 pub enum GEOSGeomTypes {
     Point = 0,
     LineString = 1,
@@ -228,10 +227,10 @@ impl CoordSeq {
             Ok(CoordSeq(c_obj))
         }
     }
-    pub fn set_x(&self, idx: u32, val: f64) -> GeosResult<()> {
+    pub fn set_x(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
-                self.0 as *mut GEOSCoordSequence,
+                self.0,
                 idx as c_uint,
                 val as c_double,
             )
@@ -242,10 +241,10 @@ impl CoordSeq {
             Ok(())
         }
     }
-    pub fn set_y(&self, idx: u32, val: f64) -> GeosResult<()> {
+    pub fn set_y(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
-                self.0 as *mut GEOSCoordSequence,
+                self.0,
                 idx as c_uint,
                 val as c_double,
             )
@@ -256,10 +255,10 @@ impl CoordSeq {
             Ok(())
         }
     }
-    pub fn set_z(&self, idx: u32, val: f64) -> GeosResult<()> {
+    pub fn set_z(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
-                self.0 as *mut GEOSCoordSequence,
+                self.0,
                 idx as c_uint,
                 val as c_double,
             )
@@ -272,72 +271,72 @@ impl CoordSeq {
     }
 
     pub fn get_x(&self, idx: u32) -> GeosResult<f64> {
-        let n_mut_ref = &mut 0.0;
+        let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getX(
-                self.0 as *const GEOSCoordSequence,
+                self.0,
                 idx as c_uint,
-                n_mut_ref as *mut c_double,
+                &mut n,
             )
         };
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(*n_mut_ref)
+            Ok(n)
         }
     }
 
     pub fn get_y(&self, idx: u32) -> GeosResult<f64> {
-        let n_mut_ref = &mut 0.0;
+        let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getY(
-                self.0 as *const GEOSCoordSequence,
+                self.0,
                 idx as c_uint,
-                n_mut_ref as *mut c_double,
+                &mut n,
             )
         };
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(*n_mut_ref)
+            Ok(n)
         }
     }
 
     pub fn get_z(&self, idx: u32) -> GeosResult<f64> {
-        let n_mut_ref = &mut 0.0;
+        let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getZ(
                 self.0 as *const GEOSCoordSequence,
                 idx as c_uint,
-                n_mut_ref as *mut c_double,
+                &mut n,
             )
         };
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(*n_mut_ref)
+            Ok(n)
         }
     }
 
     pub fn len(&self) -> GeosResult<usize> {
-        let n_mut_ref = &mut 0u32;
+        let mut n = 0 as c_uint;
         let ret_val = unsafe {
             GEOSCoordSeq_getSize(
                 self.0 as *const GEOSCoordSequence,
-                n_mut_ref as *mut c_uint,
+                &mut n,
             )
         };
         if ret_val == 0 {
             Err(Error::GeosError("getting size from CoordSeq".into()))
         } else {
-            Ok(*n_mut_ref as usize)
+            Ok(n as usize)
         }
     }
 
     /// Release the underlying C ptr (so the ptr is not destroyed when the object is destroyed)
     /// The C ptr needs to be cleanup afterward!
     /// This method can be thus called only if the C ptr is given to the C API
-    pub fn release(mut self) -> *mut GEOSCoordSequence {
+    fn release(mut self) -> *mut GEOSCoordSequence {
         mem::replace(&mut self.0, std::ptr::null_mut())
     }
 }
