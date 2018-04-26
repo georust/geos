@@ -17,7 +17,7 @@ fn create_coord_seq_from_vec<'a>(points: &'a[Point<f64>]) -> Result<CoordSeq, Er
 
 fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where It: Iterator<Item = &'a Point<f64>> {
-    let coord_seq = CoordSeq::new(len as u32, 2);
+    let mut coord_seq = CoordSeq::new(len as u32, 2);
     for (i, p) in points.enumerate() {
         let j = i as u32;
         coord_seq.set_x(j, p.x())?;
