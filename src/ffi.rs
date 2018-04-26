@@ -31,7 +31,7 @@ extern "C" {
     // API for writing WKT :
     fn GEOSWKTWriter_create() -> *mut GEOSWKTWriter;
     fn GEOSWKTWriter_destroy(writer: *mut GEOSWKTWriter);
-    fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const GEOSGeometry) -> *const c_char;
+    fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const GEOSGeometry) -> *mut c_char;
     fn GEOSWKTWriter_setRoundingPrecision(writer: *mut GEOSWKTWriter, precision: c_int);
 
     fn GEOSFree(buffer: *mut c_void);
@@ -79,7 +79,7 @@ extern "C" {
     fn GEOSisClosed(g: *const GEOSGeometry) -> c_int;
     fn GEOSisValid(g: *const GEOSGeometry) -> c_int;
 
-    fn GEOSGeomToWKT(g: *const GEOSGeometry) -> *const c_char;
+    fn GEOSGeomToWKT(g: *const GEOSGeometry) -> *mut c_char;
     #[allow(dead_code)]
     fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut GEOSGeometry;
     #[allow(dead_code)]
@@ -158,15 +158,14 @@ pub struct GeosError {
 // this has to be checked method by method in geos
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
-fn unmanaged_string(raw_ptr: *const c_char) -> String {
-    let c_str = unsafe { CStr::from_ptr(raw_ptr) };
-    let s = str::from_utf8(c_str.to_bytes()).unwrap().to_string();
-    s
+unsafe fn unmanaged_string(raw_ptr: *const c_char) -> String {
+    let c_str = CStr::from_ptr(raw_ptr);
+    str::from_utf8(c_str.to_bytes()).unwrap().to_string()
 }
 
-fn managed_string(raw_ptr: *const c_char) -> String {
+unsafe fn managed_string(raw_ptr: *mut c_char) -> String {
     let s = unmanaged_string(raw_ptr);
-    unsafe { GEOSFree(raw_ptr as *mut c_void) };
+    GEOSFree(raw_ptr as *mut c_void);
     s
 }
 
@@ -427,14 +426,15 @@ impl GGeom {
     }
 
     pub fn to_wkt_precison(&self, precision: Option<u32>) -> String {
-        let writer = unsafe { GEOSWKTWriter_create() };
-        if let Some(x) = precision {
-            unsafe { GEOSWKTWriter_setRoundingPrecision(writer, x as c_int) }
-        };
-        let c_result = unsafe { GEOSWKTWriter_write(writer, self.as_raw()) };
-        let result = managed_string(c_result);
-        unsafe { GEOSWKTWriter_destroy(writer) };
-        result
+        unsafe {
+            let writer = GEOSWKTWriter_create();
+            if let Some(x) = precision {
+                GEOSWKTWriter_setRoundingPrecision(writer, x as c_int)
+            };
+            let c_result = GEOSWKTWriter_write(writer, self.as_raw());
+            GEOSWKTWriter_destroy(writer);
+            managed_string(c_result)
+        }
     }
 
     pub fn is_ring(&self) -> GeosResult<bool> {
