@@ -622,7 +622,7 @@ impl PreparedGGeom {
     pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -631,7 +631,7 @@ impl PreparedGGeom {
     pub fn contains_properly(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContainsProperly(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -640,7 +640,7 @@ impl PreparedGGeom {
     pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCoveredBy(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -649,7 +649,7 @@ impl PreparedGGeom {
     pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCovers(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -658,7 +658,7 @@ impl PreparedGGeom {
     pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCrosses(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -667,7 +667,7 @@ impl PreparedGGeom {
     pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedDisjoint(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -676,7 +676,7 @@ impl PreparedGGeom {
     pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedIntersects(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -685,7 +685,7 @@ impl PreparedGGeom {
     pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedOverlaps(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -694,7 +694,7 @@ impl PreparedGGeom {
     pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedTouches(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
@@ -703,7 +703,7 @@ impl PreparedGGeom {
     pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedWithin(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0,
                 g2.as_raw(),
             )
         };
