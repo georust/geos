@@ -198,18 +198,18 @@ fn initialize() {
     }
 }
 
-pub struct CoordSeq(*mut GEOSCoordSequence);
+pub struct CoordSeq(*const GEOSCoordSequence);
 
 impl Drop for CoordSeq {
     fn drop(&mut self) {
-        unsafe { GEOSCoordSeq_destroy(self.0 as *mut GEOSCoordSequence) };
+        unsafe { GEOSCoordSeq_destroy(self.0 as *mut _) };
         self.0 = ptr::null_mut();
     }
 }
 
 impl Clone for CoordSeq {
     fn clone(&self) -> CoordSeq {
-        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0 as *const GEOSCoordSequence) })
+        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0) })
     }
 }
 
@@ -229,7 +229,7 @@ impl CoordSeq {
     pub fn set_x(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
-                self.0,
+                self.0 as *mut _,
                 idx as c_uint,
                 val as c_double,
             )
@@ -243,7 +243,7 @@ impl CoordSeq {
     pub fn set_y(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
-                self.0,
+                self.0 as *mut _,
                 idx as c_uint,
                 val as c_double,
             )
@@ -257,7 +257,7 @@ impl CoordSeq {
     pub fn set_z(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
-                self.0,
+                self.0 as *mut _,
                 idx as c_uint,
                 val as c_double,
             )
@@ -281,7 +281,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -297,7 +297,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -313,7 +313,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -334,11 +334,11 @@ impl CoordSeq {
 }
 
 #[repr(C)]
-pub struct GGeom(*mut GEOSGeometry);
+pub struct GGeom(*const GEOSGeometry);
 
 impl Drop for GGeom {
     fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy(self.0) }
+        unsafe { GEOSGeom_destroy(self.0 as *mut _) }
     }
 }
 
@@ -545,7 +545,7 @@ impl GGeom {
         let nb_interiors = interiors.len();
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createPolygon(
-                &mut *exterior.0,
+                exterior.0 as *mut _,
                 interiors.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as c_uint,
             ))
@@ -603,15 +603,11 @@ impl GGeom {
     }
 }
 
-pub struct PreparedGGeom(*mut GEOSPreparedGeometry);
+pub struct PreparedGGeom(*const GEOSPreparedGeometry);
 
 impl Drop for PreparedGGeom {
     fn drop(&mut self) {
-        if self.0.is_null() {
-            return;
-        }
-        unsafe { GEOSPreparedGeom_destroy(self.0) };
-        self.0 = ptr::null_mut();
+        unsafe { GEOSPreparedGeom_destroy(self.0 as *mut _) };
     }
 }
 
