@@ -396,7 +396,7 @@ impl GGeom {
     }
 
     pub fn geometry_type(&self) -> GeosResult<GEOSGeomTypes> {
-        let type_geom = unsafe { GEOSGeomTypeId(self.as_raw() ) as i32 };
+        let type_geom = unsafe { GEOSGeomTypeId(self.as_raw()) as i32 };
 
         GEOSGeomTypes::from_i32(type_geom).ok_or(Error::GeosError(format!("impossible to get geometry type (val={})", type_geom)))
     }
@@ -546,7 +546,7 @@ impl GGeom {
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createPolygon(
                 &mut *exterior.0,
-                interiors[..].as_mut_ptr() as *mut *mut GEOSGeometry,
+                interiors.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as c_uint,
             ))
         }?;
@@ -554,7 +554,7 @@ impl GGeom {
         // we'll transfert the ownership of the ptr to the new GGeom,
         // so the old one needs to forget their c ptr to avoid double cleanup
         mem::forget(exterior);
-        for mut i in interiors {
+        for i in interiors {
             mem::forget(i);
         }
 
@@ -566,14 +566,14 @@ impl GGeom {
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createCollection(
                 GEOSGeomTypes::MultiPolygon as c_int,
-                polygons[..].as_mut_ptr() as *mut *mut GEOSGeometry,
+                polygons.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_polygons as c_uint,
             ))
         }?;
 
         // we'll transfert the ownership of the ptr to the new GGeom,
         // so the old one needs to forget their c ptr to avoid double cleanup
-        for mut p in polygons {
+        for p in polygons {
             mem::forget(p);
         }
 
@@ -604,12 +604,6 @@ impl GGeom {
 }
 
 pub struct PreparedGGeom(*mut GEOSPreparedGeometry);
-
-impl Clone for PreparedGGeom {
-    fn clone(&self) -> PreparedGGeom {
-        PreparedGGeom(self.0)
-    }
-}
 
 impl Drop for PreparedGGeom {
     fn drop(&mut self) {
