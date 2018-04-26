@@ -1,7 +1,7 @@
 use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
-use std::{ptr, str, mem};
+use std::{str, mem};
 use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use num_traits::FromPrimitive;
@@ -199,38 +199,35 @@ fn initialize() {
     }
 }
 
-pub struct CoordSeq(*const GEOSCoordSequence);
+pub struct CoordSeq(NonNull<GEOSCoordSequence>);
 
 impl Drop for CoordSeq {
     fn drop(&mut self) {
-        unsafe { GEOSCoordSeq_destroy(self.0 as *mut _) };
-        self.0 = ptr::null_mut();
+        unsafe { GEOSCoordSeq_destroy(self.0.as_mut()) };
     }
 }
 
 impl Clone for CoordSeq {
     fn clone(&self) -> CoordSeq {
-        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0) })
+        CoordSeq(NonNull::new(unsafe { GEOSCoordSeq_clone(self.0.as_ref()) }).unwrap())
     }
 }
 
 impl CoordSeq {
     pub fn new(size: u32, dims: u32) -> CoordSeq {
         initialize();
-        CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
+        CoordSeq(NonNull::new(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) }).unwrap())
     }
 
     unsafe fn new_from_raw(c_obj: *mut GEOSCoordSequence) -> GeosResult<CoordSeq> {
-        if c_obj.is_null() {
-            Err(Error::NoConstructionFromNullPtr)
-        } else {
-            Ok(CoordSeq(c_obj))
-        }
+        NonNull::new(c_obj)
+            .ok_or(Error::NoConstructionFromNullPtr)
+            .map(CoordSeq)
     }
     pub fn set_x(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
-                self.0 as *mut _,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -244,7 +241,7 @@ impl CoordSeq {
     pub fn set_y(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
-                self.0 as *mut _,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -258,7 +255,7 @@ impl CoordSeq {
     pub fn set_z(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
-                self.0 as *mut _,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -274,7 +271,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getX(
-                self.0,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -290,7 +287,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getY(
-                self.0,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -306,7 +303,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getZ(
-                self.0 as *const GEOSCoordSequence,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -322,7 +319,7 @@ impl CoordSeq {
         let mut n = 0 as c_uint;
         let ret_val = unsafe {
             GEOSCoordSeq_getSize(
-                self.0 as *const GEOSCoordSequence,
+                self.0.as_ref(),
                 &mut n,
             )
         };
@@ -582,13 +579,13 @@ impl GGeom {
 
     pub fn create_point(s: &CoordSeq) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0)))
+            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0.as_ref())))
         }
     }
 
     pub fn create_line_string(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLineString(s.0))
+            GGeom::new_from_raw(GEOSGeom_createLineString(s.0.as_ref()))
         }?;
         mem::forget(s);
         Ok(obj)
@@ -596,7 +593,7 @@ impl GGeom {
 
     pub fn create_linear_ring(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0))
+            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0.as_ref()))
         }?;
         mem::forget(s);
         Ok(obj)
