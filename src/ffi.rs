@@ -3,7 +3,6 @@ use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
 use std::{ptr, str, mem};
 use error::{Error, Result as GeosResult, PredicateType};
-use std;
 use num_traits::FromPrimitive;
 
 #[repr(C)]
@@ -332,13 +331,6 @@ impl CoordSeq {
             Ok(n as usize)
         }
     }
-
-    /// Release the underlying C ptr (so the ptr is not destroyed when the object is destroyed)
-    /// The C ptr needs to be cleanup afterward!
-    /// This method can be thus called only if the C ptr is given to the C API
-    fn release(mut self) -> *mut GEOSCoordSequence {
-        mem::replace(&mut self.0, std::ptr::null_mut())
-    }
 }
 
 #[repr(C)]
@@ -590,23 +582,23 @@ impl GGeom {
 
     pub fn create_point(s: &CoordSeq) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0 as *const GEOSCoordSequence)))
+            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0)))
         }
     }
 
     pub fn create_line_string(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLineString(s.0 as *const GEOSCoordSequence))
+            GGeom::new_from_raw(GEOSGeom_createLineString(s.0))
         }?;
-        s.release();
+        mem::forget(s);
         Ok(obj)
     }
 
     pub fn create_linear_ring(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0 as *const GEOSCoordSequence))
+            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0))
         }?;
-        s.release();
+        mem::forget(s);
         Ok(obj)
     }
 }
