@@ -2,6 +2,7 @@ use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
 use std::{ptr, str, mem};
+use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use num_traits::FromPrimitive;
 
@@ -334,17 +335,17 @@ impl CoordSeq {
 }
 
 #[repr(C)]
-pub struct GGeom(*const GEOSGeometry);
+pub struct GGeom(NonNull<GEOSGeometry>);
 
 impl Drop for GGeom {
     fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy(self.0 as *mut _) }
+        unsafe { GEOSGeom_destroy(self.0.as_mut()) }
     }
 }
 
 impl Clone for GGeom {
     fn clone(&self) -> GGeom {
-        GGeom(unsafe { GEOSGeom_clone(self.0) })
+        GGeom(NonNull::new(unsafe { GEOSGeom_clone(self.0.as_ref()) }).unwrap())
     }
 }
 
@@ -364,14 +365,13 @@ impl GGeom {
     }
 
     unsafe fn new_from_raw(g: *mut GEOSGeometry) -> GeosResult<GGeom> {
-        if g.is_null() {
-            return Err(Error::NoConstructionFromNullPtr);
-        }
-        Ok(GGeom(g))
+        NonNull::new(g)
+            .ok_or(Error::NoConstructionFromNullPtr)
+            .map(GGeom)
     }
 
     fn as_raw(&self) -> &GEOSGeometry {
-        unsafe { &*self.0 }
+        unsafe { self.0.as_ref() }
     }
 
     pub fn is_valid(&self) -> bool {
@@ -541,11 +541,11 @@ impl GGeom {
         unsafe { GGeom::new_from_raw(GEOSGetCentroid(self.as_raw())) }
     }
 
-    pub fn create_polygon(exterior: GGeom, mut interiors: Vec<GGeom>) -> GeosResult<GGeom> {
+    pub fn create_polygon(mut exterior: GGeom, mut interiors: Vec<GGeom>) -> GeosResult<GGeom> {
         let nb_interiors = interiors.len();
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createPolygon(
-                exterior.0 as *mut _,
+                exterior.0.as_mut(),
                 interiors.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as c_uint,
             ))
