@@ -386,7 +386,7 @@ impl GGeom {
         match type_geom {
             GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => unsafe {
                 let t = GEOSCoordSeq_clone(GEOSGeom_getCoordSeq(self.as_raw()));
-                CoordSeq::new_from_raw(t as *mut GEOSCoordSequence)
+                CoordSeq::new_from_raw(t)
             }
             _ => Err(Error::ImpossibleOperation("Geometry must be a Point, LineString or LinearRing to extract it's coordinates".into())),
         }
@@ -600,22 +600,22 @@ impl GGeom {
     }
 }
 
-pub struct PreparedGGeom(*const GEOSPreparedGeometry);
+pub struct PreparedGGeom(NonNull<GEOSPreparedGeometry>);
 
 impl Drop for PreparedGGeom {
     fn drop(&mut self) {
-        unsafe { GEOSPreparedGeom_destroy(self.0 as *mut _) };
+        unsafe { GEOSPreparedGeom_destroy(self.0.as_mut()) };
     }
 }
 
 impl PreparedGGeom {
     pub fn new(g: &GGeom) -> PreparedGGeom {
-        PreparedGGeom(unsafe { GEOSPrepare(g.as_raw()) })
+        PreparedGGeom(NonNull::new(unsafe { GEOSPrepare(g.as_raw()) }).unwrap())
     }
     pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -624,7 +624,7 @@ impl PreparedGGeom {
     pub fn contains_properly(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContainsProperly(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -633,7 +633,7 @@ impl PreparedGGeom {
     pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCoveredBy(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -642,7 +642,7 @@ impl PreparedGGeom {
     pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCovers(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -651,7 +651,7 @@ impl PreparedGGeom {
     pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCrosses(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -660,7 +660,7 @@ impl PreparedGGeom {
     pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedDisjoint(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -669,7 +669,7 @@ impl PreparedGGeom {
     pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedIntersects(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -678,7 +678,7 @@ impl PreparedGGeom {
     pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedOverlaps(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -687,7 +687,7 @@ impl PreparedGGeom {
     pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedTouches(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -696,7 +696,7 @@ impl PreparedGGeom {
     pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedWithin(
-                self.0,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
