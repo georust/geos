@@ -1,7 +1,8 @@
 use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
-use std::{ptr, str, mem};
+use std::{str, mem};
+use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use num_traits::FromPrimitive;
 
@@ -198,38 +199,35 @@ fn initialize() {
     }
 }
 
-pub struct CoordSeq(*mut GEOSCoordSequence);
+pub struct CoordSeq(NonNull<GEOSCoordSequence>);
 
 impl Drop for CoordSeq {
     fn drop(&mut self) {
-        unsafe { GEOSCoordSeq_destroy(self.0 as *mut GEOSCoordSequence) };
-        self.0 = ptr::null_mut();
+        unsafe { GEOSCoordSeq_destroy(self.0.as_mut()) };
     }
 }
 
 impl Clone for CoordSeq {
     fn clone(&self) -> CoordSeq {
-        CoordSeq(unsafe { GEOSCoordSeq_clone(self.0 as *const GEOSCoordSequence) })
+        CoordSeq(NonNull::new(unsafe { GEOSCoordSeq_clone(self.0.as_ref()) }).unwrap())
     }
 }
 
 impl CoordSeq {
     pub fn new(size: u32, dims: u32) -> CoordSeq {
         initialize();
-        CoordSeq(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) })
+        CoordSeq(NonNull::new(unsafe { GEOSCoordSeq_create(size as c_uint, dims as c_uint) }).unwrap())
     }
 
     unsafe fn new_from_raw(c_obj: *mut GEOSCoordSequence) -> GeosResult<CoordSeq> {
-        if c_obj.is_null() {
-            Err(Error::NoConstructionFromNullPtr)
-        } else {
-            Ok(CoordSeq(c_obj))
-        }
+        NonNull::new(c_obj)
+            .ok_or(Error::NoConstructionFromNullPtr)
+            .map(CoordSeq)
     }
     pub fn set_x(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setX(
-                self.0,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -243,7 +241,7 @@ impl CoordSeq {
     pub fn set_y(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setY(
-                self.0,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -257,7 +255,7 @@ impl CoordSeq {
     pub fn set_z(&mut self, idx: u32, val: f64) -> GeosResult<()> {
         let ret_val = unsafe {
             GEOSCoordSeq_setZ(
-                self.0,
+                self.0.as_mut(),
                 idx as c_uint,
                 val as c_double,
             )
@@ -273,7 +271,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getX(
-                self.0,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -281,7 +279,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -289,7 +287,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getY(
-                self.0,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -297,7 +295,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -305,7 +303,7 @@ impl CoordSeq {
         let mut n = 0.0 as c_double;
         let ret_val = unsafe {
             GEOSCoordSeq_getZ(
-                self.0 as *const GEOSCoordSequence,
+                self.0.as_ref(),
                 idx as c_uint,
                 &mut n,
             )
@@ -313,7 +311,7 @@ impl CoordSeq {
         if ret_val == 0 {
             Err(Error::GeosError("getting coordinates from CoordSeq".into()))
         } else {
-            Ok(n)
+            Ok(n as f64)
         }
     }
 
@@ -321,7 +319,7 @@ impl CoordSeq {
         let mut n = 0 as c_uint;
         let ret_val = unsafe {
             GEOSCoordSeq_getSize(
-                self.0 as *const GEOSCoordSequence,
+                self.0.as_ref(),
                 &mut n,
             )
         };
@@ -334,17 +332,17 @@ impl CoordSeq {
 }
 
 #[repr(C)]
-pub struct GGeom(*mut GEOSGeometry);
+pub struct GGeom(NonNull<GEOSGeometry>);
 
 impl Drop for GGeom {
     fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy(self.0) }
+        unsafe { GEOSGeom_destroy(self.0.as_mut()) }
     }
 }
 
 impl Clone for GGeom {
     fn clone(&self) -> GGeom {
-        GGeom(unsafe { GEOSGeom_clone(self.0) })
+        GGeom(NonNull::new(unsafe { GEOSGeom_clone(self.0.as_ref()) }).unwrap())
     }
 }
 
@@ -364,14 +362,13 @@ impl GGeom {
     }
 
     unsafe fn new_from_raw(g: *mut GEOSGeometry) -> GeosResult<GGeom> {
-        if g.is_null() {
-            return Err(Error::NoConstructionFromNullPtr);
-        }
-        Ok(GGeom(g))
+        NonNull::new(g)
+            .ok_or(Error::NoConstructionFromNullPtr)
+            .map(GGeom)
     }
 
     fn as_raw(&self) -> &GEOSGeometry {
-        unsafe { &*self.0 }
+        unsafe { self.0.as_ref() }
     }
 
     pub fn is_valid(&self) -> bool {
@@ -389,14 +386,14 @@ impl GGeom {
         match type_geom {
             GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => unsafe {
                 let t = GEOSCoordSeq_clone(GEOSGeom_getCoordSeq(self.as_raw()));
-                CoordSeq::new_from_raw(t as *mut GEOSCoordSequence)
+                CoordSeq::new_from_raw(t)
             }
             _ => Err(Error::ImpossibleOperation("Geometry must be a Point, LineString or LinearRing to extract it's coordinates".into())),
         }
     }
 
     pub fn geometry_type(&self) -> GeosResult<GEOSGeomTypes> {
-        let type_geom = unsafe { GEOSGeomTypeId(self.as_raw() ) as i32 };
+        let type_geom = unsafe { GEOSGeomTypeId(self.as_raw()) as i32 };
 
         GEOSGeomTypes::from_i32(type_geom).ok_or(Error::GeosError(format!("impossible to get geometry type (val={})", type_geom)))
     }
@@ -541,12 +538,12 @@ impl GGeom {
         unsafe { GGeom::new_from_raw(GEOSGetCentroid(self.as_raw())) }
     }
 
-    pub fn create_polygon(exterior: GGeom, mut interiors: Vec<GGeom>) -> GeosResult<GGeom> {
+    pub fn create_polygon(mut exterior: GGeom, mut interiors: Vec<GGeom>) -> GeosResult<GGeom> {
         let nb_interiors = interiors.len();
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createPolygon(
-                &mut *exterior.0,
-                interiors[..].as_mut_ptr() as *mut *mut GEOSGeometry,
+                exterior.0.as_mut(),
+                interiors.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as c_uint,
             ))
         }?;
@@ -554,7 +551,7 @@ impl GGeom {
         // we'll transfert the ownership of the ptr to the new GGeom,
         // so the old one needs to forget their c ptr to avoid double cleanup
         mem::forget(exterior);
-        for mut i in interiors {
+        for i in interiors {
             mem::forget(i);
         }
 
@@ -566,14 +563,14 @@ impl GGeom {
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createCollection(
                 GEOSGeomTypes::MultiPolygon as c_int,
-                polygons[..].as_mut_ptr() as *mut *mut GEOSGeometry,
+                polygons.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_polygons as c_uint,
             ))
         }?;
 
         // we'll transfert the ownership of the ptr to the new GGeom,
         // so the old one needs to forget their c ptr to avoid double cleanup
-        for mut p in polygons {
+        for p in polygons {
             mem::forget(p);
         }
 
@@ -582,13 +579,13 @@ impl GGeom {
 
     pub fn create_point(s: &CoordSeq) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0)))
+            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0.as_ref())))
         }
     }
 
     pub fn create_line_string(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLineString(s.0))
+            GGeom::new_from_raw(GEOSGeom_createLineString(s.0.as_ref()))
         }?;
         mem::forget(s);
         Ok(obj)
@@ -596,39 +593,29 @@ impl GGeom {
 
     pub fn create_linear_ring(s: CoordSeq) -> GeosResult<GGeom> {
         let obj = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0))
+            GGeom::new_from_raw(GEOSGeom_createLinearRing(s.0.as_ref()))
         }?;
         mem::forget(s);
         Ok(obj)
     }
 }
 
-pub struct PreparedGGeom(*mut GEOSPreparedGeometry);
-
-impl Clone for PreparedGGeom {
-    fn clone(&self) -> PreparedGGeom {
-        PreparedGGeom(self.0)
-    }
-}
+pub struct PreparedGGeom(NonNull<GEOSPreparedGeometry>);
 
 impl Drop for PreparedGGeom {
     fn drop(&mut self) {
-        if self.0.is_null() {
-            return;
-        }
-        unsafe { GEOSPreparedGeom_destroy(self.0) };
-        self.0 = ptr::null_mut();
+        unsafe { GEOSPreparedGeom_destroy(self.0.as_mut()) };
     }
 }
 
 impl PreparedGGeom {
     pub fn new(g: &GGeom) -> PreparedGGeom {
-        PreparedGGeom(unsafe { GEOSPrepare(g.as_raw()) })
+        PreparedGGeom(NonNull::new(unsafe { GEOSPrepare(g.as_raw()) }).unwrap())
     }
     pub fn contains(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -637,7 +624,7 @@ impl PreparedGGeom {
     pub fn contains_properly(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContainsProperly(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -646,7 +633,7 @@ impl PreparedGGeom {
     pub fn covered_by(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCoveredBy(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -655,7 +642,7 @@ impl PreparedGGeom {
     pub fn covers(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCovers(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -664,7 +651,7 @@ impl PreparedGGeom {
     pub fn crosses(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCrosses(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -673,7 +660,7 @@ impl PreparedGGeom {
     pub fn disjoint(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedDisjoint(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -682,7 +669,7 @@ impl PreparedGGeom {
     pub fn intersects(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedIntersects(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -691,7 +678,7 @@ impl PreparedGGeom {
     pub fn overlaps(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedOverlaps(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -700,7 +687,7 @@ impl PreparedGGeom {
     pub fn touches(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedTouches(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
@@ -709,7 +696,7 @@ impl PreparedGGeom {
     pub fn within(&self, g2: &GGeom) -> GeosResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedWithin(
-                self.0 as *const GEOSPreparedGeometry,
+                self.0.as_ref(),
                 g2.as_raw(),
             )
         };
