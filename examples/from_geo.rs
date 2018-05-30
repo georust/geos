@@ -1,8 +1,8 @@
 extern crate geos;
-extern crate geo;
+extern crate geo_types;
 extern crate failure;
 use geos::GGeom;
-use geo::{LineString, Point, Polygon};
+use geo_types::{LineString, Point, Polygon};
 use geos::from_geo::TryInto;
 use failure::Error;
 

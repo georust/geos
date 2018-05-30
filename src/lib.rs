@@ -1,7 +1,7 @@
 #![crate_name = "geos"]
 #![crate_type = "lib"]
 
-extern crate geo;
+extern crate geo_types;
 extern crate libc;
 extern crate num;
 #[macro_use]
