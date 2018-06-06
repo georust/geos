@@ -38,7 +38,7 @@ impl<'a> TryInto<GGeom> for &'a LineString<f64> {
 
 struct LineRing<'a>(&'a LineString<f64>);
 
-/// Convert a geo::LineString to a geos LinearRing
+/// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
 impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
     type Err = Error;
