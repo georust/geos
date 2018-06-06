@@ -1,6 +1,4 @@
-extern crate geo;
-
-use self::geo::{LineString, MultiPolygon, Polygon, Point};
+use geo_types::{LineString, MultiPolygon, Polygon, Point};
 use ffi::{CoordSeq, GGeom};
 use error::Error;
 use std;
@@ -40,7 +38,7 @@ impl<'a> TryInto<GGeom> for &'a LineString<f64> {
 
 struct LineRing<'a>(&'a LineString<f64>);
 
-/// Convert a geo::LineString to a geos LinearRing
+/// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
 impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
     type Err = Error;
@@ -95,7 +93,7 @@ impl<'a> TryInto<GGeom> for &'a MultiPolygon<f64> {
 
 #[cfg(test)]
 mod test {
-    use from_geo::geo::{LineString, MultiPolygon, Point, Polygon};
+    use geo_types::{LineString, MultiPolygon, Point, Polygon};
     use ffi::GGeom;
     use from_geo::TryInto;
     use super::LineRing;
