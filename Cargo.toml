@@ -8,6 +8,7 @@ keywords = ["geos", "libgeos", "geometry", "geography", "gis"]
 categories = ["external-ffi-bindings", "algorithms"]
 description = "Rust bindings for GEOS C API"
 readme = "README.md"
+build = "build.rs"
 
 [dependencies]
 libc = "0.2"
@@ -17,3 +18,9 @@ failure = "0.1"
 failure_derive = "0.1"
 enum-primitive-derive = "^0.1"
 num-traits = "^0.1"
+
+[build-dependencies]
+skeptic = "0.13"
+
+[dev-dependencies]
+skeptic = "0.13"

@@ -5,7 +5,7 @@ rust-geos
 
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
-## Disclaimer
+### Disclaimer
 
 Work in progress (currently it's probably poorly designed, incomplete and containing beginners errors)
 
@@ -18,17 +18,20 @@ You can check the examples in the `examples/` directory.
 
 ### Constructing geometries from WKT:
 
-```rust
+```rust,skt-template
 let gg1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
 let gg2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
-let gg3 = gg1.difference(&gg2);
-println!("{:?}", gg3.to_wkt());
+let gg3 = gg1.difference(&gg2)?;
+assert_eq!(
+  gg3.to_wkt_precison(Some(0)),
+  "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))");
+
 ```
 
 
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
-```rust
+```rust,skt-template
 let g1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
 let g2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
 
@@ -44,7 +47,10 @@ to use all geos algorithms.
 
 Complete example can be found in `examples/from_geo.rs`
 
-```rust
+```rust,skt-template
+use geos::from_geo::TryInto;
+use geo_types::{LineString, Point, Polygon};
+
 // first we create a Geo object
 let exterior = LineString(vec![
     Point::new(0., 0.),
@@ -60,9 +66,8 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let geom: GGeom = (&p).try_into()?;
-// do some stuff with geom
-}
+let _geom: geos::GGeom = (&p).try_into()?;
+// do some stuff with _geom
 ```
 
 ## Contributing
