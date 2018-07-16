@@ -67,7 +67,7 @@ mod test {
     #[test]
     fn test_wkt_rounding_precision() {
         let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
-        let wkt = g.to_wkt_precison(Some(0));
+        let wkt = g.to_wkt_precision(Some(0));
         assert_eq!(true, wkt == "LINESTRING (0 0, 7 7, 45 50, 100 100)");
         let wkt2 = g.to_wkt();
         assert!(wkt2 != wkt);
