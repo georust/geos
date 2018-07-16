@@ -23,7 +23,7 @@ let gg1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
 let gg2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
 let gg3 = gg1.difference(&gg2)?;
 assert_eq!(
-  gg3.to_wkt_precison(Some(0)),
+  gg3.to_wkt_precision(Some(0)),
   "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))");
 
 ```

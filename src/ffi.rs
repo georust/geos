@@ -413,7 +413,12 @@ impl GGeom {
         unsafe { managed_string(GEOSGeomToWKT(self.as_raw())) }
     }
 
+    #[deprecated(note = "renamed to to_wkt_precision")]
     pub fn to_wkt_precison(&self, precision: Option<u32>) -> String {
+        self.to_wkt_precision(precision)
+    }
+
+    pub fn to_wkt_precision(&self, precision: Option<u32>) -> String {
         unsafe {
             let writer = GEOSWKTWriter_create();
             if let Some(x) = precision {
