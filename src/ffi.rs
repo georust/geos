@@ -2,6 +2,7 @@ use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
 use std::{str, mem};
+use std;
 use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use num_traits::FromPrimitive;
@@ -120,6 +121,12 @@ extern "C" {
     fn GEOSSnap(g1: *const GEOSGeometry, g2: *const GEOSGeometry, tolerance: c_double) -> *mut GEOSGeometry;
     #[allow(dead_code)]
     fn GEOSGeom_extractUniquePoints(g: *const GEOSGeometry) -> *mut GEOSGeometry;
+    fn GEOSVoronoiDiagram(g: *const GEOSGeometry,
+                env: *const GEOSGeometry,
+                tolerance: c_double,
+                onlyEdges: c_int) -> *mut GEOSGeometry;
+    fn GEOSNormalize(g: *mut GEOSGeometry) -> c_int;
+
 
     // Functions acting on GEOSPreparedGeometry :
     fn GEOSPreparedContains(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
@@ -602,6 +609,21 @@ impl GGeom {
         }?;
         mem::forget(s);
         Ok(obj)
+    }
+
+    pub fn voronoi(&self, envelope: Option<&GGeom>, tolerance: f32, only_edges: bool) -> GeosResult<GGeom> {
+        unsafe {
+            let raw_voronoi = GEOSVoronoiDiagram(self.as_raw(),
+                envelope.map(|e| e.0.as_ptr() as *const GEOSGeometry).unwrap_or(std::ptr::null()),
+                tolerance as c_double,
+                only_edges as c_int
+            );
+            Self::new_from_raw(raw_voronoi)
+        }
+    }
+    pub fn normalize(&mut self) -> GeosResult<bool> {
+        let ret_val = unsafe { GEOSNormalize(self.0.as_ptr()) };
+        check_geos_predicate(ret_val, PredicateType::Normalize)
     }
 }
 

@@ -16,6 +16,8 @@ pub use ffi::{version, CoordSeq, GGeom, PreparedGGeom};
 pub mod from_geo;
 mod error;
 pub use error::Error;
+mod voronoi;
+pub use voronoi::compute_voronoi;
 
 #[cfg(test)]
 mod test;
