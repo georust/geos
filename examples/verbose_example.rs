@@ -25,7 +25,7 @@ fn fun() -> Result<(), Error> {
     println!("Centroid of g1 : {:?}", g4.to_wkt());
     println!(
         "Centroid of g1 with round precision of 1: {:?}",
-        g4.to_wkt_precison(Some(1))
+        g4.to_wkt_precision(Some(1))
     );
     println!("Geom4 contains centroid of geom1 : {:?}", g3.contains(&g4)?);
     println!("Geom4 is valid ? : {}", g3.is_valid());
