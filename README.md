@@ -70,6 +70,25 @@ let _geom: geos::GGeom = (&p).try_into()?;
 // do some stuff with _geom
 ```
 
+### Voronoi
+
+[Voronoi](https://en.wikipedia.org/wiki/Voronoi_diagram) diagrams computation are available in the bindings.
+
+For those to be easier to use with [rust-geo](https://github.com/georust/rust-geo) some helpers are available in `voronoi.rs`.
+
+```rust,skt-template
+use geo_types::Point;
+let points = vec![
+    Point::new(0., 0.),
+    Point::new(0., 1.),
+    Point::new(1., 1.),
+    Point::new(1., 0.),
+];
+
+let _voronoi = geos::compute_voronoi(&points, 0.).unwrap();
+```
+
+
 ## Contributing
 
 Only a subset of geos has been implemented, feel free to add wrappers for missing features.

@@ -24,6 +24,29 @@ where It: Iterator<Item = &'a Point<f64>> {
     Ok(coord_seq)
 }
 
+impl<'a> TryInto<GGeom> for &'a Point<f64> {
+    type Err = Error;
+
+    fn try_into(self) -> Result<GGeom, Self::Err> {
+        let coord_seq = create_coord_seq(std::iter::once(self), 1)?;
+
+        GGeom::create_point(coord_seq)
+    }
+}
+
+impl<'a> TryInto<GGeom> for &'a [Point<f64>] {
+    type Err = Error;
+
+    fn try_into(self) -> Result<GGeom, Self::Err> {
+        let geom_points = self
+            .into_iter()
+            .map(|p| p.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        GGeom::create_multipoint(geom_points)
+    }
+}
+
 impl<'a> TryInto<GGeom> for &'a LineString<f64> {
     type Err = Error;
 

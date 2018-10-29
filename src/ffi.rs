@@ -589,10 +589,27 @@ impl GGeom {
         Ok(res)
     }
 
-    pub fn create_point(s: &CoordSeq) -> GeosResult<GGeom> {
-        unsafe {
-            GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0.as_ref())))
+    pub fn create_multipoint(mut points: Vec<GGeom>) -> GeosResult<GGeom> {
+        let nb_points = points.len();
+        let res = unsafe {
+            GGeom::new_from_raw(GEOSGeom_createCollection(
+                GEOSGeomTypes::MultiPoint as c_int,
+                points.as_mut_ptr() as *mut *mut GEOSGeometry,
+                nb_points as c_uint,
+            ))
+        }?;
+
+        // we'll transfert the ownership of the ptr to the new GGeom,
+        // so the old one needs to forget their c ptr to avoid double cleanup
+        for p in points {
+            mem::forget(p);
         }
+
+        Ok(res)
+    }
+
+    pub fn create_point(s: CoordSeq) -> GeosResult<GGeom> {
+        unsafe { GGeom::new_from_raw(GEOSGeom_createPoint(GEOSCoordSeq_clone(s.0.as_ref()))) }
     }
 
     pub fn create_line_string(s: CoordSeq) -> GeosResult<GGeom> {
@@ -611,12 +628,20 @@ impl GGeom {
         Ok(obj)
     }
 
-    pub fn voronoi(&self, envelope: Option<&GGeom>, tolerance: f32, only_edges: bool) -> GeosResult<GGeom> {
+    pub fn voronoi(
+        &self,
+        envelope: Option<&GGeom>,
+        tolerance: f32,
+        only_edges: bool,
+    ) -> GeosResult<GGeom> {
         unsafe {
-            let raw_voronoi = GEOSVoronoiDiagram(self.as_raw(),
-                envelope.map(|e| e.0.as_ptr() as *const GEOSGeometry).unwrap_or(std::ptr::null()),
+            let raw_voronoi = GEOSVoronoiDiagram(
+                self.as_raw(),
+                envelope
+                    .map(|e| e.0.as_ptr() as *const GEOSGeometry)
+                    .unwrap_or(std::ptr::null()),
                 tolerance as c_double,
-                only_edges as c_int
+                only_edges as c_int,
             );
             Self::new_from_raw(raw_voronoi)
         }
