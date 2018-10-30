@@ -3,6 +3,7 @@ use ffi::GGeom;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 
+//TODO, change  &[] to IntoIterator
 pub fn compute_voronoi(points: &[Point<f64>], tolerance: f32) -> Result<Vec<Polygon<f64>>, Error> {
     let geom_points: GGeom = points.try_into()?;
 
