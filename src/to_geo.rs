@@ -9,6 +9,9 @@ impl<'a> TryInto<Geometry<f64>> for GGeom {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
+        // This is a first draft, it's very inefficient, we use wkt as a pivot format to 
+        // translate the geometry.
+        // We should at least use wkb, or even better implement a direct translation
         let wkt_str = self.to_wkt();
         let wkt_obj = wkt::Wkt::from_str(&wkt_str)
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
