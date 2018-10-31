@@ -1,6 +1,6 @@
 [package]
 name = "geos"
-version = "2.0.3"
+version = "2.1.0"
 authors = ["Matthieu Viry <matthieu.viry@cnrs.fr>", "Adrien Matissart <a.matissart@qwantresearch.com>", "Antoine Desbordes <antoine.desbordes@gmail.com>", "Guillaume Pinot <texitoi@texitoi.eu>"]
 license = "MIT"
 repository = "https://github.com/georust/geos"
@@ -13,12 +13,13 @@ build = "build.rs"
 [dependencies]
 libc = "0.2"
 num = "0.1"
-geo-types = "0.1"
+geo-types = "0.2.0"
 failure = "0.1"
 failure_derive = "0.1"
 enum-primitive-derive = "^0.1"
 num-traits = "^0.1"
-wkt = "0.1.3"
+# wkt = "0.1.3"
+wkt = { version = "0.2.0", git = "https://github.com/georust/wkt.git", rev = "e7e388720fcf76d8b104b6ac2b0c9c4dc636aac2" }
 
 [build-dependencies]
 skeptic = "0.13"

@@ -31,7 +31,11 @@ impl<'a> TryInto<Geometry<f64>> for GGeom {
 mod test {
     use ffi::GGeom;
     use from_geo::TryInto;
-    use geo_types::{Geometry, LineString, MultiPolygon, Point, Polygon};
+    use geo_types::{Geometry, LineString, MultiPolygon, Coordinate, Polygon};
+
+    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
+        tuples.into_iter().map(Coordinate::from).collect()
+    }
 
     #[test]
     fn geom_to_geo_polygon() {
@@ -40,13 +44,13 @@ mod test {
 
         let geo_polygon: Geometry<f64> = poly.try_into().unwrap();
 
-        let exterior = LineString(vec![
-            Point::new(0., 0.),
-            Point::new(0., 1.),
-            Point::new(1., 1.),
-            Point::new(1., 0.),
-            Point::new(0., 0.),
-        ]);
+        let exterior = LineString(coords(vec![
+            (0., 0.),
+            (0., 1.),
+            (1., 1.),
+            (1., 0.),
+            (0., 0.),
+        ]));
         let expected_poly = MultiPolygon(vec![Polygon::new(exterior, vec![])]);
         let expected: Geometry<_> = expected_poly.into();
         assert_eq!(expected, geo_polygon);

@@ -49,19 +49,19 @@ Complete example can be found in `examples/from_geo.rs`
 
 ```rust,skt-template
 use geos::from_geo::TryInto;
-use geo_types::{LineString, Point, Polygon};
+use geo_types::{LineString, Coordinate, Polygon};
 
 // first we create a Geo object
 let exterior = LineString(vec![
-    Point::new(0., 0.),
-    Point::new(0., 1.),
-    Point::new(1., 1.),
+    Coordinate::from((0., 0.)),
+    Coordinate::from((0., 1.)),
+    Coordinate::from((1., 1.)),
 ]);
 let interiors = vec![
     LineString(vec![
-        Point::new(0.1, 0.1),
-        Point::new(0.1, 0.9),
-        Point::new(0.9, 0.9),
+        Coordinate::from((0.1, 0.1)),
+        Coordinate::from((0.1, 0.9)),
+        Coordinate::from((0.9, 0.9)),
     ]),
 ];
 let p = Polygon::new(exterior, interiors);
@@ -85,7 +85,7 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let _voronoi = geos::compute_voronoi(&points, 0.).unwrap();
+let _voronoi = geos::compute_voronoi(&points, 0.)?;
 ```
 
 

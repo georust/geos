@@ -25,7 +25,7 @@ pub fn compute_voronoi(points: &[Point<f64>], tolerance: f32) -> Result<Vec<Poly
 #[cfg(test)]
 mod test {
     use ffi::GGeom;
-    use geo_types::{LineString, Point, Polygon};
+    use geo_types::{LineString, Point, Polygon, Coordinate};
     /// create a voronoi diagram. Same unit test as https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
     fn simple_voronoi() {
@@ -75,6 +75,11 @@ mod test {
         assert!(same);
     }
 
+    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
+        tuples.into_iter().map(Coordinate::from).collect()
+    }
+
+
     // test the rust-geo voronoi wrapper
     #[test]
     fn geo_voronoi() {
@@ -89,43 +94,43 @@ mod test {
 
         let poly = vec![
             Polygon::new(
-                LineString(vec![
-                    Point::new(0.5, 2.0),
-                    Point::new(2.0, 2.0),
-                    Point::new(2.0, 0.5),
-                    Point::new(0.5, 0.5),
-                    Point::new(0.5, 2.0),
-                ]),
+                LineString(coords(vec![
+                    (0.5, 2.0),
+                    (2.0, 2.0),
+                    (2.0, 0.5),
+                    (0.5, 0.5),
+                    (0.5, 2.0),
+                ])),
                 vec![],
             ),
             Polygon::new(
-                LineString(vec![
-                    Point::new(-1.0, 0.5),
-                    Point::new(-1.0, 2.0),
-                    Point::new(0.5, 2.0),
-                    Point::new(0.5, 0.5),
-                    Point::new(-1.0, 0.5),
-                ]),
+                LineString(coords(vec![
+                    (-1.0, 0.5),
+                    (-1.0, 2.0),
+                    (0.5, 2.0),
+                    (0.5, 0.5),
+                    (-1.0, 0.5),
+                ])),
                 vec![],
             ),
             Polygon::new(
-                LineString(vec![
-                    Point::new(0.5, -1.0),
-                    Point::new(-1.0, -1.0),
-                    Point::new(-1.0, 0.5),
-                    Point::new(0.5, 0.5),
-                    Point::new(0.5, -1.0),
-                ]),
+                LineString(coords(vec![
+                    (0.5, -1.0),
+                    (-1.0, -1.0),
+                    (-1.0, 0.5),
+                    (0.5, 0.5),
+                    (0.5, -1.0),
+                ])),
                 vec![],
             ),
             Polygon::new(
-                LineString(vec![
-                    Point::new(2.0, 0.5),
-                    Point::new(2.0, -1.0),
-                    Point::new(0.5, -1.0),
-                    Point::new(0.5, 0.5),
-                    Point::new(2.0, 0.5),
-                ]),
+                LineString(coords(vec![
+                    (2.0, 0.5),
+                    (2.0, -1.0),
+                    (0.5, -1.0),
+                    (0.5, 0.5),
+                    (2.0, 0.5),
+                ])),
                 vec![],
             ),
         ];
