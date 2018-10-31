@@ -631,7 +631,7 @@ impl GGeom {
     pub fn voronoi(
         &self,
         envelope: Option<&GGeom>,
-        tolerance: f32,
+        tolerance: f64,
         only_edges: bool,
     ) -> GeosResult<GGeom> {
         unsafe {
