@@ -18,7 +18,7 @@ failure = "0.1"
 failure_derive = "0.1"
 enum-primitive-derive = "^0.1"
 num-traits = "^0.1"
-wkt = { version = "0.2.0", git = "https://github.com/georust/wkt.git", rev = "e7e388720fcf76d8b104b6ac2b0c9c4dc636aac2" }
+wkt = "0.2.1"
 
 [build-dependencies]
 skeptic = "0.13"
