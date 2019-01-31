@@ -13,19 +13,21 @@ pub fn compute_voronoi(points: &[Point<f64>], tolerance: f64) -> Result<Vec<Poly
         .and_then(|g: Geometry<f64>| match g {
             Geometry::GeometryCollection(gc) => Ok(gc),
             _ => Err(Error::ConversionError("invalid geometry type".into())),
-        }).and_then(|gc: GeometryCollection<f64>| {
+        })
+        .and_then(|gc: GeometryCollection<f64>| {
             gc.0.into_iter()
                 .map(|g| {
                     g.as_polygon()
                         .ok_or(Error::ConversionError("invalid inner geometry type".into()))
-                }).collect()
+                })
+                .collect()
         })
 }
 
 #[cfg(test)]
 mod test {
     use ffi::GGeom;
-    use geo_types::{LineString, Point, Polygon, Coordinate};
+    use geo_types::{Coordinate, LineString, Point, Polygon};
     /// create a voronoi diagram. Same unit test as https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
     fn simple_voronoi() {
@@ -78,7 +80,6 @@ mod test {
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()
     }
-
 
     // test the rust-geo voronoi wrapper
     #[test]
