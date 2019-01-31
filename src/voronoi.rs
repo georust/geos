@@ -44,7 +44,7 @@ mod test {
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();
 
-        let same = expected_output.equals_exact(&voronoi, 1e-3).unwrap();
+        let same = expected_output.equals(&voronoi).unwrap();
         assert!(same);
     }
 
@@ -71,7 +71,7 @@ mod test {
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();
 
-        let same = expected_output.equals_exact(&voronoi, 1e-3).unwrap();
+        let same = expected_output.equals(&voronoi).unwrap();
         assert!(same);
     }
 
