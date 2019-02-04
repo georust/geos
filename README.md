@@ -5,9 +5,9 @@ geos
 
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
-### Disclaimer
+The supported geos version is >= 3.5
 
-Work in progress (currently it's probably poorly designed, incomplete and containing beginners errors)
+### Disclaimer
 
 GEOS can be a tad strict on the validity on the input geometry and is prone to crash on invalid input, so they need to be checked in the wrapper.
 This project is checked with valgrind, but if you stumble on a crash feel free to open an issue explaining the problem.
