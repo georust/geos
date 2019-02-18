@@ -8,10 +8,16 @@ pub enum Error {
     ImpossibleOperation(String),
     #[fail(display = "error while calling libgeos while {}", _0)]
     GeosError(String),
-    #[fail(display = "error while calling libgeos method {} (error number = {})", _0, _1)]
+    #[fail(
+        display = "error while calling libgeos method {} (error number = {})",
+        _0,
+        _1
+    )]
     GeosFunctionError(PredicateType, i32),
     #[fail(display = "impossible to build a geometry from a nullptr")]
     NoConstructionFromNullPtr,
+    #[fail(display = "impossible to convert geometry, {}", _0)]
+    ConversionError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -41,7 +47,8 @@ pub enum PredicateType {
     PreparedIntersects,
     PreparedOverlaps,
     PreparedTouches,
-    PreparedWithin
+    PreparedWithin,
+    Normalize,
 }
 
 impl std::fmt::Display for PredicateType {

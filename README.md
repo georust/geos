@@ -5,9 +5,9 @@ geos
 
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
-### Disclaimer
+The supported geos version is >= 3.5
 
-Work in progress (currently it's probably poorly designed, incomplete and containing beginners errors)
+### Disclaimer
 
 GEOS can be a tad strict on the validity on the input geometry and is prone to crash on invalid input, so they need to be checked in the wrapper.
 This project is checked with valgrind, but if you stumble on a crash feel free to open an issue explaining the problem.
@@ -49,19 +49,19 @@ Complete example can be found in `examples/from_geo.rs`
 
 ```rust,skt-template
 use geos::from_geo::TryInto;
-use geo_types::{LineString, Point, Polygon};
+use geo_types::{LineString, Coordinate, Polygon};
 
 // first we create a Geo object
 let exterior = LineString(vec![
-    Point::new(0., 0.),
-    Point::new(0., 1.),
-    Point::new(1., 1.),
+    Coordinate::from((0., 0.)),
+    Coordinate::from((0., 1.)),
+    Coordinate::from((1., 1.)),
 ]);
 let interiors = vec![
     LineString(vec![
-        Point::new(0.1, 0.1),
-        Point::new(0.1, 0.9),
-        Point::new(0.9, 0.9),
+        Coordinate::from((0.1, 0.1)),
+        Coordinate::from((0.1, 0.9)),
+        Coordinate::from((0.9, 0.9)),
     ]),
 ];
 let p = Polygon::new(exterior, interiors);
@@ -69,6 +69,25 @@ let p = Polygon::new(exterior, interiors);
 let _geom: geos::GGeom = (&p).try_into()?;
 // do some stuff with _geom
 ```
+
+### Voronoi
+
+[Voronoi](https://en.wikipedia.org/wiki/Voronoi_diagram) diagrams computation are available in the bindings.
+
+For those to be easier to use with [rust-geo](https://github.com/georust/rust-geo) some helpers are available in `voronoi.rs`.
+
+```rust,skt-template
+use geo_types::Point;
+let points = vec![
+    Point::new(0., 0.),
+    Point::new(0., 1.),
+    Point::new(1., 1.),
+    Point::new(1., 0.),
+];
+
+let _voronoi = geos::compute_voronoi(&points, 0.)?;
+```
+
 
 ## Contributing
 
