@@ -25,8 +25,8 @@ use geos::from_geo::TryInto;
     ];
     let p = Polygon::new(exterior.clone(), interiors.clone());
 
-    assert_eq!(p.exterior, exterior);
-    assert_eq!(p.interiors, interiors);
+    assert_eq!(p.exterior(), &exterior);
+    assert_eq!(p.interiors(), interiors.as_slice());
 
     let geom: GGeom = (&p).try_into()?;
 

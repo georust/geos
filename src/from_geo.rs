@@ -90,9 +90,9 @@ impl<'a> TryInto<GGeom> for &'a Polygon<f64> {
     type Err = Error;
 
     fn try_into(self) -> Result<GGeom, Self::Err> {
-        let geom_exterior: GGeom = LineRing(&self.exterior).try_into()?;
+        let geom_exterior: GGeom = LineRing(self.exterior()).try_into()?;
 
-        let interiors: Vec<_> = self.interiors
+        let interiors: Vec<_> = self.interiors()
             .iter()
             .map(|i| LineRing(i).try_into())
             .collect::<Result<Vec<_>, _>>()?;
@@ -147,8 +147,8 @@ mod test {
         ];
         let p = Polygon::new(exterior.clone(), interiors.clone());
 
-        assert_eq!(p.exterior, exterior);
-        assert_eq!(p.interiors, interiors);
+        assert_eq!(p.exterior(), &exterior);
+        assert_eq!(p.interiors(), interiors.as_slice());
 
         let geom: GGeom = (&p).try_into().unwrap();
 
