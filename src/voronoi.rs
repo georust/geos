@@ -17,7 +17,7 @@ pub fn compute_voronoi(points: &[Point<f64>], tolerance: f64) -> Result<Vec<Poly
         .and_then(|gc: GeometryCollection<f64>| {
             gc.0.into_iter()
                 .map(|g| {
-                    g.as_polygon()
+                    g.into_polygon()
                         .ok_or(Error::ConversionError("invalid inner geometry type".into()))
                 })
                 .collect()
