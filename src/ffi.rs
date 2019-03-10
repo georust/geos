@@ -110,6 +110,7 @@ extern "C" {
     fn GEOSGetCentroid(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSSymDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
+    fn GEOSUnion(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSUnaryUnion(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSClipByRect(
         g: *const GEOSGeometry,
@@ -544,6 +545,12 @@ impl GGeom {
     pub fn sym_difference(&self, g2: &GGeom) -> GeosResult<GGeom> {
         unsafe {
             GGeom::new_from_raw(GEOSSymDifference(self.as_raw(), g2.as_raw()))
+        }
+    }
+
+    pub fn union(&self, g2: &GGeom) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSUnion(self.as_raw(), g2.as_raw()))
         }
     }
 
