@@ -636,9 +636,9 @@ impl GGeom {
         Ok(obj)
     }
 
-    pub fn unary_union(g: &GGeom) -> GeosResult<GGeom> {
+    pub fn unary_union(&self) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSUnaryUnion(g.as_raw()))
+            GGeom::new_from_raw(GEOSUnaryUnion(self.as_raw()))
         }
     }
 
