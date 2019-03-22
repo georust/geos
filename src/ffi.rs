@@ -586,7 +586,7 @@ impl GGeom {
         if !check_same_geometry_type(&polygons, GEOSGeomTypes::Polygon) {
             return Err(
                 Error::ImpossibleOperation(
-                    "All the provided geometry have to be of type Polygon".to_string()));
+                    "all the provided geometry have to be of type Polygon".to_string()));
         }
         create_multi_geom(polygons, GEOSGeomTypes::MultiPolygon)
     }
@@ -595,7 +595,7 @@ impl GGeom {
         if !check_same_geometry_type(&linestrings, GEOSGeomTypes::LineString) {
             return Err(
                 Error::ImpossibleOperation(
-                    "All the provided geometry have to be of type LineString".to_string()));
+                    "all the provided geometry have to be of type LineString".to_string()));
         }
         create_multi_geom(linestrings, GEOSGeomTypes::MultiLineString)
     }
@@ -604,7 +604,7 @@ impl GGeom {
         if !check_same_geometry_type(&points, GEOSGeomTypes::Point) {
             return Err(
                 Error::ImpossibleOperation(
-                    "All the provided geometry have to be of type Point".to_string()));
+                    "all the provided geometry have to be of type Point".to_string()));
         }
         create_multi_geom(points, GEOSGeomTypes::MultiPoint)
     }

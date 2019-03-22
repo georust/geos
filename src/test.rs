@@ -139,7 +139,7 @@ mod test {
 
         assert_eq!(
             format!("{}", e),
-            "Invalid geometry, All the provided geometry have to be of type Point".to_string(),
+            "Impossible operation, all the provided geometry have to be of type Point".to_string(),
         );
     }
 
