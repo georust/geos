@@ -773,14 +773,14 @@ fn check_geos_predicate(val: i32, p: PredicateType) -> GeosResult<bool> {
 
 fn check_same_geometry_type(geoms: &[GGeom], geom_type: GEOSGeomTypes) -> bool {
     geoms.iter()
-        .map(|g|
-            if g.geometry_type()? == geom_type {
-                Ok(true)
+        .all(|g| {
+            let t = g.geometry_type();
+            if t.is_err() {
+                false
             } else {
-                Err(Error::InvalidGeometry("".to_string()))
+                t.unwrap() == geom_type
+            }
         })
-        .collect::<GeosResult<Vec<bool>>>()
-        .is_ok()
 }
 
 fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GEOSGeomTypes) -> GeosResult<GGeom> {
