@@ -578,42 +578,35 @@ impl GGeom {
         Ok(res)
     }
 
-    pub fn create_multipolygon(mut polygons: Vec<GGeom>) -> GeosResult<GGeom> {
-        let nb_polygons = polygons.len();
-        let res = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createCollection(
-                GEOSGeomTypes::MultiPolygon as c_int,
-                polygons.as_mut_ptr() as *mut *mut GEOSGeometry,
-                nb_polygons as c_uint,
-            ))
-        }?;
-
-        // we'll transfert the ownership of the ptr to the new GGeom,
-        // so the old one needs to forget their c ptr to avoid double cleanup
-        for p in polygons {
-            mem::forget(p);
-        }
-
-        Ok(res)
+    pub fn create_geometrycollection(geoms: Vec<GGeom>) -> GeosResult<GGeom> {
+        create_multi_geom(geoms, GEOSGeomTypes::GeometryCollection)
     }
 
-    pub fn create_multipoint(mut points: Vec<GGeom>) -> GeosResult<GGeom> {
-        let nb_points = points.len();
-        let res = unsafe {
-            GGeom::new_from_raw(GEOSGeom_createCollection(
-                GEOSGeomTypes::MultiPoint as c_int,
-                points.as_mut_ptr() as *mut *mut GEOSGeometry,
-                nb_points as c_uint,
-            ))
-        }?;
-
-        // we'll transfert the ownership of the ptr to the new GGeom,
-        // so the old one needs to forget their c ptr to avoid double cleanup
-        for p in points {
-            mem::forget(p);
+    pub fn create_multipolygon(polygons: Vec<GGeom>) -> GeosResult<GGeom> {
+        if !check_same_geometry_type(&polygons, GEOSGeomTypes::Polygon) {
+            return Err(
+                Error::ImpossibleOperation(
+                    "all the provided geometry have to be of type Polygon".to_string()));
         }
+        create_multi_geom(polygons, GEOSGeomTypes::MultiPolygon)
+    }
 
-        Ok(res)
+    pub fn create_multilinestring(linestrings: Vec<GGeom>) -> GeosResult<GGeom> {
+        if !check_same_geometry_type(&linestrings, GEOSGeomTypes::LineString) {
+            return Err(
+                Error::ImpossibleOperation(
+                    "all the provided geometry have to be of type LineString".to_string()));
+        }
+        create_multi_geom(linestrings, GEOSGeomTypes::MultiLineString)
+    }
+
+    pub fn create_multipoint(points: Vec<GGeom>) -> GeosResult<GGeom> {
+        if !check_same_geometry_type(&points, GEOSGeomTypes::Point) {
+            return Err(
+                Error::ImpossibleOperation(
+                    "all the provided geometry have to be of type Point".to_string()));
+        }
+        create_multi_geom(points, GEOSGeomTypes::MultiPoint)
     }
 
     pub fn create_point(s: CoordSeq) -> GeosResult<GGeom> {
@@ -776,6 +769,30 @@ fn check_geos_predicate(val: i32, p: PredicateType) -> GeosResult<bool> {
         0 => Ok(false),
         _ => Err(Error::GeosFunctionError(p, val))
     }
+}
+
+fn check_same_geometry_type(geoms: &[GGeom], geom_type: GEOSGeomTypes) -> bool {
+    geoms.iter()
+        .all(|g| g.geometry_type().map(|t| t == geom_type).unwrap_or(false))
+}
+
+fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GEOSGeomTypes) -> GeosResult<GGeom> {
+    let nb_geoms = geoms.len();
+    let res = unsafe {
+        GGeom::new_from_raw(GEOSGeom_createCollection(
+            output_type as c_int,
+            geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
+            nb_geoms as c_uint,
+        ))
+    }?;
+
+    // we'll transfert the ownership of the ptr to the new GGeom,
+    // so the old one needs to forget their c ptr to avoid double cleanup
+    for g in geoms {
+        mem::forget(g);
+    }
+
+    Ok(res)
 }
 
 #[cfg(test)]

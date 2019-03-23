@@ -68,9 +68,79 @@ mod test {
     fn test_wkt_rounding_precision() {
         let g = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
         let wkt = g.to_wkt_precision(Some(0));
-        assert_eq!(true, wkt == "LINESTRING (0 0, 7 7, 45 50, 100 100)");
+        assert_eq!(wkt, "LINESTRING (0 0, 7 7, 45 50, 100 100)");
         let wkt2 = g.to_wkt();
         assert!(wkt2 != wkt);
+    }
+
+    #[test]
+    fn test_multipoint_from_vec_single() {
+        let vec_geoms = vec![
+            GGeom::new("POINT (1.3 2.4)").unwrap(),
+            GGeom::new("POINT (2.1 0.3)").unwrap(),
+            GGeom::new("POINT (3.1 4.7)").unwrap(),
+            GGeom::new("POINT (0.4 4.1)").unwrap(),
+        ];
+        let multi_point = GGeom::create_multipoint(vec_geoms).unwrap();
+        assert_eq!(
+            multi_point.to_wkt_precision(Some(1)),
+            "MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)",
+        )
+    }
+
+    #[test]
+    fn test_multilinestring_from_vec_single() {
+        let vec_geoms = vec![
+            GGeom::new("LINESTRING(1 1,10 50,20 25)").unwrap(),
+            GGeom::new("LINESTRING (0 0, 7 7, 45 50, 100 100)").unwrap(),
+        ];
+        let multi_linestring = GGeom::create_multilinestring(vec_geoms).unwrap();
+        assert_eq!(
+            multi_linestring.to_wkt_precision(Some(0)),
+            "MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))",
+        )
+    }
+
+    #[test]
+    fn test_multipolygon_from_vec_single() {
+        let vec_geoms = vec![
+            GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap(),
+            GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").unwrap(),
+        ];
+        let multi_polygon = GGeom::create_multipolygon(vec_geoms).unwrap();
+        assert_eq!(
+            multi_polygon.to_wkt_precision(Some(0)),
+            "MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))",
+        );
+    }
+
+    #[test]
+    fn test_geometrycollection_from_vec_ggeom() {
+        let vec_geoms = vec![
+            GGeom::new("POINT (1 2)").unwrap(),
+            GGeom::new("LINESTRING(1 1,10 50,20 25)").unwrap(),
+            GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap(),
+        ];
+        let gc = GGeom::create_geometrycollection(vec_geoms).unwrap();
+        assert_eq!(
+            gc.to_wkt_precision(Some(0)),
+            "GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 1, 10 50, 20 25), POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0)))",
+        );
+    }
+
+    #[test]
+    fn test_error_multi_from_vec_single() {
+        let vec_geoms = vec![
+            GGeom::new("POINT (1.3 2.4)").unwrap(),
+            GGeom::new("LINESTRING(1 1,10 50,20 25)").unwrap(),
+        ];
+        let multi_point = GGeom::create_multipoint(vec_geoms);
+        let e = multi_point.err().unwrap();
+
+        assert_eq!(
+            format!("{}", e),
+            "Impossible operation, all the provided geometry have to be of type Point".to_string(),
+        );
     }
 
     fn assert_almost_eq(a: f64, b: f64) {
