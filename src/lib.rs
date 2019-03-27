@@ -12,7 +12,14 @@ extern crate num_traits;
 extern crate wkt;
 
 mod ffi;
-pub use ffi::{version, CoordSeq, GGeom, PreparedGGeom};
+pub use ffi::{
+    version,
+    CoordSeq,
+    Dimensions,
+    GContextHandle,
+    GGeom,
+    PreparedGGeom,
+};
 mod error;
 pub mod from_geo;
 pub mod to_geo;

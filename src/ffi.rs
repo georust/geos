@@ -1,22 +1,28 @@
-use libc::{atexit, c_char, c_double, c_int, c_uint, c_void, size_t};
+use libc::{atexit, c_char, c_uchar, c_double, c_int, c_uint, c_void, size_t, strlen};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
-use std::{str, mem};
-use std;
+use std::{self, slice, str, mem};
 use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use num_traits::FromPrimitive;
 
 #[repr(C)]
-struct GEOSWKTReader { private: [u8; 0]}
+struct GEOSWKTReader { private: [u8; 0] }
 #[repr(C)]
-struct GEOSWKTWriter { private: [u8; 0]}
+struct GEOSWKTWriter { private: [u8; 0] }
 #[repr(C)]
-struct GEOSPreparedGeometry { private: [u8; 0]}
+struct GEOSPreparedGeometry { private: [u8; 0] }
 #[repr(C)]
-struct GEOSCoordSequence { private: [u8; 0]}
+struct GEOSCoordSequence { private: [u8; 0] }
 #[repr(C)]
-struct GEOSGeometry { private: [u8; 0]}
+struct GEOSGeometry { private: [u8; 0] }
+#[repr(C)]
+struct GEOSContextHandle_HS { private: [u8; 0] }
+#[allow(non_camel_case_types)]
+type GEOSContextHandle_t = *mut GEOSContextHandle_HS;
+#[allow(non_camel_case_types)]
+type GEOSMessageHandler_r = Option<unsafe extern "C" fn(message: *const c_char,
+                                                        userdata: *mut c_void)>;
 
 #[link(name = "geos_c")]
 extern "C" {
@@ -24,12 +30,12 @@ extern "C" {
     fn GEOSversion() -> *const c_char;
     fn finishGEOS() -> *mut c_void;
 
-    // API for reading WKT :
+    // API for reading WKT:
     fn GEOSWKTReader_create() -> *mut GEOSWKTReader;
     fn GEOSWKTReader_destroy(reader: *mut GEOSWKTReader);
     fn GEOSWKTReader_read(reader: *mut GEOSWKTReader, wkt: *const c_char) -> *mut GEOSGeometry;
 
-    // API for writing WKT :
+    // API for writing WKT:
     fn GEOSWKTWriter_create() -> *mut GEOSWKTWriter;
     fn GEOSWKTWriter_destroy(writer: *mut GEOSWKTWriter);
     fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const GEOSGeometry) -> *mut c_char;
@@ -52,10 +58,10 @@ extern "C" {
     fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double) -> c_int;
     fn GEOSCoordSeq_getSize(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
 
-    // Geometry must be a LineString, LinearRing or Point :
+    // Geometry must be a LineString, LinearRing or Point:
     fn GEOSGeom_getCoordSeq(g: *const GEOSGeometry) -> *mut GEOSCoordSequence;
 
-    // Geometry constructor :
+    // Geometry constructor:
     fn GEOSGeom_createPoint(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
     fn GEOSGeom_createLineString(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
     fn GEOSGeom_createLinearRing(s: *const GEOSCoordSequence) -> *mut GEOSGeometry;
@@ -70,7 +76,7 @@ extern "C" {
         ngeoms: c_uint,
     ) -> *mut GEOSGeometry;
 
-    // Functions acting on GEOSGeometry :
+    // Functions acting on GEOSGeometry:
     fn GEOSisEmpty(g: *const GEOSGeometry) -> c_int;
     fn GEOSisSimple(g: *const GEOSGeometry) -> c_int;
     fn GEOSisRing(g: *const GEOSGeometry) -> c_int;
@@ -130,7 +136,7 @@ extern "C" {
     fn GEOSNormalize(g: *mut GEOSGeometry) -> c_int;
 
 
-    // Functions acting on GEOSPreparedGeometry :
+    // Functions acting on GEOSPreparedGeometry:
     fn GEOSPreparedContains(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
     fn GEOSPreparedContainsProperly(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
     fn GEOSPreparedCoveredBy(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
@@ -142,9 +148,233 @@ extern "C" {
     fn GEOSPreparedTouches(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
     fn GEOSPreparedWithin(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_int;
     fn GEOSPreparedGeom_destroy(g: *mut GEOSPreparedGeometry);
+
+    fn GEOS_init_r() -> GEOSContextHandle_t;
+    fn GEOS_finish_r(handle: GEOSContextHandle_t);
+    fn GEOSContext_setNoticeMessageHandler_r(handle: GEOSContextHandle_t,
+                                             nf: GEOSMessageHandler_r,
+                                             userdata: *mut c_void) -> GEOSMessageHandler_r;
+    fn GEOSContext_setErrorMessageHandler_r(handle: GEOSContextHandle_t,
+                                            nf: GEOSMessageHandler_r,
+                                            userdata: *mut c_void) -> GEOSMessageHandler_r;
+    fn GEOS_getWKBOutputDims_r(handle: GEOSContextHandle_t) -> c_int;
+    fn GEOS_setWKBOutputDims_r(handle: GEOSContextHandle_t, newDims: c_int) -> c_int;
+    fn GEOS_getWKBByteOrder_r(handle: GEOSContextHandle_t) -> c_int;
+    fn GEOS_setWKBByteOrder_r(handle: GEOSContextHandle_t, byteOrder: c_int) -> c_int;
+    fn GEOSGeomFromWKB_buf_r(handle: GEOSContextHandle_t,
+                             wkb: *const c_uchar,
+                             size: size_t) -> *mut GEOSGeometry;
+    fn GEOSGeomToWKB_buf_r(handle: GEOSContextHandle_t,
+                           g: *const GEOSGeometry,
+                           size: *mut size_t) -> *mut c_uchar;
+    fn GEOSGeomFromHEX_buf_r(handle: GEOSContextHandle_t,
+                             hex: *const c_uchar,
+                             size: size_t) -> *mut GEOSGeometry;
+    fn GEOSGeomToHEX_buf_r(handle: GEOSContextHandle_t,
+                           g: *const GEOSGeometry,
+                           size: *mut size_t) -> *mut c_uchar;
 }
 
-#[derive(Eq, PartialEq, Debug, Primitive)]
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Dimensions {
+    TwoD,
+    ThreeD,
+    Other(u32),
+}
+
+impl From<c_int> for Dimensions {
+    fn from(dimensions: c_int) -> Self {
+        match dimensions {
+            2 => Dimensions::TwoD,
+            3 => Dimensions::ThreeD,
+            x if x > 3 => Dimensions::Other(x as _),
+            _ => panic!("dimensions must be > 1"),
+        }
+    }
+}
+
+impl Into<c_int> for Dimensions {
+    fn into(self) -> c_int {
+        match self {
+            Dimensions::TwoD => 2,
+            Dimensions::ThreeD => 3,
+            Dimensions::Other(dim) => dim as _,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum ByteOrder {
+    BigEndian,
+    LittleEndian,
+}
+
+impl From<c_int> for ByteOrder {
+    fn from(dimensions: c_int) -> Self {
+        match dimensions {
+            0 => ByteOrder::BigEndian,
+            _ => ByteOrder::LittleEndian,
+        }
+    }
+}
+
+impl Into<c_int> for ByteOrder {
+    fn into(self) -> c_int {
+        match self {
+            ByteOrder::BigEndian => 0,
+            ByteOrder::LittleEndian => 1,
+        }
+    }
+}
+
+#[repr(C)]
+pub struct GContextHandle(GEOSContextHandle_t);
+
+impl GContextHandle {
+    pub fn init() -> Self {
+        initialize();
+        let ptr = unsafe { GEOS_init_r() };
+        if ptr.is_null() {
+            panic!("GEOS_init_r failed")
+        } else {
+            GContextHandle(ptr)
+        }
+    }
+
+    pub fn set_notice_message_handler(&self, nf: Option<Box<dyn Fn(&str) + 'static>>) {
+        let nf_data: Box<Option<Box<dyn Fn(&str) + 'static>>> = Box::new(nf);
+
+        unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
+            let callback: &Option<Box<dyn Fn(&str) + 'static>> = &*(data as *mut _);
+
+            let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
+            if let Some(ref callback) = *callback {
+                let s = CStr::from_bytes_with_nul_unchecked(bytes);
+                callback(s.to_str().expect("invalid CStr -> &str conversion"))
+            } else {
+                panic!("cannot get closure...")
+            }
+        }
+
+        let page_func = if nf_data.is_some() {
+            Some(message_handler_func as _)
+        } else {
+            None
+        };
+        unsafe {
+            // We can't get back the previous closure. It'll be lost in the depth of the memory
+            // foreveeeeer.
+            GEOSContext_setNoticeMessageHandler_r(self.0,
+                                                  page_func,
+                                                  Box::into_raw(nf_data) as *mut _);
+        }
+    }
+
+    pub fn set_error_message_handler(&self, ef: Option<Box<dyn Fn(&str) + 'static>>) {
+        let nf_data: Box<Option<Box<dyn Fn(&str) + 'static>>> = Box::new(ef);
+
+        unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
+            let callback: &Option<Box<dyn Fn(&str) + 'static>> = &*(data as *mut _);
+
+            let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
+            if let Some(ref callback) = *callback {
+                let s = CStr::from_bytes_with_nul_unchecked(bytes);
+                callback(s.to_str().expect("invalid CStr -> &str conversion"))
+            } else {
+                panic!("cannot get closure...")
+            }
+        }
+
+        let page_func = if nf_data.is_some() {
+            Some(message_handler_func as _)
+        } else {
+            None
+        };
+        unsafe {
+            // We can't get back the previous closure. It'll be lost in the depth of the memory
+            // foreveeeeer.
+            GEOSContext_setErrorMessageHandler_r(self.0,
+                                                 page_func,
+                                                 Box::into_raw(nf_data) as *mut _);
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn get_WKB_output_dimensions(&self) -> Dimensions {
+        Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.0) })
+    }
+
+    #[allow(non_snake_case)]
+    pub fn set_WKB_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
+        Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.0, dimensions.into()) })
+    }
+
+    #[allow(non_snake_case)]
+    pub fn get_WKB_byte_order(&self) -> ByteOrder {
+        ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.0) })
+    }
+
+    #[allow(non_snake_case)]
+    pub fn set_WKB_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
+        ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.0, byte_order.into()) })
+    }
+
+    #[allow(non_snake_case)]
+    pub fn geom_from_WKB_buf(&self, wkb: &[u8]) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSGeomFromWKB_buf_r(self.0, wkb.as_ptr(), wkb.len()))
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn geom_to_WKB_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
+        let mut size = 0;
+        unsafe {
+            let ptr = GEOSGeomToWKB_buf_r(self.0, g.as_raw(), &mut size);
+            if ptr.is_null() || size == 0 {
+                None
+            } else {
+                let mut res = Vec::with_capacity(size);
+                for i in 0..size {
+                    res.push(::std::ptr::read(ptr.add(i)));
+                }
+                Some(res)
+            }
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn geom_from_HEX_buf(&self, hex: &[u8]) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSGeomFromHEX_buf_r(self.0, hex.as_ptr(), hex.len()))
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn geom_to_HEX_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
+        let mut size = 0;
+        unsafe {
+            let ptr = GEOSGeomToHEX_buf_r(self.0, g.as_raw(), &mut size);
+            if ptr.is_null() || size == 0 {
+                None
+            } else {
+                let mut res = Vec::with_capacity(size);
+                for i in 0..size {
+                    res.push(::std::ptr::read(ptr.add(i)));
+                }
+                Some(res)
+            }
+        }
+    }
+}
+
+impl Drop for GContextHandle {
+    fn drop(&mut self) {
+        unsafe { GEOS_finish_r(self.0) };
+    }
+}
+
+#[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Primitive)]
 #[repr(C)]
 pub enum GEOSGeomTypes {
     Point = 0,
@@ -157,7 +387,7 @@ pub enum GEOSGeomTypes {
     GeometryCollection = 7,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct GeosError {
     pub desc: &'static str,
 }
