@@ -321,11 +321,11 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     ///
-    /// context_handle.set_WKB_output_dimensions(Dimensions::TwoD);
-    /// assert!(context_handle.get_WKB_output_dimensions() == Dimensions::TwoD);
+    /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
+    /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
     /// ```
     #[allow(non_snake_case)]
-    pub fn get_WKB_output_dimensions(&self) -> Dimensions {
+    pub fn get_wkb_output_dimensions(&self) -> Dimensions {
         Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.ptr) })
     }
 
@@ -341,11 +341,11 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     ///
-    /// context_handle.set_WKB_output_dimensions(Dimensions::TwoD);
-    /// assert!(context_handle.get_WKB_output_dimensions() == Dimensions::TwoD);
+    /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
+    /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
     /// ```
     #[allow(non_snake_case)]
-    pub fn set_WKB_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
+    pub fn set_wkb_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
         Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.ptr, dimensions.into()) })
     }
 
@@ -361,11 +361,11 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     ///
-    /// context_handle.set_WKB_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_WKB_byte_order() == ByteOrder::LittleEndian);
+    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     #[allow(non_snake_case)]
-    pub fn get_WKB_byte_order(&self) -> ByteOrder {
+    pub fn get_wkb_byte_order(&self) -> ByteOrder {
         ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.ptr) })
     }
 
@@ -381,11 +381,11 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     ///
-    /// context_handle.set_WKB_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_WKB_byte_order() == ByteOrder::LittleEndian);
+    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     #[allow(non_snake_case)]
-    pub fn set_WKB_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
+    pub fn set_wkb_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
         ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.ptr, byte_order.into()) })
     }
 
@@ -401,14 +401,14 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_WKB_buf(&point_geom)
+    /// let wkb_buf = context_handle.geom_to_wkb_buf(&point_geom)
     ///                             .expect("conversion to WKB failed");
-    /// let new_geom = context_handle.geom_from_WKB_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_wkb_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion from WKB failed");
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     #[allow(non_snake_case)]
-    pub fn geom_from_WKB_buf(&self, wkb: &[u8]) -> GeosResult<GGeom> {
+    pub fn geom_from_wkb_buf(&self, wkb: &[u8]) -> GeosResult<GGeom> {
         unsafe {
             GGeom::new_from_raw(GEOSGeomFromWKB_buf_r(self.ptr, wkb.as_ptr(), wkb.len()))
         }
@@ -426,14 +426,14 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_WKB_buf(&point_geom)
+    /// let wkb_buf = context_handle.geom_to_wkb_buf(&point_geom)
     ///                             .expect("conversion to WKB failed");
-    /// let new_geom = context_handle.geom_from_WKB_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_wkb_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion from WKB failed");
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     #[allow(non_snake_case)]
-    pub fn geom_to_WKB_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
+    pub fn geom_to_wkb_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToWKB_buf_r(self.ptr, g.as_raw(), &mut size);
@@ -457,14 +457,14 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_HEX_buf(&point_geom)
-    ///                             .expect("conversion to WKB failed");
-    /// let new_geom = context_handle.geom_from_HEX_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion to WKB failed");
+    /// let wkb_buf = context_handle.geom_to_hex_buf(&point_geom)
+    ///                             .expect("conversion to HEX failed");
+    /// let new_geom = context_handle.geom_from_hex_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion from HEX failed");
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     #[allow(non_snake_case)]
-    pub fn geom_from_HEX_buf(&self, hex: &[u8]) -> GeosResult<GGeom> {
+    pub fn geom_from_hex_buf(&self, hex: &[u8]) -> GeosResult<GGeom> {
         unsafe {
             GGeom::new_from_raw(GEOSGeomFromHEX_buf_r(self.ptr, hex.as_ptr(), hex.len()))
         }
@@ -482,14 +482,14 @@ impl GContextHandle {
     ///     Err(e) => panic!("An error occurred: {}", e),
     /// };
     /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_HEX_buf(&point_geom)
-    ///                             .expect("conversion to WKB failed");
-    /// let new_geom = context_handle.geom_from_HEX_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion to WKB failed");
+    /// let wkb_buf = context_handle.geom_to_hex_buf(&point_geom)
+    ///                             .expect("conversion to HEX failed");
+    /// let new_geom = context_handle.geom_from_hex_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion from HEX failed");
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     #[allow(non_snake_case)]
-    pub fn geom_to_HEX_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
+    pub fn geom_to_hex_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToHEX_buf_r(self.ptr, g.as_raw(), &mut size);
