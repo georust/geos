@@ -18,6 +18,8 @@ pub enum Error {
     NoConstructionFromNullPtr,
     #[fail(display = "impossible to convert geometry, {}", _0)]
     ConversionError(String),
+    #[fail(display = "generic error: {}", _0)]
+    GenericError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

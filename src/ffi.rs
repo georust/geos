@@ -1,10 +1,11 @@
 use libc::{atexit, c_char, c_uchar, c_double, c_int, c_uint, c_void, size_t, strlen};
 use std::sync::{Once, ONCE_INIT};
 use std::ffi::{CStr, CString};
+use std::cell::RefCell;
 use std::{self, slice, str, mem};
 use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
-use num_traits::FromPrimitive;
+use enums::*;
 
 #[repr(C)]
 struct GEOSWKTReader { private: [u8; 0] }
@@ -175,77 +176,33 @@ extern "C" {
                            size: *mut size_t) -> *mut c_uchar;
 }
 
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Dimensions {
-    TwoD,
-    ThreeD,
-    Other(u32),
-}
-
-impl From<c_int> for Dimensions {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
-            2 => Dimensions::TwoD,
-            3 => Dimensions::ThreeD,
-            x if x > 3 => Dimensions::Other(x as _),
-            _ => panic!("dimensions must be > 1"),
-        }
-    }
-}
-
-impl Into<c_int> for Dimensions {
-    fn into(self) -> c_int {
-        match self {
-            Dimensions::TwoD => 2,
-            Dimensions::ThreeD => 3,
-            Dimensions::Other(dim) => dim as _,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub enum ByteOrder {
-    BigEndian,
-    LittleEndian,
-}
-
-impl From<c_int> for ByteOrder {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
-            0 => ByteOrder::BigEndian,
-            _ => ByteOrder::LittleEndian,
-        }
-    }
-}
-
-impl Into<c_int> for ByteOrder {
-    fn into(self) -> c_int {
-        match self {
-            ByteOrder::BigEndian => 0,
-            ByteOrder::LittleEndian => 1,
-        }
-    }
-}
-
 #[repr(C)]
-pub struct GContextHandle(GEOSContextHandle_t);
+pub struct GContextHandle {
+    ptr: GEOSContextHandle_t,
+    notice_message: RefCell<*mut c_void>,
+    error_message: RefCell<*mut c_void>,
+}
 
 impl GContextHandle {
-    pub fn init() -> Self {
+    pub fn init() -> GeosResult<Self> {
         initialize();
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
-            panic!("GEOS_init_r failed")
+            Err(Error::GenericError("GEOS_init_r failed".to_owned()))
         } else {
-            GContextHandle(ptr)
+            Ok(GContextHandle {
+                ptr,
+                notice_message: RefCell::new(::std::ptr::null_mut()),
+                error_message: RefCell::new(::std::ptr::null_mut()),
+            })
         }
     }
 
-    pub fn set_notice_message_handler(&self, nf: Option<Box<dyn Fn(&str) + 'static>>) {
-        let nf_data: Box<Option<Box<dyn Fn(&str) + 'static>>> = Box::new(nf);
+    pub fn set_notice_message_handler<'a>(&'a self, nf: Option<Box<dyn Fn(&str) + 'a>>) {
+        let nf_data: Box<Option<Box<dyn Fn(&str) + 'a>>> = Box::new(nf);
 
-        unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
-            let callback: &Option<Box<dyn Fn(&str) + 'static>> = &*(data as *mut _);
+        unsafe extern "C" fn message_handler_func<'a>(message: *const c_char, data: *mut c_void) {
+            let callback: &Option<Box<dyn Fn(&str) + 'a>> = &*(data as *mut _);
 
             let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
             if let Some(ref callback) = *callback {
@@ -261,20 +218,23 @@ impl GContextHandle {
         } else {
             None
         };
+        let nf_data = Box::into_raw(nf_data) as *mut _;
+        let previous_ptr = self.notice_message.replace(nf_data);
+        if !previous_ptr.is_null() {
+            // We free the previous closure.
+            let _callback: Box<Option<Box<dyn Fn(&str) + 'a>>> =
+                unsafe { Box::from_raw(previous_ptr as *mut _) };
+        }
         unsafe {
-            // We can't get back the previous closure. It'll be lost in the depth of the memory
-            // foreveeeeer.
-            GEOSContext_setNoticeMessageHandler_r(self.0,
-                                                  page_func,
-                                                  Box::into_raw(nf_data) as *mut _);
+            GEOSContext_setNoticeMessageHandler_r(self.ptr, page_func, nf_data);
         }
     }
 
-    pub fn set_error_message_handler(&self, ef: Option<Box<dyn Fn(&str) + 'static>>) {
-        let nf_data: Box<Option<Box<dyn Fn(&str) + 'static>>> = Box::new(ef);
+    pub fn set_error_message_handler<'a>(&'a self, ef: Option<Box<dyn Fn(&str) + 'a>>) {
+        let ef_data: Box<Option<Box<dyn Fn(&str) + 'a>>> = Box::new(ef);
 
-        unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
-            let callback: &Option<Box<dyn Fn(&str) + 'static>> = &*(data as *mut _);
+        unsafe extern "C" fn message_handler_func<'a>(message: *const c_char, data: *mut c_void) {
+            let callback: &Option<Box<dyn Fn(&str) + 'a>> = &*(data as *mut _);
 
             let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
             if let Some(ref callback) = *callback {
@@ -285,44 +245,47 @@ impl GContextHandle {
             }
         }
 
-        let page_func = if nf_data.is_some() {
+        let page_func = if ef_data.is_some() {
             Some(message_handler_func as _)
         } else {
             None
         };
+        let ef_data = Box::into_raw(ef_data) as *mut _;
+        let previous_ptr = self.notice_message.replace(ef_data);
+        if !previous_ptr.is_null() {
+            // We free the previous closure.
+            let _callback: Box<Option<Box<dyn Fn(&str) + 'a>>> =
+                unsafe { Box::from_raw(previous_ptr as *mut _) };
+        }
         unsafe {
-            // We can't get back the previous closure. It'll be lost in the depth of the memory
-            // foreveeeeer.
-            GEOSContext_setErrorMessageHandler_r(self.0,
-                                                 page_func,
-                                                 Box::into_raw(nf_data) as *mut _);
+            GEOSContext_setErrorMessageHandler_r(self.ptr, page_func, ef_data);
         }
     }
 
     #[allow(non_snake_case)]
     pub fn get_WKB_output_dimensions(&self) -> Dimensions {
-        Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.0) })
+        Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.ptr) })
     }
 
     #[allow(non_snake_case)]
     pub fn set_WKB_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
-        Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.0, dimensions.into()) })
+        Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.ptr, dimensions.into()) })
     }
 
     #[allow(non_snake_case)]
     pub fn get_WKB_byte_order(&self) -> ByteOrder {
-        ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.0) })
+        ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.ptr) })
     }
 
     #[allow(non_snake_case)]
     pub fn set_WKB_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
-        ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.0, byte_order.into()) })
+        ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.ptr, byte_order.into()) })
     }
 
     #[allow(non_snake_case)]
     pub fn geom_from_WKB_buf(&self, wkb: &[u8]) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSGeomFromWKB_buf_r(self.0, wkb.as_ptr(), wkb.len()))
+            GGeom::new_from_raw(GEOSGeomFromWKB_buf_r(self.ptr, wkb.as_ptr(), wkb.len()))
         }
     }
 
@@ -330,7 +293,7 @@ impl GContextHandle {
     pub fn geom_to_WKB_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSGeomToWKB_buf_r(self.0, g.as_raw(), &mut size);
+            let ptr = GEOSGeomToWKB_buf_r(self.ptr, g.as_raw(), &mut size);
             if ptr.is_null() || size == 0 {
                 None
             } else {
@@ -346,7 +309,7 @@ impl GContextHandle {
     #[allow(non_snake_case)]
     pub fn geom_from_HEX_buf(&self, hex: &[u8]) -> GeosResult<GGeom> {
         unsafe {
-            GGeom::new_from_raw(GEOSGeomFromHEX_buf_r(self.0, hex.as_ptr(), hex.len()))
+            GGeom::new_from_raw(GEOSGeomFromHEX_buf_r(self.ptr, hex.as_ptr(), hex.len()))
         }
     }
 
@@ -354,7 +317,7 @@ impl GContextHandle {
     pub fn geom_to_HEX_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSGeomToHEX_buf_r(self.0, g.as_raw(), &mut size);
+            let ptr = GEOSGeomToHEX_buf_r(self.ptr, g.as_raw(), &mut size);
             if ptr.is_null() || size == 0 {
                 None
             } else {
@@ -369,22 +332,23 @@ impl GContextHandle {
 }
 
 impl Drop for GContextHandle {
-    fn drop(&mut self) {
-        unsafe { GEOS_finish_r(self.0) };
-    }
-}
+    fn drop<'a>(&'a mut self) {
+        unsafe { GEOS_finish_r(self.ptr) };
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Primitive)]
-#[repr(C)]
-pub enum GEOSGeomTypes {
-    Point = 0,
-    LineString = 1,
-    LinearRing = 2,
-    Polygon = 3,
-    MultiPoint = 4,
-    MultiLineString = 5,
-    MultiPolygon = 6,
-    GeometryCollection = 7,
+        let previous_ptr = self.notice_message.replace(::std::ptr::null_mut());
+        if !previous_ptr.is_null() {
+            // We free the previous closure.
+            let _callback: Box<Option<Box<dyn Fn(&str) + 'a>>> =
+                unsafe { Box::from_raw(previous_ptr as *mut _) };
+        }
+
+        let previous_ptr = self.error_message.replace(::std::ptr::null_mut());
+        if !previous_ptr.is_null() {
+            // We free the previous closure.
+            let _callback: Box<Option<Box<dyn Fn(&str) + 'a>>> =
+                unsafe { Box::from_raw(previous_ptr as *mut _) };
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
@@ -621,9 +585,9 @@ impl GGeom {
     /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
     /// if this method's performance becomes a bottleneck, feel free to open an issue, we could skip this clone with cleaner code
     pub fn get_coord_seq(&self) -> Result<CoordSeq, Error> {
-        let type_geom = self.geometry_type()?;
+        let type_geom = self.geometry_type();
         match type_geom {
-            GEOSGeomTypes::Point | GEOSGeomTypes::LineString | GEOSGeomTypes::LinearRing => unsafe {
+            GGeomTypes::Point | GGeomTypes::LineString | GGeomTypes::LinearRing => unsafe {
                 let t = GEOSCoordSeq_clone(GEOSGeom_getCoordSeq(self.as_raw()));
                 CoordSeq::new_from_raw(t)
             }
@@ -631,10 +595,10 @@ impl GGeom {
         }
     }
 
-    pub fn geometry_type(&self) -> GeosResult<GEOSGeomTypes> {
+    pub fn geometry_type(&self) -> GGeomTypes {
         let type_geom = unsafe { GEOSGeomTypeId(self.as_raw()) as i32 };
 
-        GEOSGeomTypes::from_i32(type_geom).ok_or(Error::GeosError(format!("impossible to get geometry type (val={})", type_geom)))
+        GGeomTypes::from(type_geom)
     }
 
     pub fn area(&self) -> GeosResult<f64> {
@@ -809,34 +773,34 @@ impl GGeom {
     }
 
     pub fn create_geometrycollection(geoms: Vec<GGeom>) -> GeosResult<GGeom> {
-        create_multi_geom(geoms, GEOSGeomTypes::GeometryCollection)
+        create_multi_geom(geoms, GGeomTypes::GeometryCollection)
     }
 
     pub fn create_multipolygon(polygons: Vec<GGeom>) -> GeosResult<GGeom> {
-        if !check_same_geometry_type(&polygons, GEOSGeomTypes::Polygon) {
+        if !check_same_geometry_type(&polygons, GGeomTypes::Polygon) {
             return Err(
                 Error::ImpossibleOperation(
                     "all the provided geometry have to be of type Polygon".to_string()));
         }
-        create_multi_geom(polygons, GEOSGeomTypes::MultiPolygon)
+        create_multi_geom(polygons, GGeomTypes::MultiPolygon)
     }
 
     pub fn create_multilinestring(linestrings: Vec<GGeom>) -> GeosResult<GGeom> {
-        if !check_same_geometry_type(&linestrings, GEOSGeomTypes::LineString) {
+        if !check_same_geometry_type(&linestrings, GGeomTypes::LineString) {
             return Err(
                 Error::ImpossibleOperation(
                     "all the provided geometry have to be of type LineString".to_string()));
         }
-        create_multi_geom(linestrings, GEOSGeomTypes::MultiLineString)
+        create_multi_geom(linestrings, GGeomTypes::MultiLineString)
     }
 
     pub fn create_multipoint(points: Vec<GGeom>) -> GeosResult<GGeom> {
-        if !check_same_geometry_type(&points, GEOSGeomTypes::Point) {
+        if !check_same_geometry_type(&points, GGeomTypes::Point) {
             return Err(
                 Error::ImpossibleOperation(
                     "all the provided geometry have to be of type Point".to_string()));
         }
-        create_multi_geom(points, GEOSGeomTypes::MultiPoint)
+        create_multi_geom(points, GGeomTypes::MultiPoint)
     }
 
     pub fn create_point(s: CoordSeq) -> GeosResult<GGeom> {
@@ -1001,16 +965,15 @@ fn check_geos_predicate(val: i32, p: PredicateType) -> GeosResult<bool> {
     }
 }
 
-fn check_same_geometry_type(geoms: &[GGeom], geom_type: GEOSGeomTypes) -> bool {
-    geoms.iter()
-        .all(|g| g.geometry_type().map(|t| t == geom_type).unwrap_or(false))
+fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -> bool {
+    geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
-fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GEOSGeomTypes) -> GeosResult<GGeom> {
+fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GGeomTypes) -> GeosResult<GGeom> {
     let nb_geoms = geoms.len();
     let res = unsafe {
         GGeom::new_from_raw(GEOSGeom_createCollection(
-            output_type as c_int,
+            output_type.into(),
             geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
             nb_geoms as c_uint,
         ))

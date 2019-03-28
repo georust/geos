@@ -16,8 +16,6 @@ num = "0.2"
 geo-types = "0.4"
 failure = "0.1"
 failure_derive = "0.1"
-enum-primitive-derive = "0.1"
-num-traits = "0.2"
 wkt = "0.5"
 
 [build-dependencies]
