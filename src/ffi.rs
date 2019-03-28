@@ -493,7 +493,7 @@ impl GContextHandle {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToHEX_buf_r(self.ptr, g.as_raw(), &mut size);
-            if ptr.is_null() || size == 0 {
+            if ptr.is_null() {
                 None
             } else {
                 Some(CVec::new(ptr, size as _))
