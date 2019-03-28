@@ -6,6 +6,7 @@ use std::{self, slice, str, mem};
 use std::ptr::NonNull;
 use error::{Error, Result as GeosResult, PredicateType};
 use enums::*;
+use c_vec::CVec;
 
 #[repr(C)]
 struct GEOSWKTReader { private: [u8; 0] }
@@ -179,11 +180,25 @@ extern "C" {
 #[repr(C)]
 pub struct GContextHandle {
     ptr: GEOSContextHandle_t,
+    // TODO: maybe store the closure directly?
     notice_message: RefCell<*mut c_void>,
+    // TODO: maybe store the closure directly?
     error_message: RefCell<*mut c_void>,
 }
 
 impl GContextHandle {
+    /// Creates a new `GContextHandle`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GContextHandle;
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    /// ```
     pub fn init() -> GeosResult<Self> {
         initialize();
         let ptr = unsafe { GEOS_init_r() };
@@ -198,6 +213,22 @@ impl GContextHandle {
         }
     }
 
+    /// Allows to set a notice message handler.
+    ///
+    /// Passing [`None`] as parameter will unset this callback.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GContextHandle;
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// ```
     pub fn set_notice_message_handler<'a>(&'a self, nf: Option<Box<dyn Fn(&str) + 'a>>) {
         let nf_data: Box<Option<Box<dyn Fn(&str) + 'a>>> = Box::new(nf);
 
@@ -230,6 +261,22 @@ impl GContextHandle {
         }
     }
 
+    /// Allows to set an error message handler.
+    ///
+    /// Passing [`None`] as parameter will unset this callback.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GContextHandle;
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// ```
     pub fn set_error_message_handler<'a>(&'a self, ef: Option<Box<dyn Fn(&str) + 'a>>) {
         let ef_data: Box<Option<Box<dyn Fn(&str) + 'a>>> = Box::new(ef);
 
@@ -262,26 +309,104 @@ impl GContextHandle {
         }
     }
 
+    /// Gets WKB output dimensions.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, Dimensions};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_WKB_output_dimensions(Dimensions::TwoD);
+    /// assert!(context_handle.get_WKB_output_dimensions() == Dimensions::TwoD);
+    /// ```
     #[allow(non_snake_case)]
     pub fn get_WKB_output_dimensions(&self) -> Dimensions {
         Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.ptr) })
     }
 
+    /// Sets WKB output dimensions.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, Dimensions};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_WKB_output_dimensions(Dimensions::TwoD);
+    /// assert!(context_handle.get_WKB_output_dimensions() == Dimensions::TwoD);
+    /// ```
     #[allow(non_snake_case)]
     pub fn set_WKB_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
         Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.ptr, dimensions.into()) })
     }
 
+    /// Gets WKB byte order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, ByteOrder};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_WKB_byte_order(ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_WKB_byte_order() == ByteOrder::LittleEndian);
+    /// ```
     #[allow(non_snake_case)]
     pub fn get_WKB_byte_order(&self) -> ByteOrder {
         ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.ptr) })
     }
 
+    /// Sets WKB byte order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, ByteOrder};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    ///
+    /// context_handle.set_WKB_byte_order(ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_WKB_byte_order() == ByteOrder::LittleEndian);
+    /// ```
     #[allow(non_snake_case)]
     pub fn set_WKB_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
         ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.ptr, byte_order.into()) })
     }
 
+    /// Convert [`GGeom`] from WKB format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, GGeom};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let wkb_buf = context_handle.geom_to_WKB_buf(&point_geom)
+    ///                             .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_WKB_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion to WKB failed");
+    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// ```
     #[allow(non_snake_case)]
     pub fn geom_from_WKB_buf(&self, wkb: &[u8]) -> GeosResult<GGeom> {
         unsafe {
@@ -289,23 +414,55 @@ impl GContextHandle {
         }
     }
 
+    /// Convert [`GGeom`] to WKB format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, GGeom};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let wkb_buf = context_handle.geom_to_WKB_buf(&point_geom)
+    ///                             .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_WKB_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion to WKB failed");
+    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// ```
     #[allow(non_snake_case)]
-    pub fn geom_to_WKB_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
+    pub fn geom_to_WKB_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToWKB_buf_r(self.ptr, g.as_raw(), &mut size);
             if ptr.is_null() || size == 0 {
                 None
             } else {
-                let mut res = Vec::with_capacity(size);
-                for i in 0..size {
-                    res.push(::std::ptr::read(ptr.add(i)));
-                }
-                Some(res)
+                Some(CVec::new(ptr, size as _))
             }
         }
     }
 
+    /// Convert [`GGeom`] from HEX format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, GGeom};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let wkb_buf = context_handle.geom_to_HEX_buf(&point_geom)
+    ///                             .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_HEX_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion to WKB failed");
+    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// ```
     #[allow(non_snake_case)]
     pub fn geom_from_HEX_buf(&self, hex: &[u8]) -> GeosResult<GGeom> {
         unsafe {
@@ -313,19 +470,33 @@ impl GContextHandle {
         }
     }
 
+    /// Convert [`GGeom`] to HEX format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{GContextHandle, GGeom};
+    ///
+    /// let context_handle = match GContextHandle::init() {
+    ///     Ok(context_handle) => context_handle,
+    ///     Err(e) => panic!("An error occurred: {}", e),
+    /// };
+    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let wkb_buf = context_handle.geom_to_HEX_buf(&point_geom)
+    ///                             .expect("conversion to WKB failed");
+    /// let new_geom = context_handle.geom_from_HEX_buf(wkb_buf.as_ref())
+    ///                              .expect("conversion to WKB failed");
+    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// ```
     #[allow(non_snake_case)]
-    pub fn geom_to_HEX_buf(&self, g: &GGeom) -> Option<Vec<u8>> {
+    pub fn geom_to_HEX_buf(&self, g: &GGeom) -> Option<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToHEX_buf_r(self.ptr, g.as_raw(), &mut size);
             if ptr.is_null() || size == 0 {
                 None
             } else {
-                let mut res = Vec::with_capacity(size);
-                for i in 0..size {
-                    res.push(::std::ptr::read(ptr.add(i)));
-                }
-                Some(res)
+                Some(CVec::new(ptr, size as _))
             }
         }
     }

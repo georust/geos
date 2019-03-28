@@ -7,6 +7,7 @@ extern crate num;
 #[macro_use]
 extern crate failure;
 extern crate wkt;
+extern crate c_vec;
 
 mod ffi;
 pub use ffi::{
