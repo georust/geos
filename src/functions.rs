@@ -61,6 +61,13 @@ pub(crate) fn check_geos_predicate(val: i32, p: PredicateType) -> GResult<bool> 
     }
 }
 
+pub(crate) fn check_ret(val: i32, p: PredicateType) -> GResult<()> {
+    match val {
+        1 => Ok(()),
+        _ => Err(Error::GeosFunctionError(p, val)),
+    }
+}
+
 pub(crate) fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -> bool {
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
@@ -82,6 +89,12 @@ pub(crate) fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GGeomTypes) 
     }
 
     Ok(res)
+}
+
+pub fn orientation_index(ax: f64, ay: f64, bx: f64, by: f64, px: f64, py: f64) -> Result<Orientation, &'static str> {
+    unsafe {
+        Orientation::try_from(GEOSOrientationIndex(ax, ay, bx, by, px, py))
+    }
 }
 
 #[cfg(test)]

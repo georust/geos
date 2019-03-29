@@ -7,6 +7,7 @@ use libc::{c_double, c_int, c_uint};
 use std::ffi::CString;
 use std::ptr::NonNull;
 use std::{self, mem, str};
+use c_vec::CVec;
 
 #[repr(C)]
 pub struct GGeom(NonNull<GEOSGeometry>);
@@ -325,5 +326,99 @@ impl GGeom {
     pub fn is_closed(&self) -> GResult<bool> {
         let ret_val = unsafe { GEOSisClosed(self.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::IsSimple)
+    }
+
+    pub fn from_wkb_buf(wkb: &[u8]) -> GResult<GGeom> {
+        unsafe { GGeom::new_from_raw(GEOSGeomFromWKB_buf(wkb.as_ptr(), wkb.len())) }
+    }
+
+    pub fn to_wkb_buf(&self) -> Option<CVec<u8>> {
+        let mut size = 0;
+        unsafe {
+            let ptr = GEOSGeomToWKB_buf(self.as_raw(), &mut size);
+            if ptr.is_null() {
+                None
+            } else {
+                Some(CVec::new(ptr, size as _))
+            }
+        }
+    }
+
+    pub fn length(&self) -> GResult<f64> {
+        let mut length = 0.;
+        unsafe {
+            let ret = GEOSLength(self.as_raw(), &mut length);
+            check_ret(ret, PredicateType::IsSimple).map(|_| length)
+        }
+    }
+
+    pub fn distance(&self, other: &GGeom) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSDistance(self.as_raw(), other.as_raw(), &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn distance_indexed(&self, other: &GGeom) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSDistanceIndexed(self.as_raw(), other.as_raw(), &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn hausdorff_distance(&self, other: &GGeom) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSHausdorffDistance(self.as_raw(), other.as_raw(), &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn hausdorff_distance_densify(&self, other: &GGeom, distance_frac: f64) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSHausdorffDistanceDensify(self.as_raw(), other.as_raw(), distance_frac, &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn frechet_distance(&self, other: &GGeom) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSFrechetDistance(self.as_raw(), other.as_raw(), &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn frechet_distance_densify(&self, other: &GGeom, distance_frac: f64) -> GResult<f64> {
+        let mut distance = 0.;
+        unsafe {
+            let ret = GEOSFrechetDistanceDensify(self.as_raw(), other.as_raw(), distance_frac, &mut distance);
+            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+        }
+    }
+
+    pub fn get_length(&self) -> GResult<f64> {
+        let mut length = 0.;
+        unsafe {
+            let ret = GEOSGeomGetLength(self.as_raw(), &mut length);
+            check_ret(ret, PredicateType::IsSimple).map(|_| length)
+        }
+    }
+
+    pub fn snap(&self, other: &GGeom, tolerance: f64) -> GResult<GGeom> {
+        unsafe { GGeom::new_from_raw(GEOSSnap(self.as_raw(), other.as_raw(), tolerance)) }
+    }
+
+    pub fn extract_unique_points(&self) -> GResult<GGeom> {
+        unsafe { GGeom::new_from_raw(GEOSGeom_extractUniquePoints(self.as_raw())) }
+    }
+
+    pub fn nearest_points(&self, other: &GGeom) -> GResult<CoordSeq> {
+        unsafe {
+            CoordSeq::new_from_raw(GEOSNearestPoints(self.as_raw(), other.as_raw()))
+        }
     }
 }

@@ -1,5 +1,12 @@
 use libc::c_int;
 
+// use std::convert::TryFrom;
+// TODO: remove this implementation when 1.34 is released.
+pub trait TryFrom<T>: Sized {
+    type Error;
+    fn try_from(value: T) -> Result<Self, Self::Error>;
+}
+
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Dimensions {
     TwoD,
@@ -95,6 +102,50 @@ impl Into<c_int> for GGeomTypes {
             GGeomTypes::MultiPolygon => 6,
             GGeomTypes::GeometryCollection => 7,
             GGeomTypes::__Unknonwn(x) => x as _,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Orientation {
+    /// If reaching P takes a counter-clockwise (left) turn.
+    CounterClockwise,
+    /// If reaching P takes a clockwise (right) turn
+    Clockwise,
+    /// if P is collinear with A-B.
+    Colinear,
+}
+
+impl From<c_int> for Orientation {
+    fn from(orientation: c_int) -> Self {
+        match orientation {
+            -1 => Orientation::CounterClockwise,
+             0 => Orientation::Clockwise,
+             1 => Orientation::Colinear,
+             _ => panic!("invalid value for Orientation!"),
+        }
+    }
+}
+
+impl TryFrom<c_int> for Orientation {
+    type Error = &'static str;
+
+    fn try_from(orientation: c_int) -> Result<Self, Self::Error> {
+        match orientation {
+            -1 => Ok(Orientation::CounterClockwise),
+             0 => Ok(Orientation::Clockwise),
+             1 => Ok(Orientation::Colinear),
+             _ => Err("value must be -1, 0 or 1"),
+        }
+    }
+}
+
+impl Into<c_int> for Orientation {
+    fn into(self) -> c_int {
+        match self {
+            Orientation::CounterClockwise => -1,
+            Orientation::Clockwise => 0,
+            Orientation::Colinear => 1,
         }
     }
 }

@@ -12,8 +12,11 @@ pub(crate) mod functions;
 
 pub use context_handle::GContextHandle;
 pub use coord_seq::CoordSeq;
-pub use enums::{ByteOrder, Dimensions, GGeomTypes};
-pub use functions::version;
+pub use enums::{ByteOrder, Dimensions, GGeomTypes, Orientation};
+pub use functions::{
+    orientation_index,
+    version,
+};
 pub use geom::GGeom;
 pub use prepared_geom::PreparedGGeom;
 mod context_handle;
