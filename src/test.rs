@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test {
-    use ffi::{GEOSGeomTypes, GGeom, PreparedGGeom};
+    use enums::GGeomTypes;
+    use ffi::{GGeom, PreparedGGeom};
 
     #[test]
     fn test_relationship() {
@@ -39,11 +40,11 @@ mod test {
         assert_almost_eq(g1.area().unwrap(), g2.area().unwrap());
         assert_almost_eq(g2.area().unwrap(), g3.area().unwrap());
         let g4 = g3.get_centroid().unwrap();
-        assert_eq!(GEOSGeomTypes::Point, g4.geometry_type().unwrap());
+        assert_eq!(GGeomTypes::Point, g4.geometry_type());
         let g5 = g4.buffer(200.0, 12).unwrap();
 
         assert!(g5.area().unwrap() > g4.area().unwrap());
-        assert_eq!(GEOSGeomTypes::Polygon, g5.geometry_type().unwrap());
+        assert_eq!(GGeomTypes::Polygon, g5.geometry_type());
     }
 
     #[test]
