@@ -1,7 +1,5 @@
 extern crate geos;
-extern crate failure;
-use geos::{version, GGeom, PreparedGGeom};
-use failure::Error;
+use geos::{version, Error, GGeom, PreparedGGeom};
 
 fn fun() -> Result<(), Error> {
     println!("geos_c version: {}", version());

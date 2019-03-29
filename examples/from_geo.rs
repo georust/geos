@@ -1,12 +1,11 @@
 extern crate geos;
 extern crate geo_types;
-extern crate failure;
 
-use failure::Error;
-fn fun() -> Result<(), Error> {
-use geos::GGeom;
+use geos::{Error, GGeom};
 use geo_types::{LineString, Polygon, Coordinate};
 use geos::from_geo::TryInto;
+
+fn fun() -> Result<(), Error> {
     let exterior = LineString(vec![
         Coordinate::from((0., 0.)),
         Coordinate::from((0., 1.)),

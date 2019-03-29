@@ -1,25 +1,32 @@
 use std::{self, fmt};
 
-#[derive(Fail, Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 pub enum Error {
-    #[fail(display = "Invalid geometry, {}", _0)]
     InvalidGeometry(String),
-    #[fail(display = "Impossible operation, {}", _0)]
     ImpossibleOperation(String),
-    #[fail(display = "error while calling libgeos while {}", _0)]
     GeosError(String),
-    #[fail(
-        display = "error while calling libgeos method {} (error number = {})",
-        _0,
-        _1
-    )]
     GeosFunctionError(PredicateType, i32),
-    #[fail(display = "impossible to build a geometry from a nullptr")]
     NoConstructionFromNullPtr,
-    #[fail(display = "impossible to convert geometry, {}", _0)]
     ConversionError(String),
-    #[fail(display = "generic error: {}", _0)]
     GenericError(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::InvalidGeometry(ref s) => write!(f, "Invalid geometry, {}", s),
+            Error::ImpossibleOperation(ref s) => write!(f, "Impossible operation, {}", s),
+            Error::GeosError(ref s) => write!(f, "error while calling libgeos while {}", s),
+            Error::GeosFunctionError(p, e) => {
+                write!(f, "error while calling libgeos method {} (error number = {})", p, e)
+            }
+            Error::NoConstructionFromNullPtr => {
+                write!(f, "impossible to build a geometry from a nullptr")
+            }
+            Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {}", s),
+            Error::GenericError(ref s) => write!(f, "generic error: {}", s),
+        }
+    }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

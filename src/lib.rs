@@ -4,8 +4,6 @@
 extern crate geo_types;
 extern crate libc;
 extern crate num;
-#[macro_use]
-extern crate failure;
 extern crate wkt;
 extern crate c_vec;
 
