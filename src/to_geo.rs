@@ -1,5 +1,5 @@
+use crate::GGeom;
 use error::Error;
-use ffi::GGeom;
 use from_geo::TryInto;
 use geo_types::Geometry;
 use wkt;
@@ -29,9 +29,9 @@ impl<'a> TryInto<Geometry<f64>> for GGeom {
 
 #[cfg(test)]
 mod test {
-    use ffi::GGeom;
+    use super::GGeom;
     use from_geo::TryInto;
-    use geo_types::{Geometry, LineString, MultiPolygon, Coordinate, Polygon};
+    use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()

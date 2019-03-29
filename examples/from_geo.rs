@@ -1,9 +1,9 @@
-extern crate geos;
 extern crate geo_types;
+extern crate geos;
 
-use geos::{Error, GGeom};
-use geo_types::{LineString, Polygon, Coordinate};
+use geo_types::{Coordinate, LineString, Polygon};
 use geos::from_geo::TryInto;
+use geos::{Error, GGeom};
 
 fn fun() -> Result<(), Error> {
     let exterior = LineString(vec![
@@ -13,15 +13,13 @@ fn fun() -> Result<(), Error> {
         Coordinate::from((1., 0.)),
         Coordinate::from((0., 0.)),
     ]);
-    let interiors = vec![
-        LineString(vec![
-            Coordinate::from((0.1, 0.1)),
-            Coordinate::from((0.1, 0.9)),
-            Coordinate::from((0.9, 0.9)),
-            Coordinate::from((0.9, 0.1)),
-            Coordinate::from((0.1, 0.1)),
-        ]),
-    ];
+    let interiors = vec![LineString(vec![
+        Coordinate::from((0.1, 0.1)),
+        Coordinate::from((0.1, 0.9)),
+        Coordinate::from((0.9, 0.9)),
+        Coordinate::from((0.9, 0.1)),
+        Coordinate::from((0.1, 0.1)),
+    ])];
     let p = Polygon::new(exterior.clone(), interiors.clone());
 
     assert_eq!(p.exterior(), &exterior);

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test {
+    use crate::{GGeom, PreparedGGeom};
     use enums::GGeomTypes;
-    use ffi::{GGeom, PreparedGGeom};
 
     #[test]
     fn test_relationship() {

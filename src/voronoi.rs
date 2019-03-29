@@ -1,5 +1,5 @@
+use crate::GGeom;
 use error::Error;
-use ffi::GGeom;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 
@@ -26,7 +26,7 @@ pub fn compute_voronoi(points: &[Point<f64>], tolerance: f64) -> Result<Vec<Poly
 
 #[cfg(test)]
 mod test {
-    use ffi::GGeom;
+    use super::GGeom;
     use geo_types::{Coordinate, LineString, Point, Polygon};
     /// create a voronoi diagram. Same unit test as https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
