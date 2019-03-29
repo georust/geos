@@ -1,6 +1,6 @@
-use geo_types::{LineString, MultiPolygon, Polygon, Point, Coordinate};
-use ffi::{CoordSeq, GGeom};
+use crate::{CoordSeq, GGeom};
 use error::Error;
+use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
 use std;
 
 // define our own TryInto while the std trait is not stable
@@ -9,12 +9,14 @@ pub trait TryInto<T> {
     fn try_into(self) -> Result<T, Self::Err>;
 }
 
-fn create_coord_seq_from_vec<'a>(coords: &'a[Coordinate<f64>]) -> Result<CoordSeq, Error> {
+fn create_coord_seq_from_vec<'a>(coords: &'a [Coordinate<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
 fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
-where It: Iterator<Item = &'a Coordinate<f64>> {
+where
+    It: Iterator<Item = &'a Coordinate<f64>>,
+{
     let mut coord_seq = CoordSeq::new(len as u32, 2);
     for (i, p) in points.enumerate() {
         let j = i as u32;
@@ -70,15 +72,21 @@ impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
         let points = &(self.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
-            return Err(Error::InvalidGeometry("impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".into()));
+            return Err(Error::InvalidGeometry(
+                "impossible to create a LinearRing, A LinearRing must have at least 3 coordinates"
+                    .into(),
+            ));
         }
 
         // if the geom is not closed we close it
         let is_closed = nb_points > 0 && points.first() == points.last();
         // Note: we also need to close a 2 points closed linearring, cf test closed_2_points_linear_ring
-        let need_closing = nb_points > 0 && (! is_closed || nb_points == 3);
+        let need_closing = nb_points > 0 && (!is_closed || nb_points == 3);
         let coord_seq = if need_closing {
-            create_coord_seq(points.iter().chain(std::iter::once(&points[0])), nb_points + 1)?
+            create_coord_seq(
+                points.iter().chain(std::iter::once(&points[0])),
+                nb_points + 1,
+            )?
         } else {
             create_coord_seq(points.iter(), nb_points)?
         };
@@ -92,7 +100,8 @@ impl<'a> TryInto<GGeom> for &'a Polygon<f64> {
     fn try_into(self) -> Result<GGeom, Self::Err> {
         let geom_exterior: GGeom = LineRing(self.exterior()).try_into()?;
 
-        let interiors: Vec<_> = self.interiors()
+        let interiors: Vec<_> = self
+            .interiors()
             .iter()
             .map(|i| LineRing(i).try_into())
             .collect::<Result<Vec<_>, _>>()?;
@@ -105,7 +114,8 @@ impl<'a> TryInto<GGeom> for &'a MultiPolygon<f64> {
     type Err = Error;
 
     fn try_into(self) -> Result<GGeom, Self::Err> {
-        let polygons: Vec<_> = self.0
+        let polygons: Vec<_> = self
+            .0
             .iter()
             .map(|p| p.try_into())
             .collect::<Result<Vec<_>, _>>()?;
@@ -114,14 +124,12 @@ impl<'a> TryInto<GGeom> for &'a MultiPolygon<f64> {
     }
 }
 
-
-
 #[cfg(test)]
 mod test {
-    use geo_types::{LineString, MultiPolygon, Polygon, Coordinate};
-    use ffi::GGeom;
-    use from_geo::TryInto;
+    use super::GGeom;
     use super::LineRing;
+    use from_geo::TryInto;
+    use geo_types::{Coordinate, LineString, MultiPolygon, Polygon};
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()
@@ -136,15 +144,13 @@ mod test {
             (1., 0.),
             (0., 0.),
         ]));
-        let interiors = vec![
-            LineString(coords(vec![
-                (0.1, 0.1),
-                (0.1, 0.9),
-                (0.9, 0.9),
-                (0.9, 0.1),
-                (0.1, 0.1),
-            ])),
-        ];
+        let interiors = vec![LineString(coords(vec![
+            (0.1, 0.1),
+            (0.1, 0.9),
+            (0.9, 0.9),
+            (0.9, 0.1),
+            (0.1, 0.1),
+        ]))];
         let p = Polygon::new(exterior.clone(), interiors.clone());
 
         assert_eq!(p.exterior(), &exterior);
@@ -168,15 +174,13 @@ mod test {
             (1., 0.),
             (0., 0.),
         ]));
-        let interiors = vec![
-            LineString(coords(vec![
-                (0.1, 0.1),
-                (0.1, 0.9),
-                (0.9, 0.9),
-                (0.9, 0.1),
-                (0.1, 0.1),
-            ])),
-        ];
+        let interiors = vec![LineString(coords(vec![
+            (0.1, 0.1),
+            (0.1, 0.9),
+            (0.9, 0.9),
+            (0.9, 0.1),
+            (0.1, 0.1),
+        ]))];
         let p = Polygon::new(exterior, interiors);
         let mp = MultiPolygon(vec![p.clone()]);
 
@@ -188,9 +192,7 @@ mod test {
 
     #[test]
     fn incorrect_multipolygon_test() {
-        let exterior = LineString(coords(vec![
-            (0., 0.)
-        ]));
+        let exterior = LineString(coords(vec![(0., 0.)]));
         let interiors = vec![];
         let p = Polygon::new(exterior, interiors);
         let mp = MultiPolygon(vec![p.clone()]);
@@ -210,15 +212,13 @@ mod test {
             (2., 0.),
             (0., 0.),
         ]));
-        let interiors = vec![
-            LineString(coords(vec![
+        let interiors = vec![LineString(coords(vec![
             (0., 0.),
             (0., 1.),
             (1., 1.),
             (1., 0.),
             (0., 10.),
-            ])),
-        ];
+        ]))];
         let p = Polygon::new(exterior, interiors);
         let mp = MultiPolygon(vec![p]);
 
@@ -239,9 +239,7 @@ mod test {
     /// a linear ring should have at least 3 elements
     #[test]
     fn one_elt_linear_ring() {
-        let ls = LineString(coords(vec![
-            (0., 0.),
-        ]));
+        let ls = LineString(coords(vec![(0., 0.)]));
         let geom: Result<GGeom, _> = LineRing(&ls).try_into();
         let error = geom.err().unwrap();
         assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
@@ -250,10 +248,7 @@ mod test {
     /// a linear ring should have at least 3 elements
     #[test]
     fn two_elt_linear_ring() {
-        let ls = LineString(coords(vec![
-            (0., 0.),
-            (0., 1.),
-        ]));
+        let ls = LineString(coords(vec![(0., 0.), (0., 1.)]));
         let geom: Result<GGeom, _> = LineRing(&ls).try_into();
         let error = geom.err().unwrap();
         assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
@@ -262,11 +257,7 @@ mod test {
     /// an unclosed linearring is valid since we close it before giving it to geos
     #[test]
     fn unclosed_linear_ring() {
-        let ls = LineString(coords(vec![
-            (0., 0.),
-            (0., 1.),
-            (1., 2.),
-         ]));
+        let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.)]));
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
@@ -288,11 +279,7 @@ mod test {
     /// shapely (the python geos wrapper) considers that too
     #[test]
     fn closed_2_points_linear_ring() {
-        let ls = LineString(coords(vec![
-            (0., 0.),
-            (0., 1.),
-            (0., 0.),
-         ]));
+        let ls = LineString(coords(vec![(0., 0.), (0., 1.), (0., 0.)]));
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
@@ -303,12 +290,7 @@ mod test {
     /// a linear ring can be empty
     #[test]
     fn good_linear_ring() {
-        let ls = LineString(coords(vec![
-            (0., 0.),
-            (0., 1.),
-            (1., 2.),
-            (0., 0.),
-         ]));
+        let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.), (0., 0.)]));
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());

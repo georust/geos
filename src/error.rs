@@ -17,9 +17,11 @@ impl fmt::Display for Error {
             Error::InvalidGeometry(ref s) => write!(f, "Invalid geometry, {}", s),
             Error::ImpossibleOperation(ref s) => write!(f, "Impossible operation, {}", s),
             Error::GeosError(ref s) => write!(f, "error while calling libgeos while {}", s),
-            Error::GeosFunctionError(p, e) => {
-                write!(f, "error while calling libgeos method {} (error number = {})", p, e)
-            }
+            Error::GeosFunctionError(p, e) => write!(
+                f,
+                "error while calling libgeos method {} (error number = {})",
+                p, e
+            ),
             Error::NoConstructionFromNullPtr => {
                 write!(f, "impossible to build a geometry from a nullptr")
             }
@@ -29,7 +31,7 @@ impl fmt::Display for Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type GResult<T> = std::result::Result<T, Error>;
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum PredicateType {
