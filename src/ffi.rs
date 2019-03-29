@@ -74,9 +74,7 @@ extern "C" {
     fn GEOSisEmpty(g: *const GEOSGeometry) -> c_int;
     fn GEOSisSimple(g: *const GEOSGeometry) -> c_int;
     fn GEOSisRing(g: *const GEOSGeometry) -> c_int;
-    #[allow(dead_code)]
     fn GEOSHasZ(g: *const GEOSGeometry) -> c_int;
-    #[allow(dead_code)]
     fn GEOSisClosed(g: *const GEOSGeometry) -> c_int;
     fn GEOSisValid(g: *const GEOSGeometry) -> c_int;
 
@@ -103,9 +101,8 @@ extern "C" {
 
     fn GEOSBuffer(g: *const GEOSGeometry, width: c_double, quadsegs: c_int) -> *mut GEOSGeometry;
     fn GEOSEnvelope(g: *const GEOSGeometry) -> *mut GEOSGeometry;
-    #[allow(dead_code)]
+    fn GEOSIntersection(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSConvexHull(g: *const GEOSGeometry) -> *mut GEOSGeometry;
-    #[allow(dead_code)]
     fn GEOSBoundary(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSGetCentroid(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     fn GEOSSymDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
@@ -653,9 +650,38 @@ impl GGeom {
             Self::new_from_raw(raw_voronoi)
         }
     }
+
     pub fn normalize(&mut self) -> GeosResult<bool> {
         let ret_val = unsafe { GEOSNormalize(self.0.as_ptr()) };
         check_geos_predicate(ret_val, PredicateType::Normalize)
+    }
+
+    pub fn intersection(&self, other: &GGeom) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSIntersection(self.as_raw(), other.as_raw()))
+        }
+    }
+
+    pub fn convex_hull(&self) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSConvexHull(self.as_raw()))
+        }
+    }
+
+    pub fn boundary(&self) -> GeosResult<GGeom> {
+        unsafe {
+            GGeom::new_from_raw(GEOSBoundary(self.as_raw()))
+        }
+    }
+
+    pub fn has_z(&self) -> GeosResult<bool> {
+        let ret_val = unsafe { GEOSHasZ(self.as_raw()) };
+        check_geos_predicate(ret_val, PredicateType::IsSimple)
+    }
+
+    pub fn is_closed(&self) -> GeosResult<bool> {
+        let ret_val = unsafe { GEOSisClosed(self.as_raw()) };
+        check_geos_predicate(ret_val, PredicateType::IsSimple)
     }
 }
 
