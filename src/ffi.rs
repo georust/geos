@@ -86,12 +86,12 @@ extern "C" {
     ) -> *mut GEOSGeometry;
 
     // Functions acting on GEOSGeometry:
-    pub fn GEOSisEmpty(g: *const GEOSGeometry) -> c_int;
-    pub fn GEOSisSimple(g: *const GEOSGeometry) -> c_int;
-    pub fn GEOSisRing(g: *const GEOSGeometry) -> c_int;
-    pub fn GEOSHasZ(g: *const GEOSGeometry) -> c_int;
-    pub fn GEOSisClosed(g: *const GEOSGeometry) -> c_int;
-    pub fn GEOSisValid(g: *const GEOSGeometry) -> c_int;
+    pub fn GEOSisEmpty(g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisSimple(g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisRing(g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSHasZ(g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisClosed(g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisValid(g: *const GEOSGeometry) -> c_char;
 
     pub fn GEOSGeomToWKT(g: *const GEOSGeometry) -> *mut c_char;
     pub fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut GEOSGeometry;
@@ -106,22 +106,25 @@ extern "C" {
     pub fn GEOSFrechetDistance(g1: *const GEOSGeometry, g2: *const GEOSGeometry, distance: *mut c_double) -> c_int;
     pub fn GEOSFrechetDistanceDensify(g1: *const GEOSGeometry, g2: *const GEOSGeometry, density_frace: c_double, distance: *mut c_double) -> c_int;
     pub fn GEOSGeomGetLength(g: *const GEOSGeometry, length: *mut c_double) -> c_int;
-    pub fn GEOSNearestPoints(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSCoordSequence;
-    pub fn GEOSDisjoint(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSTouches(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSIntersects(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSCrosses(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSWithin(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSContains(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSOverlaps(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSEquals(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
+    pub fn GEOSNearestPoints(
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSCoordSequence;
+    pub fn GEOSDisjoint(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSTouches(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSIntersects(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSCrosses(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSWithin(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSContains(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSOverlaps(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSEquals(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
     pub fn GEOSEqualsExact(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
         tolerance: c_double,
-    ) -> c_int;
-    pub fn GEOSCovers(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
-    pub fn GEOSCoveredBy(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
+    ) -> c_char;
+    pub fn GEOSCovers(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSCoveredBy(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_char;
 
     pub fn GEOSBuffer(
         g: *const GEOSGeometry,
@@ -133,8 +136,10 @@ extern "C" {
     pub fn GEOSConvexHull(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSBoundary(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSGetCentroid(g: *const GEOSGeometry) -> *mut GEOSGeometry;
-    pub fn GEOSSymDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry)
-        -> *mut GEOSGeometry;
+    pub fn GEOSSymDifference(
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
     pub fn GEOSDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSUnion(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSUnaryUnion(g: *const GEOSGeometry) -> *mut GEOSGeometry;
@@ -220,6 +225,198 @@ extern "C" {
         g: *const GEOSGeometry,
         size: *mut size_t,
     ) -> *mut c_uchar;
+    pub fn GEOSisValid_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSGeomTypeId_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_int;
+    pub fn GEOSArea_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry, area: *mut c_double) -> c_int;
+    pub fn GEOSGeomToWKT_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> *mut c_char;
+    pub fn GEOSisEmpty_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisSimple_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisRing_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSHasZ_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSisClosed_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_char;
+    pub fn GEOSIntersects_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSDisjoint_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSTouches_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSCrosses_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSWithin_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSContains_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSOverlaps_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSEquals_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSEqualsExact_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        tolerance: c_double,
+    ) -> c_char;
+    pub fn GEOSCovers_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSCoveredBy_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_char;
+    pub fn GEOSDifference_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSEnvelope_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGetCentroid_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSUnion_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSSymDifference_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_createPoint_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_createLineString_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_createLinearRing_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSUnaryUnion_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSVoronoiDiagram_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+        env: *const GEOSGeometry,
+        tolerance: c_double,
+        onlyEdges: c_int,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSNormalize_r(
+        handle: GEOSContextHandle_t,
+        g: *mut GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSIntersection_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSConvexHull_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSBoundary_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+
+    pub fn GEOSLength_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSDistance_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSDistanceIndexed_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSHausdorffDistance_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSHausdorffDistanceDensify_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        density_frac: c_double,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSFrechetDistance_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSFrechetDistanceDensify_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        density_frace: c_double,
+        distance: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSGeomGetLength_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+        length: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSSnap_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+        tolerance: c_double,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_extractUniquePoints_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSNearestPoints_r(
+        handle: GEOSContextHandle_t,
+        g1: *const GEOSGeometry,
+        g2: *const GEOSGeometry,
+    ) -> *mut GEOSCoordSequence;
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }

@@ -1,4 +1,4 @@
-use coord_seq::CoordSeq;
+use crate::{CoordSeq, GContextHandle};
 use enums::*;
 use error::{Error, GResult, PredicateType};
 use ffi::*;
@@ -10,17 +10,24 @@ use std::{self, mem, str};
 use c_vec::CVec;
 
 #[repr(C)]
-pub struct GGeom(NonNull<GEOSGeometry>);
+pub struct GGeom {
+    ptr: NonNull<GEOSGeometry>,
+    context: Option<GContextHandle>,
+}
 
 impl Drop for GGeom {
     fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy(self.0.as_mut()) }
+        unsafe { GEOSGeom_destroy(self.ptr.as_mut()) }
     }
 }
 
 impl Clone for GGeom {
+    /// Doesn't clone the context handle contained in the original geometry.
     fn clone(&self) -> GGeom {
-        GGeom(NonNull::new(unsafe { GEOSGeom_clone(self.0.as_ref()) }).unwrap())
+        GGeom {
+            ptr: NonNull::new(unsafe { GEOSGeom_clone(self.ptr.as_ref()) }).unwrap(),
+            context: None,
+        }
     }
 }
 
@@ -39,19 +46,56 @@ impl GGeom {
         }
     }
 
+    /// Set the context handle to the geometry. It is best doing it this way.
+    ///
+    /// Therefore, instead of calling `handle.method(geom)`, you'll do:
+    ///
+    /// ```
+    /// use geos::{GContextHandle, GGeom};
+    ///
+    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// point_geom.to_wkb_buf(); // we don't care about the result
+    ///
+    /// // Which is the same as doing (but better):
+    /// if let Some(handle) = point_geom.set_handle(None) {
+    ///     handle.geom_to_wkb_buf(&point_geom);
+    /// }
+    /// ```
+    pub fn set_context_handle(
+        &mut self,
+        context: Option<GContextHandle>,
+    ) -> Option<GContextHandle> {
+        match context {
+            Some(c) => self.context.replace(c),
+            None => self.context.take(),
+        }
+    }
+
+    pub fn get_context_handle(&self) -> &Option<GContextHandle> {
+        &self.context
+    }
+
     pub(crate) unsafe fn new_from_raw(g: *mut GEOSGeometry) -> GResult<GGeom> {
         NonNull::new(g)
             .ok_or(Error::NoConstructionFromNullPtr)
-            .map(GGeom)
+            .map(|p| GGeom { ptr: p, context: None })
     }
 
     pub(crate) fn as_raw(&self) -> &GEOSGeometry {
-        unsafe { self.0.as_ref() }
+        unsafe { self.ptr.as_ref() }
+    }
+
+    pub(crate) fn as_raw_mut(&mut self) -> &mut GEOSGeometry {
+        unsafe { self.ptr.as_mut() }
     }
 
     pub fn is_valid(&self) -> bool {
-        let rv = unsafe { GEOSisValid(self.as_raw()) };
-        return if rv == 1 { true } else { false };
+        if let Some(ref context) = self.context {
+            return context.geom_is_valid(self);
+        }
+        unsafe { GEOSisValid(self.as_raw()) == 1 }
     }
 
     /// get the underlying geos CoordSeq object from the geometry
@@ -74,16 +118,21 @@ impl GGeom {
     }
 
     pub fn geometry_type(&self) -> GGeomTypes {
+        if let Some(ref context) = self.context {
+            return context.geometry_type(self);
+        }
         let type_geom = unsafe { GEOSGeomTypeId(self.as_raw()) as i32 };
 
         GGeomTypes::from(type_geom)
     }
 
     pub fn area(&self) -> GResult<f64> {
-        let mut n = 0.0 as c_double;
-        let ret_val = unsafe { GEOSArea(self.as_raw(), &mut n) };
+        if let Some(ref context) = self.context {
+            return context.geom_area(self);
+        }
+        let mut n = 0.;
 
-        if ret_val == 0 {
+        if unsafe { GEOSArea(self.as_raw(), &mut n) } != 0 {
             Err(Error::GeosError("computing the area".into()))
         } else {
             Ok(n as f64)
@@ -91,6 +140,9 @@ impl GGeom {
     }
 
     pub fn to_wkt(&self) -> String {
+        if let Some(ref context) = self.context {
+            return context.geom_to_wkt(self);
+        }
         unsafe { managed_string(GEOSGeomToWKT(self.as_raw())) }
     }
 
@@ -112,63 +164,99 @@ impl GGeom {
     }
 
     pub fn is_ring(&self) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_is_ring(self);
+        }
         let rv = unsafe { GEOSisRing(self.as_raw()) };
-        check_geos_predicate(rv, PredicateType::IsRing)
+        check_geos_predicate(rv as _, PredicateType::IsRing)
     }
 
     pub fn intersects(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_intersects(self, g2);
+        }
         let ret_val = unsafe { GEOSIntersects(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Intersects)
+        check_geos_predicate(ret_val as _, PredicateType::Intersects)
     }
 
     pub fn crosses(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_crosses(self, g2);
+        }
         let ret_val = unsafe { GEOSCrosses(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Crosses)
+        check_geos_predicate(ret_val as _, PredicateType::Crosses)
     }
 
     pub fn disjoint(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_disjoint(self, g2);
+        }
         let ret_val = unsafe { GEOSDisjoint(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Disjoint)
+        check_geos_predicate(ret_val as _, PredicateType::Disjoint)
     }
 
     pub fn touches(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_touches(self, g2);
+        }
         let ret_val = unsafe { GEOSTouches(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Touches)
+        check_geos_predicate(ret_val as _, PredicateType::Touches)
     }
 
     pub fn overlaps(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_overlaps(self, g2);
+        }
         let ret_val = unsafe { GEOSOverlaps(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Overlaps)
+        check_geos_predicate(ret_val as _, PredicateType::Overlaps)
     }
 
     pub fn within(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_within(self, g2);
+        }
         let ret_val = unsafe { GEOSWithin(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Within)
+        check_geos_predicate(ret_val as _, PredicateType::Within)
     }
 
     pub fn equals(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_equals(self, g2);
+        }
         let ret_val = unsafe { GEOSEquals(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Equals)
+        check_geos_predicate(ret_val as _, PredicateType::Equals)
     }
 
     pub fn equals_exact(&self, g2: &GGeom, precision: f64) -> GResult<bool> {
-        let ret_val = unsafe { GEOSEqualsExact(self.as_raw(), g2.as_raw(), precision as c_double) };
-        check_geos_predicate(ret_val, PredicateType::EqualsExact)
+        if let Some(ref context) = self.context {
+            return context.geom_equals_exact(self, g2, precision);
+        }
+        let ret_val = unsafe { GEOSEqualsExact(self.as_raw(), g2.as_raw(), precision) };
+        check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
     pub fn covers(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_covers(self, g2);
+        }
         let ret_val = unsafe { GEOSCovers(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Covers)
+        check_geos_predicate(ret_val as _, PredicateType::Covers)
     }
 
     pub fn covered_by(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_covered_by(self, g2);
+        }
         let ret_val = unsafe { GEOSCoveredBy(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::CoveredBy)
+        check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
     pub fn contains(&self, g2: &GGeom) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_contains(self, g2);
+        }
         let ret_val = unsafe { GEOSContains(self.as_raw(), g2.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::Contains)
+        check_geos_predicate(ret_val as _, PredicateType::Contains)
     }
 
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GResult<GGeom> {
@@ -183,32 +271,53 @@ impl GGeom {
     }
 
     pub fn is_empty(&self) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_is_empty(self);
+        }
         let ret_val = unsafe { GEOSisEmpty(self.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::IsEmpty)
+        check_geos_predicate(ret_val as _, PredicateType::IsEmpty)
     }
 
     pub fn is_simple(&self) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_is_simple(self);
+        }
         let ret_val = unsafe { GEOSisSimple(self.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::IsSimple)
+        check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
     pub fn difference(&self, g2: &GGeom) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_difference(self, g2);
+        }
         unsafe { GGeom::new_from_raw(GEOSDifference(self.as_raw(), g2.as_raw())) }
     }
 
     pub fn envelope(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_envelope(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSEnvelope(self.as_raw())) }
     }
 
     pub fn sym_difference(&self, g2: &GGeom) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_sym_difference(self, g2);
+        }
         unsafe { GGeom::new_from_raw(GEOSSymDifference(self.as_raw(), g2.as_raw())) }
     }
 
     pub fn union(&self, g2: &GGeom) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_union(self, g2);
+        }
         unsafe { GGeom::new_from_raw(GEOSUnion(self.as_raw(), g2.as_raw())) }
     }
 
     pub fn get_centroid(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_get_centroid(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSGetCentroid(self.as_raw())) }
     }
 
@@ -216,7 +325,7 @@ impl GGeom {
         let nb_interiors = interiors.len();
         let res = unsafe {
             GGeom::new_from_raw(GEOSGeom_createPolygon(
-                exterior.0.as_mut(),
+                exterior.ptr.as_mut(),
                 interiors.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as c_uint,
             ))
@@ -280,6 +389,9 @@ impl GGeom {
     }
 
     pub fn unary_union(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_unary_union(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSUnaryUnion(self.as_raw())) }
     }
 
@@ -289,13 +401,16 @@ impl GGeom {
         tolerance: f64,
         only_edges: bool,
     ) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_voronoi(self, envelope, tolerance, only_edges);
+        }
         unsafe {
             let raw_voronoi = GEOSVoronoiDiagram(
                 self.as_raw(),
                 envelope
-                    .map(|e| e.0.as_ptr() as *const GEOSGeometry)
+                    .map(|e| e.ptr.as_ptr() as *const GEOSGeometry)
                     .unwrap_or(std::ptr::null()),
-                tolerance as c_double,
+                tolerance,
                 only_edges as c_int,
             );
             Self::new_from_raw(raw_voronoi)
@@ -303,30 +418,52 @@ impl GGeom {
     }
 
     pub fn normalize(&mut self) -> GResult<bool> {
-        let ret_val = unsafe { GEOSNormalize(self.0.as_ptr()) };
-        check_geos_predicate(ret_val, PredicateType::Normalize)
+        if self.context.is_some() {
+            let context = self.context.take().unwrap();
+            let ret = context.geom_normalize(self);
+            self.context = Some(context);
+            ret
+        } else {
+            let ret_val = unsafe { GEOSNormalize(self.as_raw_mut()) };
+            check_geos_predicate(ret_val, PredicateType::Normalize)
+        }
     }
 
     pub fn intersection(&self, other: &GGeom) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_intersection(self, other);
+        }
         unsafe { GGeom::new_from_raw(GEOSIntersection(self.as_raw(), other.as_raw())) }
     }
 
     pub fn convex_hull(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_convex_hull(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSConvexHull(self.as_raw())) }
     }
 
     pub fn boundary(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_boundary(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSBoundary(self.as_raw())) }
     }
 
     pub fn has_z(&self) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_has_z(self);
+        }
         let ret_val = unsafe { GEOSHasZ(self.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::IsSimple)
+        check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
     pub fn is_closed(&self) -> GResult<bool> {
+        if let Some(ref context) = self.context {
+            return context.geom_is_closed(self);
+        }
         let ret_val = unsafe { GEOSisClosed(self.as_raw()) };
-        check_geos_predicate(ret_val, PredicateType::IsSimple)
+        check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
     pub fn from_wkb_buf(wkb: &[u8]) -> GResult<GGeom> {
@@ -334,6 +471,9 @@ impl GGeom {
     }
 
     pub fn to_wkb_buf(&self) -> Option<CVec<u8>> {
+        if let Some(ref context) = self.context {
+            return context.geom_to_wkb_buf(self);
+        }
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToWKB_buf(self.as_raw(), &mut size);
@@ -346,6 +486,9 @@ impl GGeom {
     }
 
     pub fn length(&self) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_length(self);
+        }
         let mut length = 0.;
         unsafe {
             let ret = GEOSLength(self.as_raw(), &mut length);
@@ -354,6 +497,9 @@ impl GGeom {
     }
 
     pub fn distance(&self, other: &GGeom) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_distance(self, other);
+        }
         let mut distance = 0.;
         unsafe {
             let ret = GEOSDistance(self.as_raw(), other.as_raw(), &mut distance);
@@ -362,6 +508,9 @@ impl GGeom {
     }
 
     pub fn distance_indexed(&self, other: &GGeom) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_distance_indexed(self, other);
+        }
         let mut distance = 0.;
         unsafe {
             let ret = GEOSDistanceIndexed(self.as_raw(), other.as_raw(), &mut distance);
@@ -370,6 +519,9 @@ impl GGeom {
     }
 
     pub fn hausdorff_distance(&self, other: &GGeom) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_hausdorff_distance(self, other);
+        }
         let mut distance = 0.;
         unsafe {
             let ret = GEOSHausdorffDistance(self.as_raw(), other.as_raw(), &mut distance);
@@ -378,14 +530,21 @@ impl GGeom {
     }
 
     pub fn hausdorff_distance_densify(&self, other: &GGeom, distance_frac: f64) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_hausdorff_distance(self, other);
+        }
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSHausdorffDistanceDensify(self.as_raw(), other.as_raw(), distance_frac, &mut distance);
+            let ret = GEOSHausdorffDistanceDensify(self.as_raw(), other.as_raw(), distance_frac,
+                                                   &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
     pub fn frechet_distance(&self, other: &GGeom) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_frechet_distance(self, other);
+        }
         let mut distance = 0.;
         unsafe {
             let ret = GEOSFrechetDistance(self.as_raw(), other.as_raw(), &mut distance);
@@ -394,14 +553,21 @@ impl GGeom {
     }
 
     pub fn frechet_distance_densify(&self, other: &GGeom, distance_frac: f64) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_frechet_distance_densify(self, other, distance_frac);
+        }
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSFrechetDistanceDensify(self.as_raw(), other.as_raw(), distance_frac, &mut distance);
+            let ret = GEOSFrechetDistanceDensify(self.as_raw(), other.as_raw(), distance_frac,
+                                                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
     pub fn get_length(&self) -> GResult<f64> {
+        if let Some(ref context) = self.context {
+            return context.geom_get_length(self);
+        }
         let mut length = 0.;
         unsafe {
             let ret = GEOSGeomGetLength(self.as_raw(), &mut length);
@@ -410,14 +576,23 @@ impl GGeom {
     }
 
     pub fn snap(&self, other: &GGeom, tolerance: f64) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_snap(self, other, tolerance);
+        }
         unsafe { GGeom::new_from_raw(GEOSSnap(self.as_raw(), other.as_raw(), tolerance)) }
     }
 
     pub fn extract_unique_points(&self) -> GResult<GGeom> {
+        if let Some(ref context) = self.context {
+            return context.geom_extract_unique_points(self);
+        }
         unsafe { GGeom::new_from_raw(GEOSGeom_extractUniquePoints(self.as_raw())) }
     }
 
     pub fn nearest_points(&self, other: &GGeom) -> GResult<CoordSeq> {
+        if let Some(ref context) = self.context {
+            return context.geom_nearest_points(self, other);
+        }
         unsafe {
             CoordSeq::new_from_raw(GEOSNearestPoints(self.as_raw(), other.as_raw()))
         }
