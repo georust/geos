@@ -94,14 +94,19 @@ extern "C" {
     pub fn GEOSisValid(g: *const GEOSGeometry) -> c_int;
 
     pub fn GEOSGeomToWKT(g: *const GEOSGeometry) -> *mut c_char;
-    #[allow(dead_code)]
     pub fn GEOSGeomFromWKB_buf(wkb: *const u8, size: size_t) -> *mut GEOSGeometry;
-    #[allow(dead_code)]
     pub fn GEOSGeomToWKB_buf(g: *const GEOSGeometry, size: *mut size_t) -> *mut u8;
     pub fn GEOSGeomTypeId(g: *const GEOSGeometry) -> c_int;
     pub fn GEOSArea(g: *const GEOSGeometry, area: *mut c_double) -> c_int;
-    #[allow(dead_code)]
     pub fn GEOSLength(g: *const GEOSGeometry, distance: *mut c_double) -> c_int;
+    pub fn GEOSDistance(g1: *const GEOSGeometry, g2: *const GEOSGeometry, distance: *mut c_double) -> c_int;
+    pub fn GEOSDistanceIndexed(g1: *const GEOSGeometry, g2: *const GEOSGeometry, distance: *mut c_double) -> c_int;
+    pub fn GEOSHausdorffDistance(g1: *const GEOSGeometry, g2: *const GEOSGeometry, distance: *mut c_double) -> c_int;
+    pub fn GEOSHausdorffDistanceDensify(g1: *const GEOSGeometry, g2: *const GEOSGeometry, density_frac: c_double, distance: *mut c_double) -> c_int;
+    pub fn GEOSFrechetDistance(g1: *const GEOSGeometry, g2: *const GEOSGeometry, distance: *mut c_double) -> c_int;
+    pub fn GEOSFrechetDistanceDensify(g1: *const GEOSGeometry, g2: *const GEOSGeometry, density_frace: c_double, distance: *mut c_double) -> c_int;
+    pub fn GEOSGeomGetLength(g: *const GEOSGeometry, length: *mut c_double) -> c_int;
+    pub fn GEOSNearestPoints(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSCoordSequence;
     pub fn GEOSDisjoint(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
     pub fn GEOSTouches(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
     pub fn GEOSIntersects(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> c_int;
@@ -140,13 +145,11 @@ extern "C" {
         xmax: c_double,
         ymax: c_double,
     ) -> *mut GEOSGeometry;
-    #[allow(dead_code)]
     pub fn GEOSSnap(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
         tolerance: c_double,
     ) -> *mut GEOSGeometry;
-    #[allow(dead_code)]
     pub fn GEOSGeom_extractUniquePoints(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSVoronoiDiagram(
         g: *const GEOSGeometry,
@@ -217,4 +220,6 @@ extern "C" {
         g: *const GEOSGeometry,
         size: *mut size_t,
     ) -> *mut c_uchar;
+
+    pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }
