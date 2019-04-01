@@ -85,7 +85,7 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let _voronoi = geos::compute_voronoi(&points, 0.)?;
+let _voronoi = geos::compute_voronoi(&points, None, 0.)?;
 ```
 
 

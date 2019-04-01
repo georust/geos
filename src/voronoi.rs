@@ -4,11 +4,15 @@ use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 
 //TODO, change  &[] to IntoIterator
-pub fn compute_voronoi(points: &[Point<f64>], tolerance: f64) -> Result<Vec<Polygon<f64>>, Error> {
+pub fn compute_voronoi(
+    points: &[Point<f64>],
+    envelope: Option<&GGeom>,
+    tolerance: f64,
+) -> Result<Vec<Polygon<f64>>, Error> {
     let geom_points: GGeom = points.try_into()?;
 
     geom_points
-        .voronoi(None, tolerance, false)?
+        .voronoi(envelope, tolerance, false)?
         .try_into()
         .and_then(|g: Geometry<f64>| match g {
             Geometry::GeometryCollection(gc) => Ok(gc),
@@ -91,7 +95,7 @@ mod test {
             Point::new(1., 0.),
         ];
 
-        let voronoi = ::compute_voronoi(&points, 0.).unwrap();
+        let voronoi = ::compute_voronoi(&points, None, 0.).unwrap();
 
         let poly = vec![
             Polygon::new(
