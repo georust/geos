@@ -172,6 +172,7 @@ impl GGeom {
     }
 
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GResult<GGeom> {
+        assert!(quadsegs > 0);
         unsafe {
             GGeom::new_from_raw(GEOSBuffer(
                 self.as_raw(),
