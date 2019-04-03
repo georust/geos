@@ -4,7 +4,7 @@ use ffi::*;
 use geom::GGeom;
 use libc::{atexit, c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
-use std::sync::{Once, ONCE_INIT};
+use std::sync::{Arc, Once, ONCE_INIT};
 use std::{mem, str};
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
@@ -72,14 +72,24 @@ pub(crate) fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
-pub(crate) fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GGeomTypes) -> GResult<GGeom> {
+pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeomTypes) -> GResult<GGeom<'a>> {
     let nb_geoms = geoms.len();
+    let context = if geoms.is_empty() {
+        match GContextHandle::init() {
+            Ok(ch) => Arc::new(ch),
+            _ => return Err(Error::GenericError("GEOS_init_r failed".to_owned())),
+        }
+    } else {
+        geoms[0].clone_context()
+    };
     let res = unsafe {
-        GGeom::new_from_raw(GEOSGeom_createCollection(
+        let ptr = GEOSGeom_createCollection_r(
+            context.as_raw(),
             output_type.into(),
             geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
             nb_geoms as c_uint,
-        ))
+        );
+        GGeom::new_from_raw(ptr, context)
     }?;
 
     // we'll transfert the ownership of the ptr to the new GGeom,

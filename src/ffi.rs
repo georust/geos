@@ -46,6 +46,18 @@ extern "C" {
     pub fn GEOSWKTWriter_destroy(writer: *mut GEOSWKTWriter);
     pub fn GEOSWKTWriter_write(writer: *mut GEOSWKTWriter, g: *const GEOSGeometry) -> *mut c_char;
     pub fn GEOSWKTWriter_setRoundingPrecision(writer: *mut GEOSWKTWriter, precision: c_int);
+    pub fn GEOSWKTWriter_create_r(handle: GEOSContextHandle_t) -> *mut GEOSWKTWriter;
+    pub fn GEOSWKTWriter_destroy_r(handle: GEOSContextHandle_t, writer: *mut GEOSWKTWriter);
+    pub fn GEOSWKTWriter_write_r(
+        handle: GEOSContextHandle_t,
+        writer: *mut GEOSWKTWriter,
+        g: *const GEOSGeometry,
+    ) -> *mut c_char;
+    pub fn GEOSWKTWriter_setRoundingPrecision_r(
+        handle: GEOSContextHandle_t,
+        writer: *mut GEOSWKTWriter,
+        precision: c_int,
+    );
 
     pub fn GEOSFree(buffer: *mut c_void);
 

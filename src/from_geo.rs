@@ -26,20 +26,20 @@ where
     Ok(coord_seq)
 }
 
-impl<'a> TryInto<GGeom> for &'a Point<f64> {
+impl<'a> TryInto<GGeom<'a>> for &'a Point<f64> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let coord_seq = create_coord_seq(std::iter::once(&self.0), 1)?;
 
         GGeom::create_point(coord_seq)
     }
 }
 
-impl<'a> TryInto<GGeom> for &'a [Point<f64>] {
+impl<'a> TryInto<GGeom<'a>> for &'a [Point<f64>] {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let geom_points = self
             .into_iter()
             .map(|p| p.try_into())
@@ -49,10 +49,10 @@ impl<'a> TryInto<GGeom> for &'a [Point<f64>] {
     }
 }
 
-impl<'a> TryInto<GGeom> for &'a LineString<f64> {
+impl<'a> TryInto<GGeom<'a>> for &'a LineString<f64> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let coord_seq = create_coord_seq_from_vec(self.0.as_slice())?;
 
         GGeom::create_line_string(coord_seq)
@@ -65,10 +65,10 @@ struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
-impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
+impl<'a> TryInto<GGeom<'a>> for &'a LineRing<'a> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let points = &(self.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
@@ -94,10 +94,10 @@ impl<'a> TryInto<GGeom> for &'a LineRing<'a> {
     }
 }
 
-impl<'a> TryInto<GGeom> for &'a Polygon<f64> {
+impl<'a> TryInto<GGeom<'a>> for &'a Polygon<f64> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let geom_exterior: GGeom = LineRing(self.exterior()).try_into()?;
 
         let interiors: Vec<_> = self
@@ -110,10 +110,10 @@ impl<'a> TryInto<GGeom> for &'a Polygon<f64> {
     }
 }
 
-impl<'a> TryInto<GGeom> for &'a MultiPolygon<f64> {
+impl<'a> TryInto<GGeom<'a>> for &'a MultiPolygon<f64> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let polygons: Vec<_> = self
             .0
             .iter()
