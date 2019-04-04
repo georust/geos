@@ -23,13 +23,13 @@ macro_rules! set_callbacks {
                     let notif = s.to_str().expect("invalid CStr -> &str conversion");
                     callback(notif);
                     if let Ok(last) = inner_context.$last.lock() {
-                        *last = notif.to_owned();
+                        *last = Some(notif.to_owned());
                     }
                 }
             }
 
             unsafe {
-                $c_func(ptr, message_handler_func, nf);
+                $c_func(ptr, Some(message_handler_func), nf as *mut _);
             }
         }
     };
@@ -82,27 +82,27 @@ impl<'a> GContextHandle<'a> {
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);
 
-        let notif_callback = Mutex::new(Box::new(|_| {}));
-        let error_callback = Mutex::new(Box::new(|_| {}));
+        let notif_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> = Mutex::new(Box::new(|_| {}));
+        let error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> = Mutex::new(Box::new(|_| {}));
 
-        let inner = Box::new(InnerContext {
+        let inner = Box::into_raw(Box::new(InnerContext {
             notif_callback,
             error_callback,
             last_notification,
             last_error,
-        }).into_raw();
+        }));
 
         set_notif(ptr, inner);
         set_error(ptr, inner);
 
         Ok(GContextHandle {
             ptr: PtrWrap(ptr),
-            inner,
+            inner: PtrWrap(inner),
         })
     }
 
     pub(crate) fn as_raw(&self) -> GEOSContextHandle_t {
-        self.ptr
+        *self.ptr
     }
 
     pub(crate) fn get_inner(&self) -> &InnerContext<'a> {
@@ -124,7 +124,7 @@ impl<'a> GContextHandle<'a> {
     /// ```
     pub fn set_notice_message_handler(&self, nf: Option<Box<dyn Fn(&str) + Send + Sync + 'a>>) {
         let inner_context = self.get_inner();
-        if let Ok(callback) = inner_context.notif_callback {
+        if let Ok(callback) = inner_context.notif_callback.lock() {
             if let Some(nf) = nf {
                 *callback = nf;
             } else {
@@ -148,7 +148,7 @@ impl<'a> GContextHandle<'a> {
     /// ```
     pub fn set_error_message_handler(&self, ef: Option<Box<dyn Fn(&str) + Send + Sync + 'a>>) {
         let inner_context = self.get_inner();
-        if let Ok(callback) = inner_context.error_callback {
+        if let Ok(callback) = inner_context.error_callback.lock() {
             if let Some(ef) = ef {
                 *callback = ef;
             } else {
@@ -269,25 +269,6 @@ impl<'a> GContextHandle<'a> {
         ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
     }
 
-    /// Convert [`GGeom`] from WKB format.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geos::{GContextHandle, GGeom};
-    ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
-    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_wkb_buf(&point_geom)
-    ///                             .expect("conversion to WKB failed");
-    /// let new_geom = context_handle.geom_from_wkb_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion from WKB failed");
-    /// assert!(point_geom.equals(&new_geom) == Ok(true));
-    /// ```
-    pub fn geom_from_wkb_buf(&self, wkb: &[u8]) -> GResult<GGeom<'a>> {
-        unsafe { GGeom::new_from_raw(GEOSGeomFromWKB_buf_r(self.as_raw(), wkb.as_ptr(), wkb.len())) }
-    }
-
     /// Convert [`GGeom`] to WKB format.
     ///
     /// # Example
@@ -313,25 +294,6 @@ impl<'a> GContextHandle<'a> {
                 Some(CVec::new(ptr, size as _))
             }
         }
-    }
-
-    /// Convert [`GGeom`] from HEX format.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geos::{GContextHandle, GGeom};
-    ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
-    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let wkb_buf = context_handle.geom_to_hex_buf(&point_geom)
-    ///                             .expect("conversion to HEX failed");
-    /// let new_geom = context_handle.geom_from_hex_buf(wkb_buf.as_ref())
-    ///                              .expect("conversion from HEX failed");
-    /// assert!(point_geom.equals(&new_geom) == Ok(true));
-    /// ```
-    pub fn geom_from_hex_buf(&self, hex: &[u8]) -> GResult<GGeom<'a>> {
-        unsafe { GGeom::new_from_raw(GEOSGeomFromHEX_buf_r(self.as_raw(), hex.as_ptr(), hex.len())) }
     }
 
     /// Convert [`GGeom`] to HEX format.

@@ -5,7 +5,7 @@ use geo_types::Geometry;
 use wkt;
 use wkt::conversion::try_into_geometry;
 
-impl<'a> TryInto<Geometry<f64>> for GGeom {
+impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry<f64>, Self::Err> {

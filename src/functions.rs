@@ -6,6 +6,7 @@ use libc::{atexit, c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::{mem, str};
+use crate::GContextHandle;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos
@@ -23,15 +24,18 @@ pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char) -> String {
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<GGeom> {
+pub fn clip_by_rect<'a>(g: &GGeom<'a>, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<GGeom<'a>> {
     unsafe {
-        GGeom::new_from_raw(GEOSClipByRect(
+        let context = g.clone_context();
+        let ptr = GEOSClipByRect_r(
+            context.as_raw(),
             g.as_raw(),
             xmin as c_double,
             ymin as c_double,
             xmax as c_double,
             ymax as c_double,
-        ))
+        );
+        GGeom::new_from_raw(ptr, context)
     }
 }
 

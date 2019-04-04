@@ -429,6 +429,43 @@ extern "C" {
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
     ) -> *mut GEOSCoordSequence;
+    pub fn GEOSBuffer_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+        width: c_double,
+        quadsegs: c_int,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_createPolygon_r(
+        handle: GEOSContextHandle_t,
+        shell: *mut GEOSGeometry,
+        holes: *mut *mut GEOSGeometry,
+        nholes: c_uint,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSCoordSeq_clone_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+    ) -> *mut GEOSCoordSequence;
+    pub fn GEOSGeom_createCollection_r(
+        handle: GEOSContextHandle_t,
+        t: c_int,
+        geoms: *mut *mut GEOSGeometry,
+        ngeoms: c_uint,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSWKTReader_create_r(handle: GEOSContextHandle_t) -> *mut GEOSWKTReader;
+    pub fn GEOSWKTReader_destroy_r(handle: GEOSContextHandle_t, reader: *mut GEOSWKTReader);
+    pub fn GEOSWKTReader_read_r(
+        handle: GEOSContextHandle_t,
+        reader: *mut GEOSWKTReader,
+        wkt: *const c_char,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSClipByRect_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+        xmin: c_double,
+        ymin: c_double,
+        xmax: c_double,
+        ymax: c_double,
+    ) -> *mut GEOSGeometry;
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }
