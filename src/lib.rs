@@ -7,6 +7,7 @@ extern crate libc;
 extern crate num;
 extern crate wkt;
 
+#[allow(dead_code)]
 pub(crate) mod ffi;
 pub(crate) mod functions;
 

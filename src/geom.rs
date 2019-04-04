@@ -15,25 +15,6 @@ pub struct GGeom<'a> {
     context: Arc<GContextHandle<'a>>,
 }
 
-unsafe impl<'a> Send for GGeom<'a> {}
-unsafe impl<'a> Sync for GGeom<'a> {}
-
-impl<'a> Drop for GGeom<'a> {
-    fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy(self.as_raw_mut()) }
-    }
-}
-
-impl<'a> Clone for GGeom<'a> {
-    /// Also pass the context to the newly created `GGeom`.
-    fn clone(&self) -> GGeom<'a> {
-        GGeom {
-            ptr: NonNull::new(unsafe { GEOSGeom_clone(self.as_raw()) }).unwrap(),
-            context: Arc::clone(&self.context),
-        }
-    }
-}
-
 impl<'a> GGeom<'a> {
     /// Create a new [`GGeom`] from the WKT format.
     ///
@@ -81,9 +62,11 @@ impl<'a> GGeom<'a> {
     pub fn new_from_hex(hex: &[u8]) -> GResult<GGeom<'a>> {
         initialize();
         match GContextHandle::init() {
-            Ok(context_handle) => {
-                let ptr = GEOSGeomFromHEX_buf_r(context_handle.as_raw(), hex.as_ptr(), hex.len());
-                GGeom::new_from_raw(ptr, Arc::new(context_handle))
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
             }
             Err(e) => Err(e),
         }
@@ -107,9 +90,11 @@ impl<'a> GGeom<'a> {
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<GGeom<'a>> {
         initialize();
         match GContextHandle::init() {
-            Ok(context_handle) => {
-                let ptr = GEOSGeomFromWKB_buf_r(context_handle.as_raw(), wkb.as_ptr(), wkb.len());
-                GGeom::new_from_raw(ptr, Arc::new(context_handle))
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
             }
             Err(e) => Err(e),
         }
@@ -166,13 +151,22 @@ impl<'a> GGeom<'a> {
     ///
     /// let context_handle = GContextHandle::init().expect("invalid init");
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// let point_geom = GGeom::new("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// point_geom.to_wkb_buf();
+    /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// point_geom.set_context_handle(context_handle);
     /// ```
     pub fn set_context_handle(&mut self, context: GContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
+    /// Get the context handle of the geometry.
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let context = point_geom.get_context_handle();
+    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// ```
     pub fn get_context_handle(&self) -> &GContextHandle<'a> {
         &self.context
     }
@@ -202,7 +196,7 @@ impl<'a> GGeom<'a> {
         unsafe { GEOSisValid_r(self.context.as_raw(), self.as_raw()) == 1 }
     }
 
-    /// get the underlying geos CoordSeq object from the geometry
+    /// Get the underlying geos CoordSeq object from the geometry
     ///
     /// Note: this clones the underlying CoordSeq to avoid double free
     /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
@@ -230,8 +224,9 @@ impl<'a> GGeom<'a> {
     pub fn area(&self) -> GResult<f64> {
         let mut n = 0.;
 
-        if unsafe { GEOSArea_r(self.context.as_raw(), self.as_raw(), &mut n) } != 0 {
-            Err(Error::GeosError("computing the area".into()))
+        let res = unsafe { GEOSArea_r(self.context.as_raw(), self.as_raw(), &mut n) };
+        if res != 1 {
+            Err(Error::GeosError(format!("area failed with code {}", res)))
         } else {
             Ok(n as f64)
         }
@@ -258,59 +253,86 @@ impl<'a> GGeom<'a> {
         check_geos_predicate(rv as _, PredicateType::IsRing)
     }
 
-    pub fn intersects(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn intersects<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSIntersects_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Intersects)
     }
 
-    pub fn crosses(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn crosses<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSCrosses_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Crosses)
     }
 
-    pub fn disjoint(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn disjoint<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSDisjoint_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Disjoint)
     }
 
-    pub fn touches(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn touches<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSTouches_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Touches)
     }
 
-    pub fn overlaps(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn overlaps<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSOverlaps_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Overlaps)
     }
 
-    pub fn within(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn within<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSWithin_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Within)
     }
 
-    pub fn equals(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    /// Checks if the two [`GGeom`] objects are equal.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let geom1 = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom2 = GGeom::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
+    /// let geom3 = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    ///
+    /// assert!(geom1.equals(&geom2) == Ok(false));
+    /// assert!(geom1.equals(&geom3) == Ok(true));
+    /// ```
+    ///
+    /// Note that you can also use method through the `PartialEq` trait:
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let geom1 = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom2 = GGeom::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
+    /// let geom3 = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    ///
+    /// assert!(geom1 != geom2);
+    /// assert!(geom1 == geom3);
+    /// ```
+    pub fn equals<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSEquals_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Equals)
     }
 
-    pub fn equals_exact(&self, g2: &GGeom<'a>, precision: f64) -> GResult<bool> {
+    pub fn equals_exact<'b>(&self, g2: &GGeom<'b>, precision: f64) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSEqualsExact_r(self.context.as_raw(), self.as_raw(), g2.as_raw(), precision)
         };
         check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
-    pub fn covers(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn covers<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSCovers_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Covers)
     }
 
-    pub fn covered_by(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn covered_by<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSCoveredBy_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
-    pub fn contains(&self, g2: &GGeom<'a>) -> GResult<bool> {
+    pub fn contains<'b>(&self, g2: &GGeom<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSContains_r(self.context.as_raw(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Contains)
     }
@@ -338,7 +360,7 @@ impl<'a> GGeom<'a> {
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
-    pub fn difference(&self, g2: &GGeom<'a>) -> GResult<GGeom<'a>> {
+    pub fn difference<'b>(&self, g2: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSDifference_r(self.context.as_raw(), self.as_raw(), g2.as_raw());
             GGeom::new_from_raw(ptr, self.clone_context())
@@ -352,7 +374,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn sym_difference(&self, g2: &GGeom<'a>) -> GResult<GGeom<'a>> {
+    pub fn sym_difference<'b>(&self, g2: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSSymDifference_r(self.context.as_raw(), self.as_raw(), g2.as_raw());
             GGeom::new_from_raw(ptr, self.clone_context())
@@ -373,7 +395,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn create_polygon(mut exterior: GGeom<'a>, mut interiors: Vec<GGeom<'a>>) -> GResult<GGeom<'a>> {
+    pub fn create_polygon<'b>(mut exterior: GGeom<'a>, mut interiors: Vec<GGeom<'b>>) -> GResult<GGeom<'a>> {
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
         let res = unsafe {
@@ -476,9 +498,9 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn voronoi(
+    pub fn voronoi<'b>(
         &self,
-        envelope: Option<&GGeom<'a>>,
+        envelope: Option<&GGeom<'b>>,
         tolerance: f64,
         only_edges: bool,
     ) -> GResult<GGeom<'a>> {
@@ -501,7 +523,7 @@ impl<'a> GGeom<'a> {
         check_geos_predicate(ret_val, PredicateType::Normalize)
     }
 
-    pub fn intersection(&self, other: &GGeom<'a>) -> GResult<GGeom<'a>> {
+    pub fn intersection<'b>(&self, other: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSIntersection_r(self.context.as_raw(), self.as_raw(), other.as_raw());
             GGeom::new_from_raw(ptr, self.clone_context())
@@ -540,7 +562,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn distance(&self, other: &GGeom<'a>) -> GResult<f64> {
+    pub fn distance<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSDistance_r(
@@ -552,94 +574,122 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn distance_indexed(&self, other: &GGeom<'a>) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_distance_indexed(self, other);
-        }
+    pub fn distance_indexed<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSDistanceIndexed(self.as_raw(), other.as_raw(), &mut distance);
+            let ret = GEOSDistanceIndexed_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
-    pub fn hausdorff_distance(&self, other: &GGeom<'a>) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_hausdorff_distance(self, other);
-        }
+    pub fn hausdorff_distance<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSHausdorffDistance(self.as_raw(), other.as_raw(), &mut distance);
+            let ret = GEOSHausdorffDistance_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
-    pub fn hausdorff_distance_densify(&self, other: &GGeom<'a>, distance_frac: f64) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_hausdorff_distance(self, other);
-        }
+    pub fn hausdorff_distance_densify<'b>(&self, other: &GGeom<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSHausdorffDistanceDensify(self.as_raw(), other.as_raw(), distance_frac,
-                                                   &mut distance);
+            let ret = GEOSHausdorffDistanceDensify_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                distance_frac,
+                &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
-    pub fn frechet_distance(&self, other: &GGeom<'a>) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_frechet_distance(self, other);
-        }
+    pub fn frechet_distance<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSFrechetDistance(self.as_raw(), other.as_raw(), &mut distance);
+            let ret = GEOSFrechetDistance_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
-    pub fn frechet_distance_densify(&self, other: &GGeom<'a>, distance_frac: f64) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_frechet_distance_densify(self, other, distance_frac);
-        }
+    pub fn frechet_distance_densify<'b>(&self, other: &GGeom<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
-            let ret = GEOSFrechetDistanceDensify(self.as_raw(), other.as_raw(), distance_frac,
-                                                 &mut distance);
+            let ret = GEOSFrechetDistanceDensify_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                distance_frac,
+                &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
         }
     }
 
     pub fn get_length(&self) -> GResult<f64> {
-        if let Some(ref context) = self.context {
-            return context.geom_get_length(self);
-        }
         let mut length = 0.;
         unsafe {
-            let ret = GEOSGeomGetLength(self.as_raw(), &mut length);
+            let ret = GEOSGeomGetLength_r(self.context.as_raw(), self.as_raw(), &mut length);
             check_ret(ret, PredicateType::IsSimple).map(|_| length)
         }
     }
 
-    pub fn snap(&self, other: &GGeom<'a>, tolerance: f64) -> GResult<GGeom<'a>> {
-        if let Some(ref context) = self.context {
-            return context.geom_snap(self, other, tolerance);
+    pub fn snap<'b>(&self, other: &GGeom<'b>, tolerance: f64) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSSnap_r(self.context.as_raw(), self.as_raw(), other.as_raw(), tolerance);
+            GGeom::new_from_raw(ptr, self.clone_context())
         }
-        unsafe { GGeom::new_from_raw(GEOSSnap(self.as_raw(), other.as_raw(), tolerance)) }
     }
 
     pub fn extract_unique_points(&self) -> GResult<GGeom<'a>> {
-        if let Some(ref context) = self.context {
-            return context.geom_extract_unique_points(self);
+        unsafe {
+            let ptr = GEOSGeom_extractUniquePoints_r(self.context.as_raw(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
         }
-        unsafe { GGeom::new_from_raw(GEOSGeom_extractUniquePoints(self.as_raw())) }
     }
 
-    pub fn nearest_points(&self, other: &GGeom<'a>) -> GResult<CoordSeq> {
-        if let Some(ref context) = self.context {
-            return context.geom_nearest_points(self, other);
-        }
+    pub fn nearest_points<'b>(&self, other: &GGeom<'b>) -> GResult<CoordSeq> {
         unsafe {
-            CoordSeq::new_from_raw(GEOSNearestPoints(self.as_raw(), other.as_raw()))
+            CoordSeq::new_from_raw(GEOSNearestPoints_r(
+                self.context.as_raw(),
+                self.as_raw(),
+                other.as_raw()))
         }
+    }
+}
+
+unsafe impl<'a> Send for GGeom<'a> {}
+unsafe impl<'a> Sync for GGeom<'a> {}
+
+impl<'a> Drop for GGeom<'a> {
+    fn drop(&mut self) {
+        unsafe { GEOSGeom_destroy_r(self.context.as_raw(), self.as_raw_mut()) }
+    }
+}
+
+impl<'a> Clone for GGeom<'a> {
+    /// Also pass the context to the newly created `GGeom`.
+    fn clone(&self) -> GGeom<'a> {
+        let ptr = unsafe { GEOSGeom_clone_r(self.context.as_raw(), self.as_raw()) };
+        GGeom {
+            ptr: NonNull::new(ptr).unwrap(),
+            context: self.clone_context(),
+        }
+    }
+}
+
+impl<'a> PartialEq for GGeom<'a> {
+    fn eq<'b>(&self, other: &GGeom<'b>) -> bool {
+        self.equals(other).unwrap_or_else(|_| false)
     }
 }

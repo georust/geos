@@ -466,6 +466,11 @@ extern "C" {
         xmax: c_double,
         ymax: c_double,
     ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_clone_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSGeometry;
+    pub fn GEOSGeom_destroy_r(handle: GEOSContextHandle_t, g: *mut GEOSGeometry);
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }

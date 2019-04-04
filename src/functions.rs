@@ -86,15 +86,18 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
     } else {
         geoms[0].clone_context()
     };
-    let res = unsafe {
-        let ptr = GEOSGeom_createCollection_r(
-            context.as_raw(),
-            output_type.into(),
-            geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
-            nb_geoms as c_uint,
-        );
-        GGeom::new_from_raw(ptr, context)
-    }?;
+    let res = {
+        let mut geoms: Vec<&mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw_mut()).collect();
+        unsafe {
+            let ptr = GEOSGeom_createCollection_r(
+                context.as_raw(),
+                output_type.into(),
+                geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
+                nb_geoms as c_uint,
+            );
+            GGeom::new_from_raw(ptr, context)
+        }
+    };
 
     // we'll transfert the ownership of the ptr to the new GGeom,
     // so the old one needs to forget their c ptr to avoid double cleanup
@@ -102,7 +105,7 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
         mem::forget(g);
     }
 
-    Ok(res)
+    res
 }
 
 pub fn orientation_index(ax: f64, ay: f64, bx: f64, by: f64, px: f64, py: f64) -> Result<Orientation, &'static str> {

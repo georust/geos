@@ -65,10 +65,10 @@ struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
-impl<'a> TryInto<GGeom<'a>> for &'a LineRing<'a> {
+impl<'a, 'b> TryInto<GGeom<'b>> for &'a LineRing<'b> {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
+    fn try_into(self) -> Result<GGeom<'b>, Self::Err> {
         let points = &(self.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
@@ -98,7 +98,8 @@ impl<'a> TryInto<GGeom<'a>> for &'a Polygon<f64> {
     type Err = Error;
 
     fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
-        let geom_exterior: GGeom = LineRing(self.exterior()).try_into()?;
+        let ring = LineRing(self.exterior());
+        let geom_exterior: GGeom = ring.try_into()?;
 
         let interiors: Vec<_> = self
             .interiors()

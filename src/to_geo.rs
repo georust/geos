@@ -40,7 +40,7 @@ mod test {
     #[test]
     fn geom_to_geo_polygon() {
         let poly = "MULTIPOLYGON(((0 0, 0 1, 1 1, 1 0, 0 0)))";
-        let poly = GGeom::new(poly).unwrap();
+        let poly = GGeom::new_from_wkt(poly).unwrap();
 
         let geo_polygon: Geometry<f64> = poly.try_into().unwrap();
 

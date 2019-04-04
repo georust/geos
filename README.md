@@ -19,8 +19,8 @@ You can check the examples in the `examples/` directory.
 ### Constructing geometries from WKT:
 
 ```rust,skt-template
-let gg1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
-let gg2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
+let gg1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
+let gg2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
 let gg3 = gg1.difference(&gg2)?;
 assert_eq!(
   gg3.to_wkt_precision(Some(0)),
@@ -32,8 +32,8 @@ assert_eq!(
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
 ```rust,skt-template
-let g1 = geos::GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
-let g2 = geos::GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
+let g1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
+let g2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
 
 let pg1 = geos::PreparedGGeom::new(&g1);
 let result = pg1.intersects(&g2)?;
