@@ -8,6 +8,34 @@ pub trait TryFrom<T>: Sized {
 }
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum CoordDimensions {
+    OneD,
+    TwoD,
+    ThreeD,
+}
+
+impl From<u32> for CoordDimensions {
+    fn from(dimensions: u32) -> Self {
+        match dimensions {
+            1 => CoordDimensions::OneD,
+            2 => CoordDimensions::TwoD,
+            3 => CoordDimensions::ThreeD,
+            _ => panic!("dimensions must be >= 1 and <= 3"),
+        }
+    }
+}
+
+impl Into<u32> for CoordDimensions {
+    fn into(self) -> u32 {
+        match self {
+            CoordDimensions::OneD => 1,
+            CoordDimensions::TwoD => 2,
+            CoordDimensions::ThreeD => 3,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Dimensions {
     TwoD,
     ThreeD,

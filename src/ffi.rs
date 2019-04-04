@@ -78,6 +78,7 @@ extern "C" {
     pub fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
         -> c_int;
     pub fn GEOSCoordSeq_getSize(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
+    pub fn GEOSCoordSeq_getDimensions(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
 
     // Geometry must be a LineString, LinearRing or Point:
     pub fn GEOSGeom_getCoordSeq(g: *const GEOSGeometry) -> *mut GEOSCoordSequence;
@@ -441,10 +442,6 @@ extern "C" {
         holes: *mut *mut GEOSGeometry,
         nholes: c_uint,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSCoordSeq_clone_r(
-        handle: GEOSContextHandle_t,
-        s: *const GEOSCoordSequence,
-    ) -> *mut GEOSCoordSequence;
     pub fn GEOSGeom_createCollection_r(
         handle: GEOSContextHandle_t,
         t: c_int,
@@ -471,6 +468,66 @@ extern "C" {
         g: *const GEOSGeometry,
     ) -> *mut GEOSGeometry;
     pub fn GEOSGeom_destroy_r(handle: GEOSContextHandle_t, g: *mut GEOSGeometry);
+    pub fn GEOSCoordSeq_create_r(
+        handle: GEOSContextHandle_t,
+        size: c_uint,
+        dims: c_uint,
+    ) -> *mut GEOSCoordSequence;
+    pub fn GEOSCoordSeq_destroy_r(handle: GEOSContextHandle_t, s: *mut GEOSCoordSequence);
+    pub fn GEOSCoordSeq_clone_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+    ) -> *mut GEOSCoordSequence;
+    pub fn GEOSCoordSeq_setX_r(
+        handle: GEOSContextHandle_t,
+        s: *mut GEOSCoordSequence,
+        idx: c_uint,
+        val: c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_setY_r(
+        handle: GEOSContextHandle_t,
+        s: *mut GEOSCoordSequence,
+        idx: c_uint,
+        val: c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_setZ_r(
+        handle: GEOSContextHandle_t,
+        s: *mut GEOSCoordSequence,
+        idx: c_uint,
+        val: c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_getX_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        idx: c_uint,
+        val: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_getY_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        idx: c_uint,
+        val: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_getZ_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        idx: c_uint,
+        val: *mut c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_getSize_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        val: *mut c_uint,
+    ) -> c_int;
+    pub fn GEOSGeom_getCoordSeq_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSCoordSequence;
+    pub fn GEOSCoordSeq_getDimensions_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        dims: *mut c_uint,
+    ) -> c_int;
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }

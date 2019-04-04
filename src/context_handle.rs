@@ -1,5 +1,3 @@
-use crate::GGeom;
-use c_vec::CVec;
 use enums::{ByteOrder, Dimensions};
 use error::{Error, GResult};
 use ffi::*;
@@ -37,7 +35,7 @@ macro_rules! set_callbacks {
 set_callbacks!(GEOSContext_setNoticeMessageHandler_r, set_notif, notif_callback, last_notification);
 set_callbacks!(GEOSContext_setErrorMessageHandler_r, set_error, error_callback, last_error);
 
-struct PtrWrap<T>(T);
+pub(crate) struct PtrWrap<T>(pub T);
 
 impl<T> Deref for PtrWrap<T> {
     type Target = T;
@@ -59,7 +57,7 @@ pub(crate) struct InnerContext<'a> {
 
 pub struct GContextHandle<'a> {
     ptr: PtrWrap<GEOSContextHandle_t>,
-    inner: PtrWrap<*mut InnerContext<'a>>,
+    pub(crate) inner: PtrWrap<*mut InnerContext<'a>>,
 }
 
 impl<'a> GContextHandle<'a> {
@@ -272,7 +270,7 @@ impl<'a> GContextHandle<'a> {
 impl<'a> Drop for GContextHandle<'a> {
     fn drop(&mut self) {
         unsafe {
-            GEOS_finish_r(self.as_raw());
+            GEOS_finish_r(self.ptr.0);
             // Now we just have to clear stuff!
             let _inner: Box<InnerContext<'a>> = Box::from_raw(self.inner.0);
         }

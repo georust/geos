@@ -1,4 +1,4 @@
-use crate::{CoordSeq, GGeom};
+use crate::{CoordDimensions, CoordSeq, GGeom};
 use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
 use std;
@@ -13,15 +13,15 @@ fn create_coord_seq_from_vec<'a>(coords: &'a [Coordinate<f64>]) -> Result<CoordS
     create_coord_seq(coords.iter(), coords.len())
 }
 
-fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
+fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, Error>
 where
     It: Iterator<Item = &'a Coordinate<f64>>,
 {
-    let mut coord_seq = CoordSeq::new(len as u32, 2);
+    let mut coord_seq = CoordSeq::new(len as u32, CoordDimensions::TwoD)
+                                 .expect("failed to create CoordSeq");
     for (i, p) in points.enumerate() {
-        let j = i as u32;
-        coord_seq.set_x(j, p.x)?;
-        coord_seq.set_y(j, p.y)?;
+        coord_seq.set_x(i, p.x)?;
+        coord_seq.set_y(i, p.y)?;
     }
     Ok(coord_seq)
 }
@@ -234,7 +234,7 @@ mod test {
 
         assert!(geom.is_valid());
         assert!(geom.is_ring().unwrap());
-        assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 0);
+        assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 0);
     }
 
     /// a linear ring should have at least 3 elements
@@ -263,7 +263,7 @@ mod test {
 
         assert!(geom.is_valid());
         assert!(geom.is_ring().unwrap());
-        assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
+        assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
 
     /// a bit tricky
@@ -285,7 +285,7 @@ mod test {
 
         assert!(geom.is_valid());
         assert!(geom.is_ring().unwrap());
-        assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
+        assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
 
     /// a linear ring can be empty
@@ -296,6 +296,6 @@ mod test {
 
         assert!(geom.is_valid());
         assert!(geom.is_ring().unwrap());
-        assert_eq!(geom.get_coord_seq().unwrap().len().unwrap(), 4);
+        assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
 }

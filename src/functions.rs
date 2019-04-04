@@ -87,7 +87,7 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
         geoms[0].clone_context()
     };
     let res = {
-        let mut geoms: Vec<&mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw_mut()).collect();
+        let mut geoms: Vec<*mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw()).collect();
         unsafe {
             let ptr = GEOSGeom_createCollection_r(
                 context.as_raw(),
