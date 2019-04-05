@@ -1,7 +1,6 @@
 use enums::{ByteOrder, Dimensions};
 use error::{Error, GResult};
 use ffi::*;
-use functions::*;
 use libc::{c_char, c_void, strlen};
 use std::ffi::CStr;
 use std::slice;
@@ -71,7 +70,6 @@ impl<'a> GContextHandle<'a> {
     /// let context_handle = GContextHandle::init().expect("invalid init");
     /// ```
     pub fn init() -> GResult<Self> {
-        initialize();
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
             return Err(Error::GenericError("GEOS_init_r failed".to_owned()));
@@ -270,7 +268,9 @@ impl<'a> GContextHandle<'a> {
 impl<'a> Drop for GContextHandle<'a> {
     fn drop(&mut self) {
         unsafe {
-            GEOS_finish_r(self.ptr.0);
+            if !self.ptr.is_null() {
+                GEOS_finish_r(self.as_raw());
+            }
             // Now we just have to clear stuff!
             let _inner: Box<InnerContext<'a>> = Box::from_raw(self.inner.0);
         }

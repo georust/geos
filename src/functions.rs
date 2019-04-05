@@ -2,9 +2,9 @@ use enums::*;
 use error::{Error, GResult, PredicateType};
 use ffi::*;
 use geom::GGeom;
-use libc::{atexit, c_char, c_double, c_uint, c_void};
+use libc::{c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
-use std::sync::{Arc, Once, ONCE_INIT};
+use std::sync::Arc;
 use std::str;
 use crate::{GContextHandle, AsRaw, ContextHandling};
 use context_handle::PtrWrap;
@@ -18,9 +18,9 @@ pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char) -> String {
     str::from_utf8(c_str.to_bytes()).unwrap().to_string()
 }
 
-pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char) -> String {
+pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char, context: &GContextHandle) -> String {
     let s = unmanaged_string(raw_ptr);
-    GEOSFree(raw_ptr as *mut c_void);
+    GEOSFree_r(context.as_raw(), raw_ptr as *mut c_void);
     s
 }
 
@@ -42,20 +42,6 @@ pub fn clip_by_rect<'a>(g: &GGeom<'a>, xmin: f64, ymin: f64, xmax: f64, ymax: f6
 
 pub fn version() -> String {
     unsafe { unmanaged_string(GEOSversion()) }
-}
-
-pub fn initialize() {
-    static INIT: Once = ONCE_INIT;
-    INIT.call_once(|| unsafe {
-        initGEOS();
-        assert_eq!(atexit(cleanup), 0);
-    });
-
-    extern "C" fn cleanup() {
-        unsafe {
-            finishGEOS();
-        }
-    }
 }
 
 pub(crate) fn check_geos_predicate(val: i32, p: PredicateType) -> GResult<bool> {

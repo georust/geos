@@ -60,6 +60,7 @@ extern "C" {
     );
 
     pub fn GEOSFree(buffer: *mut c_void);
+    pub fn GEOSFree_r(context: GEOSContextHandle_t, buffer: *mut c_void);
 
     pub fn GEOSPrepare(g: *const GEOSGeometry) -> *mut GEOSPreparedGeometry;
     pub fn GEOSGeom_destroy(g: *mut GEOSGeometry);

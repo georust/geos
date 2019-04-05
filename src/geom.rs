@@ -26,7 +26,6 @@ impl<'a> GGeom<'a> {
     /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
     pub fn new_from_wkt(wkt: &str) -> GResult<GGeom<'a>> {
-        initialize();
         match GContextHandle::init() {
             Ok(context_handle) => {
                 let c_str = CString::new(wkt).expect("Conversion to CString failed");
@@ -57,7 +56,6 @@ impl<'a> GGeom<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<GGeom<'a>> {
-        initialize();
         match GContextHandle::init() {
             Ok(context) => {
                 unsafe {
@@ -85,7 +83,6 @@ impl<'a> GGeom<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<GGeom<'a>> {
-        initialize();
         match GContextHandle::init() {
             Ok(context) => {
                 unsafe {
@@ -216,7 +213,10 @@ impl<'a> GGeom<'a> {
     }
 
     pub fn to_wkt(&self) -> String {
-        unsafe { managed_string(GEOSGeomToWKT_r(self.get_raw_context(), self.as_raw())) }
+        unsafe {
+            let ptr = GEOSGeomToWKT_r(self.get_raw_context(), self.as_raw());
+            managed_string(ptr, &self.context)
+        }
     }
 
     pub fn to_wkt_precision(&self, precision: Option<u32>) -> String {
@@ -227,7 +227,7 @@ impl<'a> GGeom<'a> {
             };
             let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
             GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
-            managed_string(c_result)
+            managed_string(c_result, &self.context)
         }
     }
 
@@ -653,7 +653,9 @@ unsafe impl<'a> Sync for GGeom<'a> {}
 
 impl<'a> Drop for GGeom<'a> {
     fn drop(&mut self) {
-        unsafe { GEOSGeom_destroy_r(self.get_raw_context(), self.as_raw()) }
+        if !self.ptr.is_null() {
+            unsafe { GEOSGeom_destroy_r(self.get_raw_context(), self.as_raw()) }
+        }
     }
 }
 

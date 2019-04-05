@@ -1,7 +1,6 @@
 use error::{Error, GResult};
 use context_handle::PtrWrap;
 use ffi::*;
-use functions::*;
 use crate::{CoordDimensions, GContextHandle, AsRaw, ContextHandling, ContextInteractions};
 use std::sync::Arc;
 
@@ -43,7 +42,6 @@ impl<'a> CoordSeq<'a> {
     /// assert!(coord_seq2.get_x(1) == Ok(1.));
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
-        initialize();
         match GContextHandle::init() {
             Ok(context_handle) => {
                 unsafe {
