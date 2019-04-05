@@ -1,4 +1,4 @@
-use crate::{CoordSeq, GContextHandle};
+use crate::{CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGGeom};
 use context_handle::PtrWrap;
 use enums::*;
 use error::{Error, GResult, PredicateType};
@@ -141,31 +141,18 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    /// Set the context handle to the geometry.
+    /// Creates a new [`PreparedGGeom`] from the current `GGeom`.
     ///
-    /// ```
-    /// use geos::{GContextHandle, GGeom};
-    ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
-    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// point_geom.set_context_handle(context_handle);
-    /// ```
-    pub fn set_context_handle(&mut self, context: GContextHandle<'a>) {
-        self.context = Arc::new(context);
-    }
-
-    /// Get the context handle of the geometry.
+    /// # Example
     ///
     /// ```
     /// use geos::GGeom;
     ///
     /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let context = point_geom.get_context_handle();
-    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
-    pub fn get_context_handle(&self) -> &GContextHandle<'a> {
-        &self.context
+    pub fn to_prepared_geom(&self) -> GResult<PreparedGGeom<'a>> {
+        PreparedGGeom::new(self)
     }
 
     pub(crate) unsafe fn new_from_raw(
@@ -176,18 +163,6 @@ impl<'a> GGeom<'a> {
             return Err(Error::NoConstructionFromNullPtr);
         }
         Ok(GGeom { ptr: PtrWrap(ptr), context })
-    }
-
-    pub(crate) fn as_raw(&self) -> *mut GEOSGeometry {
-        *self.ptr
-    }
-
-    pub(crate) fn clone_context(&self) -> Arc<GContextHandle<'a>> {
-        Arc::clone(&self.context)
-    }
-
-    pub(crate) fn get_raw_context(&self) -> GEOSContextHandle_t {
-        self.context.as_raw()
     }
 
     pub fn is_valid(&self) -> bool {
@@ -696,5 +671,56 @@ impl<'a> Clone for GGeom<'a> {
 impl<'a> PartialEq for GGeom<'a> {
     fn eq<'b>(&self, other: &GGeom<'b>) -> bool {
         self.equals(other).unwrap_or_else(|_| false)
+    }
+}
+
+impl<'a> ContextInteractions for GGeom<'a> {
+    type Context = GContextHandle<'a>;
+
+    /// Set the context handle to the geometry.
+    ///
+    /// ```
+    /// use geos::{ContextInteractions, GContextHandle, GGeom};
+    ///
+    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// point_geom.set_context_handle(context_handle);
+    /// ```
+    fn set_context_handle(&mut self, context: Self::Context) {
+        self.context = Arc::new(context);
+    }
+
+    /// Get the context handle of the geometry.
+    ///
+    /// ```
+    /// use geos::{ContextInteractions, GGeom};
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let context = point_geom.get_context_handle();
+    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// ```
+    fn get_context_handle(&self) -> &Self::Context {
+        &self.context
+    }
+}
+
+impl<'a> AsRaw for GGeom<'a> {
+    type RawType = *mut GEOSGeometry;
+
+    fn as_raw(&self) -> Self::RawType {
+        *self.ptr
+    }
+}
+
+impl<'a> ContextHandling for GGeom<'a> {
+    type Context = Arc<GContextHandle<'a>>;
+
+    fn get_raw_context(&self) -> GEOSContextHandle_t {
+        self.context.as_raw()
+    }
+
+    fn clone_context(&self) -> Arc<GContextHandle<'a>> {
+        Arc::clone(&self.context)
     }
 }

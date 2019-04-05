@@ -23,9 +23,9 @@ let gg1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
 let gg2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
 let gg3 = gg1.difference(&gg2)?;
 assert_eq!(
-  gg3.to_wkt_precision(Some(0)),
-  "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))");
-
+    gg3.to_wkt_precision(Some(0)),
+    "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))",
+);
 ```
 
 
@@ -35,7 +35,7 @@ assert_eq!(
 let g1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
 let g2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
 
-let pg1 = geos::PreparedGGeom::new(&g1);
+let pg1 = geos::PreparedGGeom::new(&g1)?;
 let result = pg1.intersects(&g2)?;
 assert_eq!(result, true);
 ```

@@ -528,6 +528,64 @@ extern "C" {
         s: *const GEOSCoordSequence,
         dims: *mut c_uint,
     ) -> c_int;
+    pub fn GEOSPrepare_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> *mut GEOSPreparedGeometry;
+    pub fn GEOSPreparedContains_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedContainsProperly_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedCoveredBy_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedCovers_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedCrosses_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedDisjoint_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedIntersects_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedOverlaps_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedTouches_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedWithin_r(
+        handle: GEOSContextHandle_t,
+        pg1: *const GEOSPreparedGeometry,
+        g2: *const GEOSGeometry,
+    ) -> c_int;
+    pub fn GEOSPreparedGeom_destroy_r(
+        handle: GEOSContextHandle_t,
+        g: *mut GEOSPreparedGeometry,
+    );
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }

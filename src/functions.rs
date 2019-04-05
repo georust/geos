@@ -6,7 +6,7 @@ use libc::{atexit, c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::{mem, str};
-use crate::GContextHandle;
+use crate::{GContextHandle, AsRaw, ContextHandling};
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos

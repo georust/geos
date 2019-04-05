@@ -37,6 +37,14 @@ pub use error::{Error, GResult};
 mod voronoi;
 pub use voronoi::compute_voronoi;
 mod enums;
+mod traits;
+pub(crate) use traits::{
+    AsRaw,
+    ContextHandling,
+};
+pub use traits::{
+    ContextInteractions,
+};
 
 #[cfg(test)]
 mod test;
