@@ -16,8 +16,8 @@ before_install:
   - sudo apt-get install libgeos-dev libgdal-dev valgrind
 
 script:
-  - cargo test
   - cargo test --features geo
+  - cargo test
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
   - cargo run --features geo --example prepared_geom

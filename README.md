@@ -66,8 +66,8 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let _geom: geos::GGeom = (&p).try_into()?;
-// do some stuff with _geom
+let geom: geos::GGeom = (&p).try_into()?;
+// do some stuff with geom
 ```
 
 ### Voronoi
@@ -85,7 +85,7 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let _voronoi = geos::compute_voronoi(&points, None, 0.)?;
+let voronoi = geos::compute_voronoi(&points, None, 0.)?;
 ```
 
 
