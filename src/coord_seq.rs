@@ -48,9 +48,6 @@ impl<'a> CoordSeq<'a> {
             Ok(context_handle) => {
                 unsafe {
                     let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
-                    if ptr.is_null() {
-                        return Err(Error::NoConstructionFromNullPtr);
-                    }
                     CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into())
                 }
             }

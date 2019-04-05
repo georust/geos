@@ -5,8 +5,9 @@ use geom::GGeom;
 use libc::{atexit, c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
 use std::sync::{Arc, Once, ONCE_INIT};
-use std::{mem, str};
+use std::str;
 use crate::{GContextHandle, AsRaw, ContextHandling};
+use context_handle::PtrWrap;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos
@@ -101,8 +102,8 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
 
     // we'll transfert the ownership of the ptr to the new GGeom,
     // so the old one needs to forget their c ptr to avoid double cleanup
-    for g in geoms {
-        mem::forget(g);
+    for g in geoms.iter_mut() {
+        g.ptr = PtrWrap(::std::ptr::null_mut());
     }
 
     res

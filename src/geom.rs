@@ -6,12 +6,12 @@ use ffi::*;
 use functions::*;
 use libc::{c_double, c_int, c_uint};
 use std::ffi::CString;
-use std::{self, mem, str};
+use std::{self, str};
 use c_vec::CVec;
 use std::sync::Arc;
 
 pub struct GGeom<'a> {
-    ptr: PtrWrap<*mut GEOSGeometry>,
+    pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
     context: Arc<GContextHandle<'a>>,
 }
 
@@ -378,7 +378,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    pub fn create_polygon<'b>(exterior: GGeom<'a>, mut interiors: Vec<GGeom<'b>>) -> GResult<GGeom<'a>> {
+    pub fn create_polygon<'b>(mut exterior: GGeom<'a>, mut interiors: Vec<GGeom<'b>>) -> GResult<GGeom<'a>> {
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
         let res = unsafe {
@@ -394,9 +394,9 @@ impl<'a> GGeom<'a> {
 
         // we'll transfert the ownership of the ptr to the new GGeom,
         // so the old one needs to forget their c ptr to avoid double cleanup
-        mem::forget(exterior);
-        for i in interiors {
-            mem::forget(i);
+        exterior.ptr = PtrWrap(::std::ptr::null_mut());
+        for i in interiors.iter_mut() {
+            i.ptr = PtrWrap(::std::ptr::null_mut());
         }
 
         res
@@ -433,12 +433,12 @@ impl<'a> GGeom<'a> {
         create_multi_geom(points, GGeomTypes::MultiPoint)
     }
 
-    pub fn create_point(s: CoordSeq<'a>) -> GResult<GGeom<'a>> {
+    pub fn create_point(mut s: CoordSeq<'a>) -> GResult<GGeom<'a>> {
         unsafe {
-            // FIXME: is cloning really necessary?
-            let coords = GEOSCoordSeq_clone_r(s.get_raw_context(), s.as_raw());
-            let ptr = GEOSGeom_createPoint_r(s.get_raw_context(), coords);
-            GGeom::new_from_raw(ptr, s.clone_context())
+            let ptr = GEOSGeom_createPoint_r(s.get_raw_context(), s.as_raw());
+            let res = GGeom::new_from_raw(ptr, s.clone_context());
+            s.ptr = PtrWrap(::std::ptr::null_mut());
+            res
         }
     }
 
