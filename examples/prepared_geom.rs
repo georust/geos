@@ -1,6 +1,9 @@
+#[cfg(feature = "geo")]
 extern crate geos;
+#[cfg(feature = "geo")]
 use geos::{version, Error, GGeom, PreparedGGeom};
 
+#[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
     println!("geos_c version: {}", version());
     let g1 = GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
@@ -27,6 +30,12 @@ fn fun() -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(feature = "geo")]
 fn main() {
     fun().unwrap();
+}
+
+#[cfg(not(feature = "geo"))]
+fn main() {
+    eprintln!("You need to enable the \"geo\" feature to run this example!", );
 }

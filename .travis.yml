@@ -17,9 +17,12 @@ before_install:
 
 script:
   - cargo test
+  - cargo test --features geo
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
+  - cargo run --features geo --example prepared_geom
   - cargo run --example from_geo
+  - cargo run --features geo --example from_geo
   # run valgrind to check that there are no memoryleaks
   # Note: cargo seems to randomly name the executable, so we use find to find all the tests
   - find ./target/debug/deps -name "geos*"  -type f -executable | xargs -n 1 valgrind --leak-check=full --error-exitcode=42
