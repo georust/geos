@@ -2,34 +2,68 @@
 #![crate_type = "lib"]
 
 extern crate c_vec;
-extern crate geo_types;
 extern crate libc;
 extern crate num;
+#[cfg(feature = "geo")]
+extern crate geo_types;
+#[cfg(feature = "geo")]
 extern crate wkt;
 
+#[allow(dead_code)]
 pub(crate) mod ffi;
 pub(crate) mod functions;
 
-pub use context_handle::GContextHandle;
-pub use coord_seq::CoordSeq;
-pub use enums::{ByteOrder, Dimensions, GGeomTypes, Orientation};
+pub use context_handle::{
+    GContextHandle,
+};
+pub use coord_seq::{
+    CoordSeq,
+};
+pub use enums::{
+    ByteOrder,
+    CoordDimensions,
+    Dimensions,
+    GGeomTypes,
+    Orientation,
+};
 pub use functions::{
     orientation_index,
     version,
 };
-pub use geom::GGeom;
-pub use prepared_geom::PreparedGGeom;
+pub use geom::{
+    GGeom,
+};
+pub use prepared_geom::{
+    PreparedGGeom,
+};
 mod context_handle;
 mod coord_seq;
 mod error;
+#[cfg(feature = "geo")]
 pub mod from_geo;
 mod geom;
 mod prepared_geom;
+#[cfg(feature = "geo")]
 pub mod to_geo;
-pub use error::{Error, GResult};
+pub use error::{
+    Error,
+    GResult,
+};
+#[cfg(feature = "geo")]
 mod voronoi;
-pub use voronoi::compute_voronoi;
+#[cfg(feature = "geo")]
+pub use voronoi::{
+    compute_voronoi,
+};
 mod enums;
+mod traits;
+pub(crate) use traits::{
+    AsRaw,
+    ContextHandling,
+};
+pub use traits::{
+    ContextInteractions,
+};
 
 #[cfg(test)]
 mod test;

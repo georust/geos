@@ -2,10 +2,12 @@ use enums::*;
 use error::{Error, GResult, PredicateType};
 use ffi::*;
 use geom::GGeom;
-use libc::{atexit, c_char, c_double, c_uint, c_void};
+use libc::{c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
-use std::sync::{Once, ONCE_INIT};
-use std::{mem, str};
+use std::sync::Arc;
+use std::str;
+use crate::{GContextHandle, AsRaw, ContextHandling};
+use context_handle::PtrWrap;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos
@@ -16,41 +18,30 @@ pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char) -> String {
     str::from_utf8(c_str.to_bytes()).unwrap().to_string()
 }
 
-pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char) -> String {
+pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char, context: &GContextHandle) -> String {
     let s = unmanaged_string(raw_ptr);
-    GEOSFree(raw_ptr as *mut c_void);
+    GEOSFree_r(context.as_raw(), raw_ptr as *mut c_void);
     s
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect(g: &GGeom, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<GGeom> {
+pub fn clip_by_rect<'a>(g: &GGeom<'a>, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<GGeom<'a>> {
     unsafe {
-        GGeom::new_from_raw(GEOSClipByRect(
+        let context = g.clone_context();
+        let ptr = GEOSClipByRect_r(
+            context.as_raw(),
             g.as_raw(),
             xmin as c_double,
             ymin as c_double,
             xmax as c_double,
             ymax as c_double,
-        ))
+        );
+        GGeom::new_from_raw(ptr, context)
     }
 }
 
 pub fn version() -> String {
     unsafe { unmanaged_string(GEOSversion()) }
-}
-
-pub fn initialize() {
-    static INIT: Once = ONCE_INIT;
-    INIT.call_once(|| unsafe {
-        initGEOS();
-        assert_eq!(atexit(cleanup), 0);
-    });
-
-    extern "C" fn cleanup() {
-        unsafe {
-            finishGEOS();
-        }
-    }
 }
 
 pub(crate) fn check_geos_predicate(val: i32, p: PredicateType) -> GResult<bool> {
@@ -72,23 +63,36 @@ pub(crate) fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
-pub(crate) fn create_multi_geom(mut geoms: Vec<GGeom>, output_type: GGeomTypes) -> GResult<GGeom> {
+pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeomTypes) -> GResult<GGeom<'a>> {
     let nb_geoms = geoms.len();
-    let res = unsafe {
-        GGeom::new_from_raw(GEOSGeom_createCollection(
-            output_type.into(),
-            geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
-            nb_geoms as c_uint,
-        ))
-    }?;
+    let context = if geoms.is_empty() {
+        match GContextHandle::init() {
+            Ok(ch) => Arc::new(ch),
+            _ => return Err(Error::GenericError("GEOS_init_r failed".to_owned())),
+        }
+    } else {
+        geoms[0].clone_context()
+    };
+    let res = {
+        let mut geoms: Vec<*mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw()).collect();
+        unsafe {
+            let ptr = GEOSGeom_createCollection_r(
+                context.as_raw(),
+                output_type.into(),
+                geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
+                nb_geoms as c_uint,
+            );
+            GGeom::new_from_raw(ptr, context)
+        }
+    };
 
     // we'll transfert the ownership of the ptr to the new GGeom,
     // so the old one needs to forget their c ptr to avoid double cleanup
-    for g in geoms {
-        mem::forget(g);
+    for g in geoms.iter_mut() {
+        g.ptr = PtrWrap(::std::ptr::null_mut());
     }
 
-    Ok(res)
+    res
 }
 
 pub fn orientation_index(ax: f64, ay: f64, bx: f64, by: f64, px: f64, py: f64) -> Result<Orientation, &'static str> {

@@ -36,7 +36,7 @@ mod test {
     #[test]
     fn simple_voronoi() {
         let points = "MULTIPOINT ((150 200), (180 270), (275 163))";
-        let input = GGeom::new(points).unwrap();
+        let input = GGeom::new_from_wkt(points).unwrap();
 
         let mut voronoi = input.voronoi(None, 0., false).unwrap();
 
@@ -45,7 +45,7 @@ mod test {
             POLYGON ((400 369.6542056074766, 400 38, 170.024 38, 221.20588235294116 210.91176470588235, 400 369.6542056074766)), 
             POLYGON ((25 295, 25 395, 400 395, 400 369.6542056074766, 221.20588235294116 210.91176470588235, 25 295)))";
 
-        let mut expected_output = GGeom::new(expected_output).unwrap();
+        let mut expected_output = GGeom::new_from_wkt(expected_output).unwrap();
 
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();
@@ -59,7 +59,7 @@ mod test {
     fn wkt_voronoi_precision() {
         let points = "MULTIPOINT ((100 200), (105 202), (110 200), (140 230), 
         (210 240), (220 190), (170 170), (170 260), (213 245), (220 190))";
-        let input = GGeom::new(points).unwrap();
+        let input = GGeom::new_from_wkt(points).unwrap();
 
         let mut voronoi = input.voronoi(None, 6., false).unwrap();
 
@@ -72,7 +72,7 @@ mod test {
         POLYGON ((255 380, 340 380, 340 240, 183.51851851851853 208.7037037037037, 178.33333333333334 211.66666666666666, 176.66666666666666 223.33333333333334, 255 380)), 
         POLYGON ((340 240, 340 50, 247 50, 183.51851851851853 208.7037037037037, 340 240)))";
 
-        let mut expected_output = GGeom::new(expected_output).unwrap();
+        let mut expected_output = GGeom::new_from_wkt(expected_output).unwrap();
 
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();

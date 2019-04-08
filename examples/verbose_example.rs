@@ -3,11 +3,11 @@ use geos::{version, Error, GGeom};
 
 fn fun() -> Result<(), Error> {
     println!("geos_c version: {}", version());
-    let g1 = GGeom::new("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
+    let g1 = GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
     println!("Geometry 1 created");
     println!("Area : {}", g1.area()?);
     println!("Is Geom1 simple : {:?}", g1.is_simple()?);
-    let g2 = GGeom::new("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
+    let g2 = GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
     println!("Geometry 2 created");
     println!("Geom1 intersects geom2 : {:?}\n", g1.intersects(&g2)?);
     let g3 = g1.buffer(100.0, 8)?;
@@ -15,7 +15,7 @@ fn fun() -> Result<(), Error> {
     let result = g1.within(&g2)?;
     println!("Geom1 within geom2 : {:?}\n", result);
     println!("Geom1 to wkt : {:?}", g1.to_wkt());
-    let g5 = GGeom::new("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)")?;
+    let g5 = GGeom::new_from_wkt("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)")?;
     println!("Geom5 (linestring) : {:?}", g5.geometry_type());
     let g6 = g5.buffer(20.0, 10)?;
     println!("Geom6 (polygon) : {:?}", g6.geometry_type());
