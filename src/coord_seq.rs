@@ -191,6 +191,9 @@ impl<'a> Clone for CoordSeq<'a> {
     /// Also pass the context to the newly created `CoordSeq`.
     fn clone(&self) -> CoordSeq<'a> {
         let ptr = unsafe { GEOSCoordSeq_clone_r(self.get_raw_context(), self.as_raw()) };
+        if ptr.is_null() {
+            panic!("Couldn't clone CoordSeq...");
+        }
         CoordSeq {
             ptr: PtrWrap(ptr),
             context: self.clone_context(),

@@ -663,6 +663,9 @@ impl<'a> Clone for GGeom<'a> {
     /// Also pass the context to the newly created `GGeom`.
     fn clone(&self) -> GGeom<'a> {
         let ptr = unsafe { GEOSGeom_clone_r(self.get_raw_context(), self.as_raw()) };
+        if ptr.is_null() {
+            panic!("Couldn't clone geometry...");
+        }
         GGeom {
             ptr: PtrWrap(ptr),
             context: self.clone_context(),
