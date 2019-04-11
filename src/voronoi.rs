@@ -3,7 +3,6 @@ use error::Error;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 
-//TODO, change  &[] to IntoIterator
 pub fn compute_voronoi(
     points: &[Point<f64>],
     envelope: Option<&GGeom>,

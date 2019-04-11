@@ -28,12 +28,19 @@ impl<'a> GGeom<'a> {
     pub fn new_from_wkt(wkt: &str) -> GResult<GGeom<'a>> {
         match GContextHandle::init() {
             Ok(context_handle) => {
-                let c_str = CString::new(wkt).expect("Conversion to CString failed");
-                unsafe {
-                    let reader = GEOSWKTReader_create_r(context_handle.as_raw());
-                    let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader, c_str.as_ptr());
-                    GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
-                    GGeom::new_from_raw(ptr, Arc::new(context_handle))
+                match CString::new(wkt) {
+                    Ok(c_str) => {
+                        unsafe {
+                            let reader = GEOSWKTReader_create_r(context_handle.as_raw());
+                            let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader,
+                                                           c_str.as_ptr());
+                            GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
+                            GGeom::new_from_raw(ptr, Arc::new(context_handle))
+                        }
+                    }
+                    Err(e) => {
+                        Err(Error::GenericError(format!("Conversion to CString failed: {}", e)))
+                    }
                 }
             }
             Err(e) => Err(e),
@@ -169,8 +176,9 @@ impl<'a> GGeom<'a> {
     /// Get the underlying geos CoordSeq object from the geometry
     ///
     /// Note: this clones the underlying CoordSeq to avoid double free
-    /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos geometry)
-    /// if this method's performance becomes a bottleneck, feel free to open an issue, we could skip this clone with cleaner code
+    /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos
+    /// geometry) if this method's performance becomes a bottleneck, feel free to open an issue,
+    /// we could skip this clone with cleaner code
     pub fn get_coord_seq(&self) -> GResult<CoordSeq<'a>> {
         let type_geom = self.geometry_type();
         match type_geom {
@@ -392,8 +400,8 @@ impl<'a> GGeom<'a> {
             GGeom::new_from_raw(ptr, context_handle)
         };
 
-        // we'll transfert the ownership of the ptr to the new GGeom,
-        // so the old one needs to forget their c ptr to avoid double cleanup
+        // We transfered the ownership of the ptr to the new GGeom,
+        // so the old ones need to forget their c ptr to avoid double free.
         exterior.ptr = PtrWrap(::std::ptr::null_mut());
         for i in interiors.iter_mut() {
             i.ptr = PtrWrap(::std::ptr::null_mut());
@@ -409,7 +417,7 @@ impl<'a> GGeom<'a> {
     pub fn create_multipolygon(polygons: Vec<GGeom<'a>>) -> GResult<GGeom<'a>> {
         if !check_same_geometry_type(&polygons, GGeomTypes::Polygon) {
             return Err(Error::ImpossibleOperation(
-                "all the provided geometry have to be of type Polygon".to_string(),
+                "all the provided geometry have to be of type Polygon".to_owned(),
             ));
         }
         create_multi_geom(polygons, GGeomTypes::MultiPolygon)
@@ -418,7 +426,7 @@ impl<'a> GGeom<'a> {
     pub fn create_multilinestring(linestrings: Vec<GGeom<'a>>) -> GResult<GGeom<'a>> {
         if !check_same_geometry_type(&linestrings, GGeomTypes::LineString) {
             return Err(Error::ImpossibleOperation(
-                "all the provided geometry have to be of type LineString".to_string(),
+                "all the provided geometry have to be of type LineString".to_owned(),
             ));
         }
         create_multi_geom(linestrings, GGeomTypes::MultiLineString)
@@ -427,7 +435,7 @@ impl<'a> GGeom<'a> {
     pub fn create_multipoint(points: Vec<GGeom<'a>>) -> GResult<GGeom<'a>> {
         if !check_same_geometry_type(&points, GGeomTypes::Point) {
             return Err(Error::ImpossibleOperation(
-                "all the provided geometry have to be of type Point".to_string(),
+                "all the provided geometry have to be of type Point".to_owned(),
             ));
         }
         create_multi_geom(points, GGeomTypes::MultiPoint)
@@ -660,7 +668,7 @@ impl<'a> Drop for GGeom<'a> {
 }
 
 impl<'a> Clone for GGeom<'a> {
-    /// Also pass the context to the newly created `GGeom`.
+    /// Also passes the context to the newly created `GGeom`.
     fn clone(&self) -> GGeom<'a> {
         let ptr = unsafe { GEOSGeom_clone_r(self.get_raw_context(), self.as_raw()) };
         if ptr.is_null() {
