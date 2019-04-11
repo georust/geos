@@ -97,7 +97,7 @@ impl<'a> CoordSeq<'a> {
             if !data.iter().skip(1).all(|x| x.len() == dims) {
                 return Err(Error::GenericError("All vec entries must have the same size!".to_owned()));
             }
-            match match GContextHandle::init() {
+            match GContextHandle::init() {
                 Ok(context_handle) => {
                     unsafe {
                         let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(),
@@ -107,30 +107,27 @@ impl<'a> CoordSeq<'a> {
                     }
                 }
                 Err(e) => return Err(e),
-            } {
-                Ok(coord) => {
-                    let raw_context = coord.get_raw_context();
-                    let raw_coord = coord.as_raw();
+            }.and_then(|coord| {
+                let raw_context = coord.get_raw_context();
+                let raw_coord = coord.as_raw();
 
-                    let funcs = [GEOSCoordSeq_setX_r,
-                                 GEOSCoordSeq_setY_r,
-                                 GEOSCoordSeq_setZ_r];
+                let funcs = [GEOSCoordSeq_setX_r,
+                             GEOSCoordSeq_setY_r,
+                             GEOSCoordSeq_setZ_r];
 
-                    for (line, line_data) in data.iter().enumerate() {
-                        for (pos, elem) in line_data.iter().enumerate() {
-                            unsafe {
-                                if funcs[pos](raw_context, raw_coord, line as _, *elem) == 0 {
-                                    let err = format!("Failed to set value at position {} on \
-                                                       line {}", pos, line);
-                                    return Err(Error::GenericError(err));
-                                }
+                for (line, line_data) in data.iter().enumerate() {
+                    for (pos, elem) in line_data.iter().enumerate() {
+                        unsafe {
+                            if funcs[pos](raw_context, raw_coord, line as _, *elem) == 0 {
+                                let err = format!("Failed to set value at position {} on \
+                                                   line {}", pos, line);
+                                return Err(Error::GenericError(err));
                             }
                         }
                     }
-                    Ok(coord)
                 }
-                e => e,
-            }
+                Ok(coord)
+            })
         } else {
             Err(Error::GenericError("Can't determine dimension for the CoordSeq".to_owned()))
         }
