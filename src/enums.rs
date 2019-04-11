@@ -25,6 +25,19 @@ impl From<u32> for CoordDimensions {
     }
 }
 
+impl TryFrom<u32> for CoordDimensions {
+    type Error = &'static str;
+
+    fn try_from(dimensions: u32) -> Result<Self, Self::Error> {
+        match dimensions {
+            1 => Ok(CoordDimensions::OneD),
+            2 => Ok(CoordDimensions::TwoD),
+            3 => Ok(CoordDimensions::ThreeD),
+            _ => Err("dimensions must be >= 1 and <= 3"),
+        }
+    }
+}
+
 impl Into<u32> for CoordDimensions {
     fn into(self) -> u32 {
         match self {
@@ -53,6 +66,19 @@ impl From<c_int> for Dimensions {
     }
 }
 
+impl TryFrom<c_int> for Dimensions {
+    type Error = &'static str;
+
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
+        match dimensions {
+            2 => Ok(Dimensions::TwoD),
+            3 => Ok(Dimensions::ThreeD),
+            x if x > 3 => Ok(Dimensions::Other(x as _)),
+            _ => Err("dimensions must be > 1"),
+        }
+    }
+}
+
 impl Into<c_int> for Dimensions {
     fn into(self) -> c_int {
         match self {
@@ -70,10 +96,21 @@ pub enum ByteOrder {
 }
 
 impl From<c_int> for ByteOrder {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
+    fn from(order: c_int) -> Self {
+        match order {
             0 => ByteOrder::BigEndian,
             _ => ByteOrder::LittleEndian,
+        }
+    }
+}
+
+impl TryFrom<c_int> for ByteOrder {
+    type Error = &'static str;
+
+    fn try_from(order: c_int) -> Result<Self, Self::Error> {
+        match order {
+            0 => Ok(ByteOrder::BigEndian),
+            _ => Ok(ByteOrder::LittleEndian),
         }
     }
 }
@@ -114,6 +151,24 @@ impl From<c_int> for GGeomTypes {
             6 => GGeomTypes::MultiPolygon,
             7 => GGeomTypes::GeometryCollection,
             x => GGeomTypes::__Unknonwn(x as _),
+        }
+    }
+}
+
+impl TryFrom<c_int> for GGeomTypes {
+    type Error = &'static str;
+
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
+        match dimensions {
+            0 => Ok(GGeomTypes::Point),
+            1 => Ok(GGeomTypes::LineString),
+            2 => Ok(GGeomTypes::LinearRing),
+            3 => Ok(GGeomTypes::Polygon),
+            4 => Ok(GGeomTypes::MultiPoint),
+            5 => Ok(GGeomTypes::MultiLineString),
+            6 => Ok(GGeomTypes::MultiPolygon),
+            7 => Ok(GGeomTypes::GeometryCollection),
+            x => Ok(GGeomTypes::__Unknonwn(x as _)),
         }
     }
 }
