@@ -1,4 +1,4 @@
-use libc::c_int;
+use libc::{c_int, size_t};
 
 // use std::convert::TryFrom;
 // TODO: remove this implementation when 1.34 is released.
@@ -229,6 +229,47 @@ impl Into<c_int> for Orientation {
             Orientation::CounterClockwise => -1,
             Orientation::Clockwise => 0,
             Orientation::Colinear => 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Ordinate {
+    X,
+    Y,
+    Z,
+}
+
+impl From<size_t> for Ordinate {
+    fn from(ordinate: size_t) -> Self {
+        match ordinate {
+            0 => Ordinate::X,
+            1 => Ordinate::Y,
+            2 => Ordinate::Z,
+            _ => panic!("ordinate must be >= 0 and <= 2"),
+        }
+    }
+}
+
+impl TryFrom<size_t> for Ordinate {
+    type Error = &'static str;
+
+    fn try_from(ordinate: size_t) -> Result<Self, Self::Error> {
+        match ordinate {
+            0 => Ok(Ordinate::X),
+            1 => Ok(Ordinate::Y),
+            2 => Ok(Ordinate::Z),
+            _ => Err("ordinate value must be >= 0 and <= 2"),
+        }
+    }
+}
+
+impl Into<size_t> for Ordinate {
+    fn into(self) -> size_t {
+        match self {
+            Ordinate::X => 0,
+            Ordinate::Y => 1,
+            Ordinate::Z => 2,
         }
     }
 }

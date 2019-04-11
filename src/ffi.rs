@@ -72,12 +72,20 @@ extern "C" {
     pub fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
     pub fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
     pub fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: c_uint, val: c_double) -> c_int;
+    pub fn GEOSCoordSeq_setOrdinate(
+        s: *mut GEOSCoordSequence,
+        idx: c_uint,
+        ordinate: size_t,
+        val: c_double,
+    ) -> c_int;
     pub fn GEOSCoordSeq_getX(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
         -> c_int;
     pub fn GEOSCoordSeq_getY(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
         -> c_int;
     pub fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
         -> c_int;
+    pub fn GEOSCoordSeq_getOrdinate(s: *const GEOSCoordSequence, idx: c_uint, ordinate: size_t)
+        -> c_double;
     pub fn GEOSCoordSeq_getSize(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
     pub fn GEOSCoordSeq_getDimensions(s: *const GEOSCoordSequence, val: *mut c_uint) -> c_int;
 
@@ -587,6 +595,19 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g: *mut GEOSPreparedGeometry,
     );
+    pub fn GEOSCoordSeq_setOrdinate_r(
+        handle: GEOSContextHandle_t,
+        s: *mut GEOSCoordSequence,
+        idx: c_uint,
+        ordinate: size_t,
+        val: c_double,
+    ) -> c_int;
+    pub fn GEOSCoordSeq_getOrdinate_r(
+        handle: GEOSContextHandle_t,
+        s: *const GEOSCoordSequence,
+        idx: c_uint,
+        ordinate: size_t,
+    ) -> c_double;
 
     pub fn GEOSOrientationIndex(ax: c_double, ay: c_double, bx: c_double, by: c_double, px: c_double, py: c_double) -> c_int;
 }

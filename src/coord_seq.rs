@@ -8,6 +8,7 @@ use crate::{
     CoordDimensions,
     GContextHandle,
     GGeom,
+    Ordinate,
 };
 use crate::enums::TryFrom;
 use std::sync::Arc;
@@ -228,6 +229,37 @@ impl<'a> CoordSeq<'a> {
         }
     }
 
+    /// Sets the value at the given `ordinate` (aka position).
+    ///
+    /// Note: your `CoordSeq` object must have enough dimensions to set at the given `ordinate`!
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Ordinate};
+    ///
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
+    ///                           .expect("failed to create CoordSeq");
+    /// coords.set_ordinate(0, Ordinate::Z, 10.);
+    /// assert!(coords.get_z(0) == Ok(10.));
+    /// assert!(coords.get_ordinate(0, Ordinate::Z) == 10.);
+    /// ```
+    pub fn set_ordinate(&mut self, line: usize, ordinate: Ordinate, val: f64) -> GResult<()> {
+        let ordinate = ordinate.into();
+        assert!(line < self.nb_lines);
+        assert!(self.nb_dimensions > ordinate);
+
+        let ret_val = unsafe {
+            GEOSCoordSeq_setOrdinate_r(self.get_raw_context(), self.as_raw(), line as _,
+                                       ordinate, val)
+        };
+        if ret_val == 0 {
+            Err(Error::GeosError(format!("impossible to set value for ordinate {}", ordinate)))
+        } else {
+            Ok(())
+        }
+    }
+
     /// Gets the X position value at the given `line`.
     ///
     /// # Example
@@ -248,7 +280,7 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getX_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
         } else {
             Ok(n as f64)
         }
@@ -277,7 +309,7 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getY_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
         } else {
             Ok(n as f64)
         }
@@ -306,9 +338,34 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getZ_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("getting coordinates from CoordSeq".into()))
+            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
         } else {
             Ok(n as f64)
+        }
+    }
+
+    /// Gets the value at the given `ordinate` (aka position).
+    ///
+    /// Note: your `CoordSeq` object must have enough dimensions to access the given `ordinate`!
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Ordinate};
+    ///
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
+    ///                           .expect("failed to create CoordSeq");
+    /// coords.set_ordinate(0, Ordinate::Z, 10.);
+    /// assert!(coords.get_z(0) == Ok(10.));
+    /// assert!(coords.get_ordinate(0, Ordinate::Z) == 10.);
+    /// ```
+    pub fn get_ordinate(&self, line: usize, ordinate: Ordinate) -> f64 {
+        let ordinate = ordinate.into();
+        assert!(line < self.nb_lines);
+        assert!(self.nb_dimensions > ordinate);
+
+        unsafe {
+            GEOSCoordSeq_getOrdinate_r(self.get_raw_context(), self.as_raw(), line as _, ordinate)
         }
     }
 
@@ -415,13 +472,14 @@ impl<'a> Drop for CoordSeq<'a> {
 impl<'a> Clone for CoordSeq<'a> {
     /// Also pass the context to the newly created `CoordSeq`.
     fn clone(&self) -> CoordSeq<'a> {
-        let ptr = unsafe { GEOSCoordSeq_clone_r(self.get_raw_context(), self.as_raw()) };
+        let context = self.clone_context();
+        let ptr = unsafe { GEOSCoordSeq_clone_r(context.as_raw(), self.as_raw()) };
         if ptr.is_null() {
             panic!("Couldn't clone CoordSeq...");
         }
         CoordSeq {
             ptr: PtrWrap(ptr),
-            context: self.clone_context(),
+            context,
             nb_dimensions: self.nb_dimensions,
             nb_lines: self.nb_lines,
         }
