@@ -18,10 +18,12 @@ You can check the examples in the `examples/` directory.
 
 ### Constructing geometries from WKT:
 
-```rust,skt-template
-let gg1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
-let gg2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
-let gg3 = gg1.difference(&gg2)?;
+```rust
+extern crate geos;
+
+let gg1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))").expect("invalid WKT");
+let gg2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))").expect("invalid WKT");
+let gg3 = gg1.difference(&gg2).expect("difference failed");
 assert_eq!(
     gg3.to_wkt_precision(Some(0)),
     "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))",
@@ -31,12 +33,14 @@ assert_eq!(
 
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
-```rust,skt-template
-let g1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
-let g2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
+```rust
+extern crate geos;
 
-let pg1 = geos::PreparedGGeom::new(&g1)?;
-let result = pg1.intersects(&g2)?;
+let g1 = geos::GGeom::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").expect("invalid WKT");
+let g2 = geos::GGeom::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").expect("invalid WKT");
+
+let pg1 = geos::PreparedGGeom::new(&g1).expect("PreparedGGeom::new failed");
+let result = pg1.intersects(&g2).expect("intersects failed");
 assert_eq!(result, true);
 ```
 
@@ -47,7 +51,10 @@ to use all geos algorithms.
 
 Complete example can be found in `examples/from_geo.rs`
 
-```rust,skt-template
+```rust
+extern crate geos;
+extern crate geo_types;
+
 use geos::from_geo::TryInto;
 use geo_types::{LineString, Coordinate, Polygon};
 
@@ -66,7 +73,7 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let geom: geos::GGeom = (&p).try_into()?;
+let geom: geos::GGeom = (&p).try_into().expect("failed conversion");
 // do some stuff with geom
 ```
 
@@ -76,7 +83,9 @@ let geom: geos::GGeom = (&p).try_into()?;
 
 For those to be easier to use with [rust-geo](https://github.com/georust/rust-geo) some helpers are available in `voronoi.rs`.
 
-```rust,skt-template
+```rust
+extern crate geo_types;
+
 use geo_types::Point;
 let points = vec![
     Point::new(0., 0.),
@@ -85,7 +94,7 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let voronoi = geos::compute_voronoi(&points, None, 0.)?;
+let voronoi = geos::compute_voronoi(&points, None, 0.).expect("compute_voronoi failed");
 ```
 
 
