@@ -8,9 +8,8 @@ extern crate num;
 extern crate geo_types;
 #[cfg(feature = "geo")]
 extern crate wkt;
+extern crate geos_sys;
 
-#[allow(dead_code)]
-pub(crate) mod ffi;
 pub(crate) mod functions;
 
 pub use context_handle::{

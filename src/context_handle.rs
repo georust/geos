@@ -1,6 +1,6 @@
 use enums::{ByteOrder, Dimensions};
 use error::{Error, GResult};
-use ffi::*;
+use geos_sys::*;
 use libc::{c_char, c_void, strlen};
 use std::ffi::CStr;
 use std::slice;

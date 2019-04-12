@@ -1,8 +1,7 @@
 use enums::*;
 use error::{Error, GResult, PredicateType};
-use ffi::*;
+use geos_sys::*;
 use geom::GGeom;
-use libc::{c_char, c_double, c_uint, c_void};
 use std::ffi::CStr;
 use std::sync::Arc;
 use std::str;
@@ -13,14 +12,14 @@ use context_handle::PtrWrap;
 // this has to be checked method by method in geos
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
-pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char) -> String {
+pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8) -> String {
     let c_str = CStr::from_ptr(raw_ptr);
     str::from_utf8(c_str.to_bytes()).unwrap().to_string()
 }
 
-pub(crate) unsafe fn managed_string(raw_ptr: *mut c_char, context: &GContextHandle) -> String {
+pub(crate) unsafe fn managed_string(raw_ptr: *mut i8, context: &GContextHandle) -> String {
     let s = unmanaged_string(raw_ptr);
-    GEOSFree_r(context.as_raw(), raw_ptr as *mut c_void);
+    GEOSFree_r(context.as_raw(), raw_ptr as *mut _);
     s
 }
 
@@ -31,10 +30,10 @@ pub fn clip_by_rect<'a>(g: &GGeom<'a>, xmin: f64, ymin: f64, xmax: f64, ymax: f6
         let ptr = GEOSClipByRect_r(
             context.as_raw(),
             g.as_raw(),
-            xmin as c_double,
-            ymin as c_double,
-            xmax as c_double,
-            ymax as c_double,
+            xmin,
+            ymin,
+            xmax,
+            ymax,
         );
         GGeom::new_from_raw(ptr, context)
     }
@@ -80,7 +79,7 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
                 context.as_raw(),
                 output_type.into(),
                 geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
-                nb_geoms as c_uint,
+                nb_geoms as _,
             );
             GGeom::new_from_raw(ptr, context)
         }

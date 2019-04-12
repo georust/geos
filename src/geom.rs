@@ -2,9 +2,8 @@ use crate::{CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteraction
 use context_handle::PtrWrap;
 use enums::*;
 use error::{Error, GResult, PredicateType};
-use ffi::*;
+use geos_sys::*;
 use functions::*;
-use libc::{c_double, c_int, c_uint};
 use std::ffi::CString;
 use std::{self, str};
 use c_vec::CVec;
@@ -231,7 +230,7 @@ impl<'a> GGeom<'a> {
         unsafe {
             let writer = GEOSWKTWriter_create_r(self.get_raw_context());
             if let Some(x) = precision {
-                GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), writer, x as c_int)
+                GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), writer, x as _)
             };
             let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
             GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
@@ -334,8 +333,8 @@ impl<'a> GGeom<'a> {
             let ptr = GEOSBuffer_r(
                 self.get_raw_context(),
                 self.as_raw(),
-                width as c_double,
-                quadsegs as c_int,
+                width,
+                quadsegs as _,
             );
             GGeom::new_from_raw(ptr, self.clone_context())
         }
@@ -395,7 +394,7 @@ impl<'a> GGeom<'a> {
                 context_handle.as_raw(),
                 exterior.as_raw(),
                 geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
-                nb_interiors as c_uint,
+                nb_interiors as _,
             );
             GGeom::new_from_raw(ptr, context_handle)
         };
@@ -489,7 +488,7 @@ impl<'a> GGeom<'a> {
                     .map(|e| e.as_raw())
                     .unwrap_or(std::ptr::null_mut()),
                 tolerance,
-                only_edges as c_int,
+                only_edges as _,
             );
             Self::new_from_raw(raw_voronoi, self.clone_context())
         }
