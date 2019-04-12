@@ -1,4 +1,4 @@
-use libc::c_int;
+use libc::{c_int, size_t};
 
 // use std::convert::TryFrom;
 // TODO: remove this implementation when 1.34 is released.
@@ -21,6 +21,19 @@ impl From<u32> for CoordDimensions {
             2 => CoordDimensions::TwoD,
             3 => CoordDimensions::ThreeD,
             _ => panic!("dimensions must be >= 1 and <= 3"),
+        }
+    }
+}
+
+impl TryFrom<u32> for CoordDimensions {
+    type Error = &'static str;
+
+    fn try_from(dimensions: u32) -> Result<Self, Self::Error> {
+        match dimensions {
+            1 => Ok(CoordDimensions::OneD),
+            2 => Ok(CoordDimensions::TwoD),
+            3 => Ok(CoordDimensions::ThreeD),
+            _ => Err("dimensions must be >= 1 and <= 3"),
         }
     }
 }
@@ -53,6 +66,19 @@ impl From<c_int> for Dimensions {
     }
 }
 
+impl TryFrom<c_int> for Dimensions {
+    type Error = &'static str;
+
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
+        match dimensions {
+            2 => Ok(Dimensions::TwoD),
+            3 => Ok(Dimensions::ThreeD),
+            x if x > 3 => Ok(Dimensions::Other(x as _)),
+            _ => Err("dimensions must be > 1"),
+        }
+    }
+}
+
 impl Into<c_int> for Dimensions {
     fn into(self) -> c_int {
         match self {
@@ -70,10 +96,21 @@ pub enum ByteOrder {
 }
 
 impl From<c_int> for ByteOrder {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
+    fn from(order: c_int) -> Self {
+        match order {
             0 => ByteOrder::BigEndian,
             _ => ByteOrder::LittleEndian,
+        }
+    }
+}
+
+impl TryFrom<c_int> for ByteOrder {
+    type Error = &'static str;
+
+    fn try_from(order: c_int) -> Result<Self, Self::Error> {
+        match order {
+            0 => Ok(ByteOrder::BigEndian),
+            _ => Ok(ByteOrder::LittleEndian),
         }
     }
 }
@@ -114,6 +151,24 @@ impl From<c_int> for GGeomTypes {
             6 => GGeomTypes::MultiPolygon,
             7 => GGeomTypes::GeometryCollection,
             x => GGeomTypes::__Unknonwn(x as _),
+        }
+    }
+}
+
+impl TryFrom<c_int> for GGeomTypes {
+    type Error = &'static str;
+
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
+        match dimensions {
+            0 => Ok(GGeomTypes::Point),
+            1 => Ok(GGeomTypes::LineString),
+            2 => Ok(GGeomTypes::LinearRing),
+            3 => Ok(GGeomTypes::Polygon),
+            4 => Ok(GGeomTypes::MultiPoint),
+            5 => Ok(GGeomTypes::MultiLineString),
+            6 => Ok(GGeomTypes::MultiPolygon),
+            7 => Ok(GGeomTypes::GeometryCollection),
+            x => Ok(GGeomTypes::__Unknonwn(x as _)),
         }
     }
 }
@@ -174,6 +229,47 @@ impl Into<c_int> for Orientation {
             Orientation::CounterClockwise => -1,
             Orientation::Clockwise => 0,
             Orientation::Colinear => 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Ordinate {
+    X,
+    Y,
+    Z,
+}
+
+impl From<size_t> for Ordinate {
+    fn from(ordinate: size_t) -> Self {
+        match ordinate {
+            0 => Ordinate::X,
+            1 => Ordinate::Y,
+            2 => Ordinate::Z,
+            _ => panic!("ordinate must be >= 0 and <= 2"),
+        }
+    }
+}
+
+impl TryFrom<size_t> for Ordinate {
+    type Error = &'static str;
+
+    fn try_from(ordinate: size_t) -> Result<Self, Self::Error> {
+        match ordinate {
+            0 => Ok(Ordinate::X),
+            1 => Ok(Ordinate::Y),
+            2 => Ok(Ordinate::Z),
+            _ => Err("ordinate value must be >= 0 and <= 2"),
+        }
+    }
+}
+
+impl Into<size_t> for Ordinate {
+    fn into(self) -> size_t {
+        match self {
+            Ordinate::X => 0,
+            Ordinate::Y => 1,
+            Ordinate::Z => 2,
         }
     }
 }

@@ -24,6 +24,7 @@ pub use enums::{
     CoordDimensions,
     Dimensions,
     GGeomTypes,
+    Ordinate,
     Orientation,
 };
 pub use functions::{
