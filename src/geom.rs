@@ -22,13 +22,21 @@ impl<'a> GGeom<'a> {
     /// ```
     /// use geos::GGeom;
     ///
-    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = GGeom::new_from_wkt_s("POINT (2.5 2.5)".to_owned())
+    ///                        .expect("Invalid geometry");
     /// ```
-    pub fn new_from_wkt(hex: &[u8]) -> GResult<GGeom<'a>> {
+    pub fn new_from_wkt_s(wkt: String) -> GResult<GGeom<'a>> {
         match GContextHandle::init() {
             Ok(context) => {
+                let wkt = match CString::new(wkt) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        return Err(Error::GenericError(format!("Conversion to CString failed: {}",
+                                                               e)));
+                    }
+                };
                 unsafe {
-                    let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
+                    let ptr = GEOSGeomFromWKT_r(context.as_raw(), wkt.as_ptr());
                     GGeom::new_from_raw(ptr, Arc::new(context))
                 }
             }
@@ -36,17 +44,17 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    /// Same as [`new_from_wkt`] except it internally uses a reader instead of just using the given
-    /// string.
+    /// Same as [`new_from_wkt_s`] except it internally uses a reader instead of just using the
+    /// given string.
     ///
     /// # Example
     ///
     /// ```
     /// use geos::GGeom;
     ///
-    /// let point_geom = GGeom::new_from_wkt_reader("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
-    pub fn new_from_wkt_reader(wkt: &str) -> GResult<GGeom<'a>> {
+    pub fn new_from_wkt(wkt: &str) -> GResult<GGeom<'a>> {
         match GContextHandle::init() {
             Ok(context_handle) => {
                 match CString::new(wkt) {
@@ -716,7 +724,7 @@ impl<'a> GGeom<'a> {
         }
         let mut y = 0.;
         unsafe {
-            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut y) != 0 {
+            if GEOSGeomGetY_r(self.get_raw_context(), self.as_raw(), &mut y) != 0 {
                 Ok(y)
             } else {
                 Err(Error::GenericError("GEOSGeomGetY_r failed".to_owned()))
