@@ -11,13 +11,10 @@ extern crate wkt;
 extern crate geos_sys;
 
 #[cfg(feature = "geo")]
-#[macro_use]
 extern crate doc_comment;
 
 #[cfg(feature = "geo")]
-doc_comment! {
-    include_str!("../README.md")
-}
+doc_comment::doctest!("../README.md");
 
 pub(crate) mod functions;
 
