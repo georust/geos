@@ -24,7 +24,29 @@ impl<'a> GGeom<'a> {
     ///
     /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
-    pub fn new_from_wkt(wkt: &str) -> GResult<GGeom<'a>> {
+    pub fn new_from_wkt(hex: &[u8]) -> GResult<GGeom<'a>> {
+        match GContextHandle::init() {
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Same as [`new_from_wkt`] except it internally uses a reader instead of just using the given
+    /// string.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt_reader("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// ```
+    pub fn new_from_wkt_reader(wkt: &str) -> GResult<GGeom<'a>> {
         match GContextHandle::init() {
             Ok(context_handle) => {
                 match CString::new(wkt) {
@@ -651,6 +673,109 @@ impl<'a> GGeom<'a> {
                 return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
             }
             CoordSeq::new_from_raw(ptr, self.clone_context(), size, dims)
+        }
+    }
+
+    /// Returns the X position. The given `GGeom` must be a `Point`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (1.5 2.5 3.5)").expect("Invalid geometry");
+    /// assert!(point_geom.get_x() == Ok(1.5));
+    /// ```
+    pub fn get_x(&self) -> GResult<f64> {
+        if self.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Geometry must be a point".to_owned()));
+        }
+        let x = 0.;
+        unsafe {
+            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut x) != 0 {
+                Ok(x)
+            } else {
+                Err(Error::GenericError("GEOSGeomGetX_r failed".to_owned()))
+            }
+        }
+    }
+
+    /// Returns the Y position. The given `GGeom` must be a `Point`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (1.5 2.5 3.5)").expect("Invalid geometry");
+    /// assert!(point_geom.get_y() == Ok(2.5));
+    /// ```
+    pub fn get_y(&self) -> GResult<f64> {
+        if self.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Geometry must be a point".to_owned()));
+        }
+        let y = 0.;
+        unsafe {
+            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut y) != 0 {
+                Ok(y)
+            } else {
+                Err(Error::GenericError("GEOSGeomGetY_r failed".to_owned()))
+            }
+        }
+    }
+
+    /// Returns the Z position. The given `GGeom` must be a `Point`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    pub fn get_z(&self) -> GResult<f64> {
+        if self.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Geometry must be a point".to_owned()));
+        }
+        let z = 0.;
+        unsafe {
+            if GEOSGeomGetZ_r(self.get_raw_context(), self.as_raw(), &mut z) != 0 {
+                Ok(z)
+            } else {
+                Err(Error::GenericError("GEOSGeomGetZ_r failed".to_owned()))
+            }
+        }
+    }
+
+    /// The given `GGeom` must be a `LineString`, otherwise it'll fail.
+    pub fn get_point_n(&self, n: usize) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSGeomGetPointN_r(self.get_raw_context(), self.as_raw(), n as _);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    /// The given `GGeom` must be a `LineString`, otherwise it'll fail.
+    pub fn get_start_point(&self) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSGeomGetStartPoint_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    /// The given `GGeom` must be a `LineString`, otherwise it'll fail.
+    pub fn get_end_point(&self) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSGeomGetEndPoint_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
         }
     }
 }
