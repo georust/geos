@@ -8,9 +8,17 @@ extern crate num;
 extern crate geo_types;
 #[cfg(feature = "geo")]
 extern crate wkt;
+extern crate geos_sys;
 
-#[allow(dead_code)]
-pub(crate) mod ffi;
+#[cfg(feature = "geo")]
+#[macro_use]
+extern crate doc_comment;
+
+#[cfg(feature = "geo")]
+doc_comment! {
+    include_str!("../README.md")
+}
+
 pub(crate) mod functions;
 
 pub use context_handle::{

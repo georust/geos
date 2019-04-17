@@ -1,6 +1,6 @@
 use error::{Error, GResult};
 use context_handle::PtrWrap;
-use ffi::*;
+use geos_sys::*;
 use crate::{
     AsRaw,
     ContextHandling,

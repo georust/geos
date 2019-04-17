@@ -1,7 +1,7 @@
 use crate::{GContextHandle, GGeom, GResult, AsRaw, ContextHandling, ContextInteractions};
 use error::PredicateType;
 use context_handle::PtrWrap;
-use ffi::*;
+use geos_sys::*;
 use functions::*;
 use std::sync::Arc;
 use error::Error;

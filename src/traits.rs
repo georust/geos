@@ -1,4 +1,4 @@
-use ffi::GEOSContextHandle_t;
+use geos_sys::GEOSContextHandle_t;
 
 pub trait AsRaw {
     type RawType;
