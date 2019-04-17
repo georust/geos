@@ -483,9 +483,7 @@ impl<'a> Clone for CoordSeq<'a> {
     }
 }
 
-impl<'a> ContextInteractions for CoordSeq<'a> {
-    type Context = GContextHandle<'a>;
-
+impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
     /// Set the context handle to the `CoordSeq`.
     ///
     /// ```
@@ -496,7 +494,7 @@ impl<'a> ContextInteractions for CoordSeq<'a> {
     /// let mut coord_seq = CoordSeq::new(2, CoordDimensions::TwoD).expect("failed to create CoordSeq");
     /// coord_seq.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: Self::Context) {
+    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -509,7 +507,7 @@ impl<'a> ContextInteractions for CoordSeq<'a> {
     /// let context = coord_seq.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &Self::Context {
+    fn get_context_handle(&self) -> &GContextHandle<'a> {
         &self.context
     }
 }
