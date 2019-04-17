@@ -198,8 +198,41 @@ impl<'a> GGeom<'a> {
         Ok(GGeom { ptr: PtrWrap(ptr), context })
     }
 
+    /// Checks if the geometry is valid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                        .expect("Invalid geometry");
+    /// assert!(point_geom.is_valid() == false);
+    /// ```
     pub fn is_valid(&self) -> bool {
         unsafe { GEOSisValid_r(self.get_raw_context(), self.as_raw()) == 1 }
+    }
+
+    /// Returns an explanation on why the geometry is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                        .expect("Invalid geometry");
+    /// assert!(point_geom.is_valid_reason() == Some("Self-intersection[0 0]".to_owned()));
+    /// ```
+    pub fn is_valid_reason(&self) -> Option<String> {
+        unsafe {
+            let ptr = GEOSisValidReason_r(self.get_raw_context(), self.as_raw());
+            if ptr.is_null() {
+                None
+            } else {
+                Some(managed_string(ptr, self.get_context_handle()))
+            }
+        }
     }
 
     /// Get the underlying geos CoordSeq object from the geometry
@@ -252,7 +285,7 @@ impl<'a> GGeom<'a> {
     pub fn to_wkt(&self) -> String {
         unsafe {
             let ptr = GEOSGeomToWKT_r(self.get_raw_context(), self.as_raw());
-            managed_string(ptr, &self.context)
+            managed_string(ptr, self.get_context_handle())
         }
     }
 
@@ -264,7 +297,7 @@ impl<'a> GGeom<'a> {
             };
             let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
             GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
-            managed_string(c_result, &self.context)
+            managed_string(c_result, self.get_context_handle())
         }
     }
 
