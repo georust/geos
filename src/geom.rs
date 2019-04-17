@@ -853,9 +853,7 @@ impl<'a> PartialEq for GGeom<'a> {
     }
 }
 
-impl<'a> ContextInteractions for GGeom<'a> {
-    type Context = GContextHandle<'a>;
-
+impl<'a> ContextInteractions<'a> for GGeom<'a> {
     /// Set the context handle to the geometry.
     ///
     /// ```
@@ -866,7 +864,7 @@ impl<'a> ContextInteractions for GGeom<'a> {
     /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// point_geom.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: Self::Context) {
+    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -879,7 +877,7 @@ impl<'a> ContextInteractions for GGeom<'a> {
     /// let context = point_geom.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &Self::Context {
+    fn get_context_handle(&self) -> &GContextHandle<'a> {
         &self.context
     }
 }

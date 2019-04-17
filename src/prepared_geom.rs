@@ -109,9 +109,7 @@ impl<'a> Drop for PreparedGGeom<'a> {
     }
 }
 
-impl<'a> ContextInteractions for PreparedGGeom<'a> {
-    type Context = GContextHandle<'a>;
-
+impl<'a> ContextInteractions<'a> for PreparedGGeom<'a> {
     /// Set the context handle to the `PreparedGGeom`.
     ///
     /// ```
@@ -124,7 +122,7 @@ impl<'a> ContextInteractions for PreparedGGeom<'a> {
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// prepared_geom.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: Self::Context) {
+    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -139,7 +137,7 @@ impl<'a> ContextInteractions for PreparedGGeom<'a> {
     /// let context = prepared_geom.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &Self::Context {
+    fn get_context_handle(&self) -> &GContextHandle<'a> {
         &self.context
     }
 }
