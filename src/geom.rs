@@ -690,7 +690,7 @@ impl<'a> GGeom<'a> {
         if self.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
-        let x = 0.;
+        let mut x = 0.;
         unsafe {
             if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut x) != 0 {
                 Ok(x)
@@ -714,7 +714,7 @@ impl<'a> GGeom<'a> {
         if self.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
-        let y = 0.;
+        let mut y = 0.;
         unsafe {
             if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut y) != 0 {
                 Ok(y)
@@ -736,7 +736,7 @@ impl<'a> GGeom<'a> {
         if self.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
-        let z = 0.;
+        let mut z = 0.;
         unsafe {
             if GEOSGeomGetZ_r(self.get_raw_context(), self.as_raw(), &mut z) != 0 {
                 Ok(z)
