@@ -12,6 +12,7 @@ use std::sync::Arc;
 pub struct GGeom<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
     context: Arc<GContextHandle<'a>>,
+    owned: bool,
 }
 
 impl<'a> GGeom<'a> {
@@ -202,6 +203,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    #[cfg(feature = "v3_7")]
     pub fn reverse(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
@@ -233,7 +235,7 @@ impl<'a> GGeom<'a> {
         if ptr.is_null() {
             return Err(Error::NoConstructionFromNullPtr);
         }
-        Ok(GGeom { ptr: PtrWrap(ptr), context })
+        Ok(GGeom { ptr: PtrWrap(ptr), context, owned: true, })
     }
 
     /// Checks if the geometry is valid.
@@ -265,6 +267,28 @@ impl<'a> GGeom<'a> {
     pub fn is_valid_reason(&self) -> Option<String> {
         unsafe {
             let ptr = GEOSisValidReason_r(self.get_raw_context(), self.as_raw());
+            if ptr.is_null() {
+                None
+            } else {
+                Some(managed_string(ptr, self.get_context_handle()))
+            }
+        }
+    }
+
+    /// Returns the type of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                        .expect("Invalid geometry");
+    /// assert_eq!(point_geom.get_type(), Some("Polygon".to_owned()));
+    /// ```
+    pub fn get_type(&self) -> Option<String> {
+        unsafe {
+            let ptr = GEOSGeomType_r(self.get_raw_context(), self.as_raw());
             if ptr.is_null() {
                 None
             } else {
@@ -651,6 +675,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    #[cfg(feature = "v3_7")]
     pub fn distance_indexed<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -688,6 +713,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    #[cfg(feature = "v3_7")]
     pub fn frechet_distance<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -700,6 +726,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    #[cfg(feature = "v3_7")]
     pub fn frechet_distance_densify<'b>(&self, other: &GGeom<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -771,7 +798,7 @@ impl<'a> GGeom<'a> {
         }
         let mut x = 0.;
         unsafe {
-            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut x) != 0 {
+            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut x) == 1 {
                 Ok(x)
             } else {
                 Err(Error::GenericError("GEOSGeomGetX_r failed".to_owned()))
@@ -795,7 +822,7 @@ impl<'a> GGeom<'a> {
         }
         let mut y = 0.;
         unsafe {
-            if GEOSGeomGetY_r(self.get_raw_context(), self.as_raw(), &mut y) != 0 {
+            if GEOSGeomGetY_r(self.get_raw_context(), self.as_raw(), &mut y) == 1 {
                 Ok(y)
             } else {
                 Err(Error::GenericError("GEOSGeomGetY_r failed".to_owned()))
@@ -810,14 +837,17 @@ impl<'a> GGeom<'a> {
     /// ```
     /// use geos::GGeom;
     ///
-    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_z() == Ok(4.0));
+    /// ```
+    #[cfg(feature = "v3_7")]
     pub fn get_z(&self) -> GResult<f64> {
         if self.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
         let mut z = 0.;
         unsafe {
-            if GEOSGeomGetZ_r(self.get_raw_context(), self.as_raw(), &mut z) != 0 {
+            if GEOSGeomGetZ_r(self.get_raw_context(), self.as_raw(), &mut z) == 1 {
                 Ok(z)
             } else {
                 Err(Error::GenericError("GEOSGeomGetZ_r failed".to_owned()))
@@ -886,18 +916,66 @@ impl<'a> GGeom<'a> {
     }
 
     /// Returns the nth interior ring.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+    ///                                               (1 1, 2 1, 2 5, 1 5, 1 1),\
+    ///                                               (8 5, 8 4, 9 4, 9 5, 8 5))")
+    ///                        .expect("Invalid geometry");
+    /// let interior = point_geom.get_interior_ring_n(0).expect("failed to get interior ring");
+    /// assert_eq!(interior.to_wkt(),
+    ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
+    ///                         2.0000000000000000 1.0000000000000000, \
+    ///                         2.0000000000000000 5.0000000000000000, \
+    ///                         1.0000000000000000 5.0000000000000000, \
+    ///                         1.0000000000000000 1.0000000000000000)");
+    /// ```
     pub fn get_interior_ring_n(&self, n: u32) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            match GGeom::new_from_raw(ptr, self.clone_context()) {
+                Ok(mut g) => {
+                    g.owned = false;
+                    Ok(g)
+                }
+                e => e,
+            }
         }
     }
 
     /// Returns the exterior ring.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+    ///                                               (1 1, 2 1, 2 5, 1 5, 1 1))")
+    ///                        .expect("Invalid geometry");
+    ///
+    /// let exterior = point_geom.get_exterior_ring().expect("failed to get exterior ring");
+    /// assert_eq!(exterior.to_wkt(),
+    ///            "LINEARRING (0.0000000000000000 0.0000000000000000, \
+    ///                         10.0000000000000000 0.0000000000000000, \
+    ///                         10.0000000000000000 6.0000000000000000, \
+    ///                         0.0000000000000000 6.0000000000000000, \
+    ///                         0.0000000000000000 0.0000000000000000)");
+    /// ```
     pub fn get_exterior_ring(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            match GGeom::new_from_raw(ptr, self.clone_context()) {
+                Ok(mut g) => {
+                    g.owned = false;
+                    Ok(g)
+                }
+                e => e,
+            }
         }
     }
 
@@ -923,6 +1001,19 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    /// Return in which coordinate dimension the geometry is.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Dimensions, GGeom};
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_coordinate_dimension() == Ok(Dimensions::ThreeD));
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 4.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_coordinate_dimension() == Ok(Dimensions::TwoD));
+    /// ```
     pub fn get_coordinate_dimension(&self) -> GResult<Dimensions> {
         unsafe {
             let ret = GEOSGeom_getCoordinateDimension_r(self.get_raw_context(), self.as_raw());
@@ -933,6 +1024,53 @@ impl<'a> GGeom<'a> {
             }
         }
     }
+
+    pub fn make_valid(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn get_num_geometries(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetNumGeometries_r(self.get_raw_context(), self.as_raw());
+            if ret < 1 {
+                Err(Error::GenericError("GEOSGetNumGeometries_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Get SRID of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// point_geom.set_srid(4326);
+    /// assert_eq!(point_geom.get_srid(), Ok(4326));
+    /// ```
+    pub fn get_srid(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetSRID_r(self.get_raw_context(), self.as_raw());
+            if ret < 1 {
+                Err(Error::GenericError("GEOSGetSRID_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Set SRID of the geometry.
+    pub fn set_srid(&self, srid: usize) {
+        unsafe {
+            GEOSSetSRID_r(self.get_raw_context(), self.as_raw(), srid as _);
+        }
+    }
 }
 
 unsafe impl<'a> Send for GGeom<'a> {}
@@ -940,7 +1078,7 @@ unsafe impl<'a> Sync for GGeom<'a> {}
 
 impl<'a> Drop for GGeom<'a> {
     fn drop(&mut self) {
-        if !self.ptr.is_null() {
+        if !self.ptr.is_null() && self.owned {
             unsafe { GEOSGeom_destroy_r(self.get_raw_context(), self.as_raw()) }
         }
     }
@@ -957,6 +1095,7 @@ impl<'a> Clone for GGeom<'a> {
         GGeom {
             ptr: PtrWrap(ptr),
             context,
+            owned: true,
         }
     }
 }

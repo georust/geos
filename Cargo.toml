@@ -11,6 +11,7 @@ readme = "README.md"
 
 [features]
 geo = ["geo-types", "wkt"]
+v3_7 = ["geos-sys/v3_7_0"]
 
 [dependencies]
 libc = "0.2"
