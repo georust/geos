@@ -189,6 +189,7 @@ impl<'a> GGeom<'a> {
         PreparedGGeom::new(self)
     }
 
+    #[cfg(feature = "v3_8_0")]
     pub fn build_area(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
@@ -203,7 +204,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    #[cfg(feature = "v3_7")]
+    #[cfg(feature = "v3_7_0")]
     pub fn reverse(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
@@ -675,7 +676,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    #[cfg(feature = "v3_7")]
+    #[cfg(feature = "v3_7_0")]
     pub fn distance_indexed<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -713,7 +714,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    #[cfg(feature = "v3_7")]
+    #[cfg(feature = "v3_7_0")]
     pub fn frechet_distance<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -726,7 +727,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
-    #[cfg(feature = "v3_7")]
+    #[cfg(feature = "v3_7_0")]
     pub fn frechet_distance_densify<'b>(&self, other: &GGeom<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -840,7 +841,7 @@ impl<'a> GGeom<'a> {
     /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert!(point_geom.get_z() == Ok(4.0));
     /// ```
-    #[cfg(feature = "v3_7")]
+    #[cfg(feature = "v3_7_0")]
     pub fn get_z(&self) -> GResult<f64> {
         if self.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
@@ -1025,6 +1026,7 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    #[cfg(feature = "v3_8_0")]
     pub fn make_valid(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
