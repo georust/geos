@@ -12,6 +12,7 @@ use std::sync::Arc;
 pub struct GGeom<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
     context: Arc<GContextHandle<'a>>,
+    owned: bool,
 }
 
 impl<'a> GGeom<'a> {
@@ -233,7 +234,7 @@ impl<'a> GGeom<'a> {
         if ptr.is_null() {
             return Err(Error::NoConstructionFromNullPtr);
         }
-        Ok(GGeom { ptr: PtrWrap(ptr), context })
+        Ok(GGeom { ptr: PtrWrap(ptr), context, owned: true, })
     }
 
     /// Checks if the geometry is valid.
@@ -886,10 +887,34 @@ impl<'a> GGeom<'a> {
     }
 
     /// Returns the nth interior ring.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+    ///                                               (1 1, 2 1, 2 5, 1 5, 1 1),\
+    ///                                               (8 5, 8 4, 9 4, 9 5, 8 5))")
+    ///                        .expect("Invalid geometry");
+    /// let interior = point_geom.get_interior_ring_n(0).expect("failed to get interior ring");
+    /// assert_eq!(interior.to_wkt(),
+    ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
+    ///                         2.0000000000000000 1.0000000000000000, \
+    ///                         2.0000000000000000 5.0000000000000000, \
+    ///                         1.0000000000000000 5.0000000000000000, \
+    ///                         1.0000000000000000 1.0000000000000000)");
+    /// ```
     pub fn get_interior_ring_n(&self, n: u32) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            match GGeom::new_from_raw(ptr, self.clone_context()) {
+                Ok(mut g) => {
+                    g.owned = false;
+                    Ok(g)
+                }
+                e => e,
+            }
         }
     }
 
@@ -940,7 +965,7 @@ unsafe impl<'a> Sync for GGeom<'a> {}
 
 impl<'a> Drop for GGeom<'a> {
     fn drop(&mut self) {
-        if !self.ptr.is_null() {
+        if !self.ptr.is_null() && self.owned {
             unsafe { GEOSGeom_destroy_r(self.get_raw_context(), self.as_raw()) }
         }
     }
@@ -957,6 +982,7 @@ impl<'a> Clone for GGeom<'a> {
         GGeom {
             ptr: PtrWrap(ptr),
             context,
+            owned: true,
         }
     }
 }
