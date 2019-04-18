@@ -857,6 +857,82 @@ impl<'a> GGeom<'a> {
             GGeom::new_from_raw(ptr, self.clone_context())
         }
     }
+
+    /// The given `GGeom` must be a `LineString`, otherwise it'll fail.
+    pub fn get_num_points(&self) -> GResult<usize> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ret = GEOSGeomGetNumPoints_r(self.get_raw_context(), self.as_raw());
+            if ret == -1 {
+                Err(Error::GenericError("GEOSGeomGetNumPoints_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Returns the number of interior rings.
+    pub fn get_num_interior_rings(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetNumInteriorRings_r(self.get_raw_context(), self.as_raw());
+            if ret == -1 {
+                Err(Error::GenericError("GEOSGetNumInteriorRings_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Returns the nth interior ring.
+    pub fn get_interior_ring_n(&self, n: u32) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    /// Returns the exterior ring.
+    pub fn get_exterior_ring(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn get_num_coordinates(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetNumCoordinates_r(self.get_raw_context(), self.as_raw());
+            if ret == -1 {
+                Err(Error::GenericError("GEOSGetNumCoordinates_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    pub fn get_num_dimensions(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGeom_getDimensions_r(self.get_raw_context(), self.as_raw());
+            if ret == -1 {
+                Err(Error::GenericError("GEOSGeom_getDimensions_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    pub fn get_coordinate_dimension(&self) -> GResult<Dimensions> {
+        unsafe {
+            let ret = GEOSGeom_getCoordinateDimension_r(self.get_raw_context(), self.as_raw());
+            if ret != 2 && ret != 3 {
+                Err(Error::GenericError("GEOSGeom_getCoordinateDimension_r failed".to_owned()))
+            } else {
+                Ok(Dimensions::from(ret))
+            }
+        }
+    }
 }
 
 unsafe impl<'a> Send for GGeom<'a> {}
