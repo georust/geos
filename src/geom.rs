@@ -275,6 +275,28 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    /// Returns the type of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                        .expect("Invalid geometry");
+    /// assert_eq!(point_geom.get_type(), Some("Polygon".to_owned()));
+    /// ```
+    pub fn get_type(&self) -> Option<String> {
+        unsafe {
+            let ptr = GEOSGeomType_r(self.get_raw_context(), self.as_raw());
+            if ptr.is_null() {
+                None
+            } else {
+                Some(managed_string(ptr, self.get_context_handle()))
+            }
+        }
+    }
+
     /// Get the underlying geos CoordSeq object from the geometry
     ///
     /// Note: this clones the underlying CoordSeq to avoid double free
@@ -1000,6 +1022,53 @@ impl<'a> GGeom<'a> {
             } else {
                 Ok(Dimensions::from(ret))
             }
+        }
+    }
+
+    pub fn make_valid(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn get_num_geometries(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetNumGeometries_r(self.get_raw_context(), self.as_raw());
+            if ret < 1 {
+                Err(Error::GenericError("GEOSGetNumGeometries_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Get SRID of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// point_geom.set_srid(4326);
+    /// assert_eq!(point_geom.get_srid(), Ok(4326));
+    /// ```
+    pub fn get_srid(&self) -> GResult<usize> {
+        unsafe {
+            let ret = GEOSGetSRID_r(self.get_raw_context(), self.as_raw());
+            if ret < 1 {
+                Err(Error::GenericError("GEOSGetSRID_r failed".to_owned()))
+            } else {
+                Ok(ret as _)
+            }
+        }
+    }
+
+    /// Set SRID of the geometry.
+    pub fn set_srid(&self, srid: usize) {
+        unsafe {
+            GEOSSetSRID_r(self.get_raw_context(), self.as_raw(), srid as _);
         }
     }
 }
