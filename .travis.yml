@@ -17,7 +17,6 @@ before_install:
 
 script:
   - cargo test --features geo
-  - cargo test --features v3_7
   - cargo test
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
