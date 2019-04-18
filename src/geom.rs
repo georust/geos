@@ -188,6 +188,44 @@ impl<'a> GGeom<'a> {
         PreparedGGeom::new(self)
     }
 
+    pub fn build_area(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn line_merge(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSLineMerge_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn reverse(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn simplify(&self, tolerance: f64) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn topology_preserve_simplify(&self, tolerance: f64) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSTopologyPreserveSimplify_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                tolerance);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSGeometry,
         context: Arc<GContextHandle<'a>>,
