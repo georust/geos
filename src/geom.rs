@@ -1,4 +1,6 @@
-use crate::{CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGGeom};
+use crate::{
+    CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGGeom, Precision,
+};
 use context_handle::PtrWrap;
 use enums::*;
 use error::{Error, GResult, PredicateType};
@@ -732,14 +734,16 @@ impl<'a> GGeom<'a> {
 
     #[cfg(feature = "v3_7_0")]
     pub fn distance_indexed<'b>(&self, other: &GGeom<'b>) -> GResult<f64> {
-        let mut distance = 0.;
         unsafe {
-            let ret = GEOSDistanceIndexed_r(
-                self.get_raw_context(),
-                self.as_raw(),
-                other.as_raw(),
-                &mut distance);
-            check_ret(ret, PredicateType::IsSimple).map(|_| distance)
+            let mut distance = 0.;
+            if GEOSDistanceIndexed_r(self.get_raw_context(),
+                                     self.as_raw(),
+                                     other.as_raw(),
+                                     &mut distance) != 1 {
+                Err(Error::GenericError("GEOSDistanceIndexed_r failed".to_owned()))
+            } else {
+                Ok(distance)
+            }
         }
     }
 
@@ -1122,9 +1126,124 @@ impl<'a> GGeom<'a> {
     }
 
     /// Set SRID of the geometry.
-    pub fn set_srid(&self, srid: usize) {
+    pub fn set_srid(&self, srid: usize) -> GResult<()> {
         unsafe {
-            GEOSSetSRID_r(self.get_raw_context(), self.as_raw(), srid as _);
+            if GEOSSetSRID_r(self.get_raw_context(), self.as_raw(), srid as _) == 0 {
+                Err(Error::GenericError("GEOSSetSRID_r failed".to_owned()))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn get_precision(&self) -> GResult<f64> {
+        unsafe {
+            let ret = GEOSGeom_getPrecision_r(self.get_raw_context(), self.as_raw());
+            if ret == -1. {
+                Err(Error::GenericError("GEOSGeom_getPrecision_r failed".to_owned()))
+            } else {
+                Ok(ret)
+            }
+        }
+    }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn set_precision(&self, grid_size: f64, flags: Precision) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSGeom_setPrecision_r(self.get_raw_context(),
+                                              self.as_raw(),
+                                              grid_size,
+                                              flags.into());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    /// Returns the biggest X of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let line = GGeom::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
+    /// assert_eq!(line.get_x_max(), Ok(5.));
+    /// ```
+    #[cfg(feature = "v3_7_0")]
+    pub fn get_x_max(&self) -> GResult<f64> {
+        unsafe {
+            let mut value = 0.;
+            if GEOSGeom_getXMax_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+                Err(Error::GenericError("GEOSGeom_getXMax_r failed".to_owned()))
+            } else {
+                Ok(value)
+            }
+        }
+    }
+
+    /// Returns the smallest X of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let line = GGeom::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
+    /// assert_eq!(line.get_x_min(), Ok(1.));
+    /// ```
+    #[cfg(feature = "v3_7_0")]
+    pub fn get_x_min(&self) -> GResult<f64> {
+        unsafe {
+            let mut value = 0.;
+            if GEOSGeom_getXMin_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+                Err(Error::GenericError("GEOSGeom_getXMin_r failed".to_owned()))
+            } else {
+                Ok(value)
+            }
+        }
+    }
+
+    /// Returns the biggest Y of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let line = GGeom::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
+    /// assert_eq!(line.get_y_max(), Ok(6.));
+    /// ```
+    #[cfg(feature = "v3_7_0")]
+    pub fn get_y_max(&self) -> GResult<f64> {
+        unsafe {
+            let mut value = 0.;
+            if GEOSGeom_getYMax_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+                Err(Error::GenericError("GEOSGeom_getYMax_r failed".to_owned()))
+            } else {
+                Ok(value)
+            }
+        }
+    }
+
+    /// Returns the smallest Y of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let line = GGeom::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
+    /// assert_eq!(line.get_y_min(), Ok(3.));
+    /// ```
+    #[cfg(feature = "v3_7_0")]
+    pub fn get_y_min(&self) -> GResult<f64> {
+        unsafe {
+            let mut value = 0.;
+            if GEOSGeom_getYMin_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+                Err(Error::GenericError("GEOSGeom_getYMin_r failed".to_owned()))
+            } else {
+                Ok(value)
+            }
         }
     }
 }
