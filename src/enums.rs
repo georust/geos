@@ -273,3 +273,40 @@ impl Into<size_t> for Ordinate {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum Precision {
+    NoTopo,
+    KeepCollapsed,
+}
+
+impl From<c_int> for Precision {
+    fn from(order: c_int) -> Self {
+        match order {
+            1 => Precision::NoTopo,
+            2 => Precision::KeepCollapsed,
+            x => panic!("Unknown precision type {}", x)
+        }
+    }
+}
+
+impl TryFrom<c_int> for Precision {
+    type Error = &'static str;
+
+    fn try_from(order: c_int) -> Result<Self, Self::Error> {
+        match order {
+            1 => Ok(Precision::NoTopo),
+            2 => Ok(Precision::KeepCollapsed),
+            _ => Err("Unknown precision type"),
+        }
+    }
+}
+
+impl Into<c_int> for Precision {
+    fn into(self) -> c_int {
+        match self {
+            Precision::NoTopo => 0,
+            Precision::KeepCollapsed => 1,
+        }
+    }
+}

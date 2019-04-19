@@ -441,6 +441,19 @@ impl<'a> CoordSeq<'a> {
         }
     }
 
+    /// Returns `true` if the geometry has a counter-clockwise orientation.
+    #[cfg(feature = "v3_7_0")]
+    pub fn is_ccw(&self) -> GResult<bool> {
+        unsafe {
+            let mut is_ccw = 0;
+            if GEOSCoordSeq_isCCW_r(self.get_raw_context(), self.as_raw(), &mut is_ccw) != 1 {
+                Err(Error::GenericError("GEOSCoordSeq_isCCW_r failed".to_owned()))
+            } else {
+                Ok(is_ccw == 1)
+            }
+        }
+    }
+
     pub fn create_point(self) -> GResult<GGeom<'a>> {
         GGeom::create_point(self)
     }

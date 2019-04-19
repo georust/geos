@@ -31,6 +31,7 @@ pub use enums::{
     GGeomTypes,
     Ordinate,
     Orientation,
+    Precision,
 };
 pub use functions::{
     orientation_index,
