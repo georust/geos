@@ -280,11 +280,11 @@ mod test {
     /// shapely (the python geos wrapper) considers that too
     #[test]
     fn closed_2_points_linear_ring() {
-        let ls = LineString(coords(vec![(0., 0.), (0., 1.), (0., 0.)]));
+        let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 1.)]));
         let geom: GGeom = LineRing(&ls).try_into().unwrap();
 
         assert!(geom.is_valid());
-        assert!(geom.is_ring().unwrap());
+        assert!(geom.is_ring().expect("is_ring failed"));
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
 

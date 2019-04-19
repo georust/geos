@@ -94,7 +94,7 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let voronoi = geos::compute_voronoi(&points, None, 0.).expect("compute_voronoi failed");
+let voronoi = geos::compute_voronoi(&points, None, 0., false).expect("compute_voronoi failed");
 ```
 
 

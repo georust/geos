@@ -197,6 +197,29 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    /// Merges `Multi Line String` geometry into a (set of) `Line String`.
+    ///
+    /// ### Warning
+    ///
+    /// If you use this function on something else than a `Multi Line String` or a
+    /// `Line String`, it'll return an empty `Geometry collection`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let lines = GGeom::new_from_wkt("MULTILINESTRING((-29 -27,-30 -29.7,-36 -31,-45 -33),\
+    ///                                                  (-45 -33,-46 -32))")
+    ///                   .expect("Invalid geometry");
+    /// let lines_merged = lines.line_merge().expect("line merge failed");
+    /// assert_eq!(lines_merged.to_wkt(),
+    ///            "LINESTRING (-29.0000000000000000 -27.0000000000000000, \
+    ///                         -30.0000000000000000 -29.6999999999999993, \
+    ///                         -36.0000000000000000 -31.0000000000000000, \
+    ///                         -45.0000000000000000 -33.0000000000000000, \
+    ///                         -46.0000000000000000 -32.0000000000000000)");
+    /// ```
     pub fn line_merge(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSLineMerge_r(self.get_raw_context(), self.as_raw());
@@ -345,6 +368,16 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    /// Returns a WKT representation of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// assert_eq!(point_geom.to_wkt(), "POINT (2.5000000000000000 2.5000000000000000)");
+    /// ```
     pub fn to_wkt(&self) -> String {
         unsafe {
             let ptr = GEOSGeomToWKT_r(self.get_raw_context(), self.as_raw());
@@ -352,6 +385,17 @@ impl<'a> GGeom<'a> {
         }
     }
 
+
+    /// Returns a WKT representation of the geometry with the given `precision`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// assert_eq!(point_geom.to_wkt_precision(Some(2)), "POINT (2.50 2.50)");
+    /// ```
     pub fn to_wkt_precision(&self, precision: Option<u32>) -> String {
         unsafe {
             let writer = GEOSWKTWriter_create_r(self.get_raw_context());
@@ -364,6 +408,16 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    /// Returns `true` if the geometry is a ring.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::GGeom;
+    ///
+    /// let circle = GGeom::new_from_wkt("LINESTRING(0 0, 0 1, 1 1, 0 0)").expect("Invalid geometry");
+    /// assert_eq!(circle.is_ring(), Ok(true));
+    /// ```
     pub fn is_ring(&self) -> GResult<bool> {
         let rv = unsafe { GEOSisRing_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(rv as _, PredicateType::IsRing)
