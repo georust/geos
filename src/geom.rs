@@ -1,6 +1,6 @@
-use crate::{
-    CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGGeom, Precision,
-};
+use crate::{CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGGeom};
+#[cfg(feature = "v3_6_0")]
+use crate::Precision;
 use context_handle::PtrWrap;
 use enums::*;
 use error::{Error, GResult, PredicateType};
