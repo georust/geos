@@ -31,6 +31,9 @@ pub use enums::{
     GGeomTypes,
     Ordinate,
     Orientation,
+};
+#[cfg(feature = "v3_6_0")]
+pub use enums::{
     Precision,
 };
 pub use functions::{
