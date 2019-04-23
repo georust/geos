@@ -100,6 +100,39 @@ pub fn orientation_index(ax: f64, ay: f64, bx: f64, by: f64, px: f64, py: f64) -
     }
 }
 
+/// Returns [`None`] if the segments don't intersect, otherwise returns `Some(x_pos, y_pos)`.
+#[cfg(feature = "v3_7_0")]
+pub fn segment_intersection(
+    ax0: f64,
+    ay0: f64,
+    ax1: f64,
+    ay1: f64,
+    bx0: f64,
+    by0: f64,
+    bx1: f64,
+    by1: f64,
+) -> GResult<Option<(f64, f64)>> {
+    match GContextHandle::init() {
+        Ok(context) => {
+            unsafe {
+                let mut cx = 0.;
+                let mut cy = 0.;
+
+                let ret = GEOSSegmentIntersection_r(
+                    context.as_raw(), ax0, ay0, ax1, ay1, bx0, by0, bx1, by1, &mut cx, &mut cy);
+                if ret == -1 {
+                    Ok(None)
+                } else if ret == 0 {
+                    Ok(Some((cx, cy)))
+                } else {
+                    Err(Error::GenericError("GEOSSegmentIntersection_r failed".to_owned()))
+                }
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::check_geos_predicate;
