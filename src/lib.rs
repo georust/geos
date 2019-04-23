@@ -40,6 +40,10 @@ pub use functions::{
     orientation_index,
     version,
 };
+#[cfg(feature = "v3_7_0")]
+pub use functions::{
+    segment_intersection,
+};
 pub use geom::{
     GGeom,
 };

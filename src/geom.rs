@@ -1246,6 +1246,42 @@ impl<'a> GGeom<'a> {
             }
         }
     }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn minimum_clearance(&self) -> GResult<f64> {
+        unsafe {
+            let mut value = 0.;
+            if GEOSMinimumClearance_r(self.get_raw_context(), self.as_raw(), &mut value) != 0 {
+                Err(Error::GenericError("GEOSMinimumClearance_r failed".to_owned()))
+            } else {
+                Ok(value)
+            }
+        }
+    }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn minimum_clearance_line(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSMinimumClearanceLine_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn minimum_rotated_rectangle(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSMinimumRotatedRectangle_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    #[cfg(feature = "v3_6_0")]
+    pub fn minimum_width(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSMinimumWidth_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
 }
 
 unsafe impl<'a> Send for GGeom<'a> {}
