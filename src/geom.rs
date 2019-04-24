@@ -567,6 +567,54 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    pub fn create_empty_polygon() -> GResult<GGeom<'a>> {
+        match GContextHandle::init() {
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn create_empty_point() -> GResult<GGeom<'a>> {
+        match GContextHandle::init() {
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn create_empty_line_string() -> GResult<GGeom<'a>> {
+        match GContextHandle::init() {
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn create_empty_collection(type_: GGeomTypes) -> GResult<GGeom<'a>> {
+        match GContextHandle::init() {
+            Ok(context) => {
+                unsafe {
+                    let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
+                    GGeom::new_from_raw(ptr, Arc::new(context))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
     pub fn create_polygon<'b>(mut exterior: GGeom<'a>, mut interiors: Vec<GGeom<'b>>) -> GResult<GGeom<'a>> {
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
@@ -1279,6 +1327,18 @@ impl<'a> GGeom<'a> {
     pub fn minimum_width(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMinimumWidth_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn delaunay_triangulation(&self, tolerance: f64, only_edges: bool) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSDelaunayTriangulation_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                tolerance,
+                only_edges as _,
+            );
             GGeom::new_from_raw(ptr, self.clone_context())
         }
     }
