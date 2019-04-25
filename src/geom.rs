@@ -1151,6 +1151,16 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    pub fn get_geometry_n(&self, n: usize) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSGetGeometryN_r(self.get_raw_context(), self.as_raw(), n as _);
+            GGeom::new_from_raw(ptr, self.clone_context()).map(|mut x| {
+                x.owned = false;
+                x
+            })
+        }
+    }
+
     /// Get SRID of the geometry.
     ///
     /// # Example
@@ -1340,6 +1350,40 @@ impl<'a> GGeom<'a> {
                 only_edges as _,
             );
             GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn interpolate(&self, d: f64) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSInterpolate_r(self.get_raw_context(), self.as_raw(), d);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn interpolate_normalized(&self, d: f64) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSInterpolateNormalized_r(self.get_raw_context(), self.as_raw(), d);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn project_normalized(&self, p: &GGeom<'_>) -> GResult<f64> {
+        if p.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
+        }
+        unsafe {
+            let ret = GEOSProjectNormalized_r(self.get_raw_context(), self.as_raw(), p.as_raw());
+            if ret == -1. {
+                Err(Error::GenericError("GEOSProjectNormalized_r failed".to_owned()))
+            } else {
+                Ok(ret)
+            }
         }
     }
 }
