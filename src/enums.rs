@@ -287,7 +287,7 @@ impl From<c_int> for Precision {
         match order {
             1 => Precision::NoTopo,
             2 => Precision::KeepCollapsed,
-            x => panic!("Unknown precision type {}", x)
+            x => panic!("Unknown precision type {}", x),
         }
     }
 }
