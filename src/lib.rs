@@ -10,11 +10,12 @@ extern crate geo_types;
 extern crate wkt;
 extern crate geos_sys;
 
-#[cfg(feature = "geo")]
+#[cfg(all(feature = "geo", test))]
+#[macro_use]
 extern crate doc_comment;
 
-#[cfg(feature = "geo")]
-doc_comment::doctest!("../README.md");
+#[cfg(all(feature = "geo", test))]
+doctest!("../README.md");
 
 pub(crate) mod functions;
 
