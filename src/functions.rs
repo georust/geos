@@ -24,7 +24,13 @@ pub(crate) unsafe fn managed_string(raw_ptr: *mut i8, context: &GContextHandle) 
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect<'a>(g: &GGeom<'a>, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<GGeom<'a>> {
+pub fn clip_by_rect<'a>(
+    g: &GGeom<'a>,
+    xmin: f64,
+    ymin: f64,
+    xmax: f64,
+    ymax: f64,
+) -> GResult<GGeom<'a>> {
     unsafe {
         let context = g.clone_context();
         let ptr = GEOSClipByRect_r(
@@ -62,7 +68,10 @@ pub(crate) fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
-pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeomTypes) -> GResult<GGeom<'a>> {
+pub(crate) fn create_multi_geom<'a>(
+    mut geoms: Vec<GGeom<'a>>,
+    output_type: GGeomTypes,
+) -> GResult<GGeom<'a>> {
     let nb_geoms = geoms.len();
     let context = if geoms.is_empty() {
         match GContextHandle::init() {
@@ -94,9 +103,26 @@ pub(crate) fn create_multi_geom<'a>(mut geoms: Vec<GGeom<'a>>, output_type: GGeo
     res
 }
 
-pub fn orientation_index(ax: f64, ay: f64, bx: f64, by: f64, px: f64, py: f64) -> Result<Orientation, &'static str> {
-    unsafe {
-        Orientation::try_from(GEOSOrientationIndex(ax, ay, bx, by, px, py))
+pub fn orientation_index(
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+    px: f64,
+    py: f64,
+) -> GResult<Orientation> {
+    match GContextHandle::init() {
+        Ok(context) => {
+            unsafe {
+                match Orientation::try_from(
+                    GEOSOrientationIndex_r(context.as_raw(), ax, ay, bx, by, px, py)
+                ) {
+                    Ok(o) => Ok(o),
+                    Err(e) => Err(Error::GenericError(e.to_owned())),
+                }
+            }
+        }
+        Err(e) => Err(e),
     }
 }
 

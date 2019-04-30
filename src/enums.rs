@@ -314,3 +314,44 @@ impl Into<c_int> for Precision {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum JoinStyle {
+    Round,
+    Mitre,
+    Bevel,
+}
+
+impl From<c_int> for JoinStyle {
+    fn from(join_style: c_int) -> Self {
+        match join_style {
+            1 => JoinStyle::Round,
+            2 => JoinStyle::Mitre,
+            3 => JoinStyle::Bevel,
+            _ => panic!("Unknown join style"),
+        }
+    }
+}
+
+impl TryFrom<c_int> for JoinStyle {
+    type Error = &'static str;
+
+    fn try_from(join_style: c_int) -> Result<Self, Self::Error> {
+        match join_style {
+            1 => Ok(JoinStyle::Round),
+            2 => Ok(JoinStyle::Mitre),
+            3 => Ok(JoinStyle::Bevel),
+            _ => Err("Unknown join style"),
+        }
+    }
+}
+
+impl Into<c_int> for JoinStyle {
+    fn into(self) -> c_int {
+        match self {
+            JoinStyle::Round => 1,
+            JoinStyle::Mitre => 2,
+            JoinStyle::Bevel => 3,
+        }
+    }
+}

@@ -18,35 +18,6 @@ pub struct GGeom<'a> {
 }
 
 impl<'a> GGeom<'a> {
-    /// Create a new [`GGeom`] from the WKT format.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geos::GGeom;
-    ///
-    /// let point_geom = GGeom::new_from_wkt_s("POINT (2.5 2.5)".to_owned())
-    ///                        .expect("Invalid geometry");
-    /// ```
-    pub fn new_from_wkt_s(wkt: String) -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
-            Ok(context) => {
-                let wkt = match CString::new(wkt) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        return Err(Error::GenericError(format!("Conversion to CString failed: {}",
-                                                               e)));
-                    }
-                };
-                unsafe {
-                    let ptr = GEOSGeomFromWKT_r(context.as_raw(), wkt.as_ptr());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
-                }
-            }
-            Err(e) => Err(e),
-        }
-    }
-
     /// Same as [`new_from_wkt_s`] except it internally uses a reader instead of just using the
     /// given string.
     ///
@@ -196,6 +167,51 @@ impl<'a> GGeom<'a> {
         unsafe {
             let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
             GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn polygonize<T: AsRef<GGeom<'a>>>(geometries: &[T]) -> GResult<GGeom<'a>> {
+        unsafe {
+            let context = match geometries.get(0) {
+                Some(g) => g.as_ref().clone_context(),
+                None => {
+                    match GContextHandle::init() {
+                        Ok(context) => Arc::new(context),
+                        Err(e) => return Err(e),
+                    }
+                }
+            };
+            let geoms = geometries.iter()
+                                  .map(|g| g.as_ref().as_raw() as *const _)
+                                  .collect::<Vec<_>>();
+            let ptr = GEOSPolygonize_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
+            GGeom::new_from_raw(ptr, context)
+        }
+    }
+
+    pub fn polygonizer_get_cut_edges<T: AsRef<GGeom<'a>>>(
+        &self,
+        geometries: &[T],
+    ) -> GResult<GGeom<'a>> {
+        unsafe {
+            let context = match geometries.get(0) {
+                Some(g) => g.as_ref().clone_context(),
+                None => {
+                    match GContextHandle::init() {
+                        Ok(context) => Arc::new(context),
+                        Err(e) => return Err(e),
+                    }
+                }
+            };
+            let geoms = geometries.iter()
+                                  .map(|g| g.as_ref().as_raw() as *const _)
+                                  .collect::<Vec<_>>();
+            let ptr = GEOSPolygonizer_getCutEdges_r(
+                context.as_raw(),
+                geoms.as_ptr(),
+                geoms.len() as _,
+            );
+            GGeom::new_from_raw(ptr, context)
         }
     }
 
@@ -382,8 +398,10 @@ impl<'a> GGeom<'a> {
     /// ```
     pub fn to_wkt(&self) -> String {
         unsafe {
-            let ptr = GEOSGeomToWKT_r(self.get_raw_context(), self.as_raw());
-            managed_string(ptr, self.get_context_handle())
+            let writer = GEOSWKTWriter_create_r(self.get_raw_context());
+            let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
+            GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
+            managed_string(c_result, self.get_context_handle())
         }
     }
 
@@ -1384,6 +1402,103 @@ impl<'a> GGeom<'a> {
             } else {
                 Ok(ret)
             }
+        }
+    }
+
+    pub fn node(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSNode_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    ///  Return an offset line at a given distance and side from an input line. All points of the
+    /// returned geometries are not further than the given distance from the input geometry.
+    ///
+    /// ### Parameters description:
+    ///
+    /// #### width
+    ///
+    /// * If `width` is positive, the offset will be at the left side of the input line and retain
+    ///   the same direction.
+    /// * If `width` is negative, it'll be at the right side and in the opposite direction.
+    ///
+    /// #### quadrant_segments
+    ///
+    /// * If `quadrant_segments` is >= 1, joins are round, and `quadrant_segments` indicates the
+    ///   number of segments to use to approximate a quarter-circle.
+    /// * If `quadrant_segments` == 0, joins are bevelled (flat).
+    /// * If `quadrant_segments` < 0, joins are mitred, and the value of `quadrant_segments`
+    ///   indicates the mitre ration limit as `mitre_limit = |quadrant_segments|`
+    ///
+    /// #### mitre_limit
+    ///
+    /// The mitre ratio is the ratio of the distance from the corner to the end of the mitred offset
+    /// corner. When two line segments meet at a sharp angle, a miter join will extend far beyond
+    /// the original geometry (and in the extreme case will be infinitely far). To prevent
+    /// unreasonable geometry, the mitre limit allows controlling the maximum length of the join
+    /// corner. Corners with a ratio which exceed the limit will be beveled.
+    pub fn offset_curve(
+        &self,
+        width: f64,
+        quadrant_segments: i32,
+        join_style: JoinStyle,
+        mitre_limit: f64,
+    ) -> GResult<GGeom<'a>> {
+        if self.geometry_type() != GGeomTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
+        unsafe {
+            let ptr = GEOSOffsetCurve_r(self.get_raw_context(), self.as_raw(), width,
+                                        quadrant_segments, join_style.into(), mitre_limit);
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    pub fn point_on_surface(&self) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSPointOnSurface_r(self.get_raw_context(), self.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
+        }
+    }
+
+    /// Returns, in the tuple elements order:
+    ///
+    /// 1. The polygonized geometry.
+    /// 2. The cuts geometries collection.
+    /// 3. The dangles geometries collection.
+    /// 4. The invalid geometries collection.
+    pub fn polygonize_full(
+        &self,
+    ) -> GResult<(GGeom<'a>, Option<GGeom<'a>>, Option<GGeom<'a>>, Option<GGeom<'a>>)> {
+        let mut cuts: *mut GEOSGeometry = ::std::ptr::null_mut();
+        let mut dangles: *mut GEOSGeometry = ::std::ptr::null_mut();
+        let mut invalids: *mut GEOSGeometry = ::std::ptr::null_mut();
+
+        unsafe {
+            let ptr = GEOSPolygonize_full_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                &mut cuts,
+                &mut dangles,
+                &mut invalids,
+            );
+            let cuts = if !cuts.is_null() {
+                GGeom::new_from_raw(cuts, self.clone_context()).ok()
+            } else {
+                None
+            };
+            let dangles = if !dangles.is_null() {
+                GGeom::new_from_raw(dangles, self.clone_context()).ok()
+            } else {
+                None
+            };
+            let invalids = if !invalids.is_null() {
+                GGeom::new_from_raw(invalids, self.clone_context()).ok()
+            } else {
+                None
+            };
+            GGeom::new_from_raw(ptr, self.clone_context()).map(|x| (x, cuts, dangles, invalids))
         }
     }
 }
