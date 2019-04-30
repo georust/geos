@@ -2,6 +2,7 @@ use crate::{CoordDimensions, CoordSeq, GGeom};
 use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
 use std;
+use std::borrow::Borrow;
 
 // define our own TryInto while the std trait is not stable
 pub trait TryInto<T> {
@@ -36,13 +37,26 @@ impl<'a> TryInto<GGeom<'a>> for &'a Point<f64> {
     }
 }
 
-impl<'a> TryInto<GGeom<'a>> for &'a [Point<f64>] {
+/*impl<'a> TryInto<GGeom<'a>> for &'a [Point<f64>] {
     type Err = Error;
 
     fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
         let geom_points = self
             .into_iter()
             .map(|p| p.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        GGeom::create_multipoint(geom_points)
+    }
+}*/
+
+impl<'a, T: Borrow<Point<f64>>> TryInto<GGeom<'a>> for &'a [T] {
+    type Err = Error;
+
+    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
+        let geom_points = self
+            .into_iter()
+            .map(|p| p.borrow().try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
         GGeom::create_multipoint(geom_points)

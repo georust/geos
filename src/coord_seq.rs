@@ -81,20 +81,21 @@ impl<'a> CoordSeq<'a> {
     /// assert!(coords.get_y(1) == Ok(3.));
     ///
     /// // All vectors don't have the same length, this is an error!
-    /// assert!(CoordSeq::new_from_vec(&[&[0., 1.], &[3.]]).is_err());
+    /// assert!(CoordSeq::new_from_vec(&[vec![0., 1.], vec![3.]]).is_err());
     ///
     /// // An empty vector is an error as well since we can't figure out its dimensions!
-    /// assert!(CoordSeq::new_from_vec(&[]).is_err());
+    /// let x: &[f64] = &[];
+    /// assert!(CoordSeq::new_from_vec(&[x]).is_err());
     /// ```
-    pub fn new_from_vec(data: &[&[f64]]) -> GResult<CoordSeq<'a>> {
+    pub fn new_from_vec<T: AsRef<[f64]>>(data: &[T]) -> GResult<CoordSeq<'a>> {
         let size = data.len();
 
         if size > 0 {
-            let dims = data[0].len();
+            let dims = data[0].as_ref().len();
             if let Err(e) = CoordDimensions::try_from(dims as _) {
                 return Err(Error::GenericError(e.to_owned()));
             }
-            if !data.iter().skip(1).all(|x| x.len() == dims) {
+            if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
                 return Err(Error::GenericError("All vec entries must have the same size!".to_owned()));
             }
             match GContextHandle::init() {
@@ -116,7 +117,7 @@ impl<'a> CoordSeq<'a> {
                              GEOSCoordSeq_setZ_r];
 
                 for (line, line_data) in data.iter().enumerate() {
-                    for (pos, elem) in line_data.iter().enumerate() {
+                    for (pos, elem) in line_data.as_ref().iter().enumerate() {
                         unsafe {
                             if funcs[pos](raw_context, raw_coord, line as _, *elem) == 0 {
                                 let err = format!("Failed to set value at position {} on \
@@ -377,7 +378,7 @@ impl<'a> CoordSeq<'a> {
     ///                       .expect("failed to create CoordSeq");
     /// assert!(coords.size() == Ok(2));
     ///
-    /// let coords = CoordSeq::new_from_vec(&[&[1.], &[2.], &[3.], &[4.]])
+    /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
     ///                       .expect("failed to create CoordSeq");
     /// assert!(coords.size() == Ok(4));
     /// ```
@@ -406,7 +407,7 @@ impl<'a> CoordSeq<'a> {
     ///                       .expect("failed to create CoordSeq");
     /// assert!(coords.number_of_lines() == Ok(2));
     ///
-    /// let coords = CoordSeq::new_from_vec(&[&[1.], &[2.], &[3.], &[4.]])
+    /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
     ///                       .expect("failed to create CoordSeq");
     /// assert!(coords.number_of_lines() == Ok(4));
     /// ```

@@ -2,9 +2,10 @@ use crate::GGeom;
 use error::Error;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
+use std::borrow::Borrow;
 
-pub fn compute_voronoi(
-    points: &[Point<f64>],
+pub fn compute_voronoi<T: Borrow<Point<f64>>>(
+    points: &[T],
     envelope: Option<&GGeom>,
     tolerance: f64,
     only_edges: bool,
