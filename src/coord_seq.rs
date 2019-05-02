@@ -7,7 +7,7 @@ use crate::{
     ContextInteractions,
     CoordDimensions,
     GContextHandle,
-    GGeom,
+    Geometry,
     Ordinate,
 };
 use crate::enums::TryFrom;
@@ -457,16 +457,16 @@ impl<'a> CoordSeq<'a> {
         }
     }
 
-    pub fn create_point(self) -> GResult<GGeom<'a>> {
-        GGeom::create_point(self)
+    pub fn create_point(self) -> GResult<Geometry<'a>> {
+        Geometry::create_point(self)
     }
 
-    pub fn create_line_string(self) -> GResult<GGeom<'a>> {
-        GGeom::create_line_string(self)
+    pub fn create_line_string(self) -> GResult<Geometry<'a>> {
+        Geometry::create_line_string(self)
     }
 
-    pub fn create_linear_ring(self) -> GResult<GGeom<'a>> {
-        GGeom::create_linear_ring(self)
+    pub fn create_linear_ring(self) -> GResult<Geometry<'a>> {
+        Geometry::create_linear_ring(self)
     }
 }
 

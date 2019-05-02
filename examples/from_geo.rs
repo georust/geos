@@ -7,7 +7,7 @@ use geo_types::{Coordinate, LineString, Polygon};
 #[cfg(feature = "geo")]
 use geos::from_geo::TryInto;
 #[cfg(feature = "geo")]
-use geos::{Error, GGeom};
+use geos::{Error, Geometry};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -30,7 +30,7 @@ fn fun() -> Result<(), Error> {
     assert_eq!(p.exterior(), &exterior);
     assert_eq!(p.interiors(), interiors.as_slice());
 
-    let geom: GGeom = (&p).try_into()?;
+    let geom: Geometry = (&p).try_into()?;
 
     assert!(geom.contains(&geom)?);
     assert!(!geom.contains(&(&exterior).try_into()?)?);

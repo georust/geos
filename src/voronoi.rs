@@ -1,4 +1,4 @@
-use crate::GGeom;
+use crate::Geometry as GGeom;
 use error::Error;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
