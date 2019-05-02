@@ -1391,6 +1391,20 @@ impl<'a> GGeom<'a> {
         }
     }
 
+    pub fn project(&self, p: &GGeom<'_>) -> GResult<f64> {
+        if p.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
+        }
+        unsafe {
+            let ret = GEOSProject_r(self.get_raw_context(), self.as_raw(), p.as_raw());
+            if ret == -1. {
+                Err(Error::GenericError("GEOSProject_r failed".to_owned()))
+            } else {
+                Ok(ret)
+            }
+        }
+    }
+
     pub fn project_normalized(&self, p: &GGeom<'_>) -> GResult<f64> {
         if p.geometry_type() != GGeomTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
@@ -1499,6 +1513,12 @@ impl<'a> GGeom<'a> {
                 None
             };
             GGeom::new_from_raw(ptr, self.clone_context()).map(|x| (x, cuts, dangles, invalids))
+        }
+    }
+    pub fn shared_paths(&self, other: GGeom<'_>) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSSharedPaths_r(self.get_raw_context(), self.as_raw(), other.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context())
         }
     }
 }
