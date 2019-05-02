@@ -23,9 +23,9 @@ pub trait ContextInteractions<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextInteractions, GGeom};
+    /// use geos::{ContextInteractions, Geometry};
     ///
-    /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// // execute some calls on `point_geom`
     /// point_geom.get_last_error();
     /// // This is a shortcut for calling:
@@ -40,9 +40,9 @@ pub trait ContextInteractions<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextInteractions, GGeom};
+    /// use geos::{ContextInteractions, Geometry};
     ///
-    /// let mut point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// // execute some calls on `point_geom`
     /// point_geom.get_last_notification();
     /// // This is a shortcut for calling:

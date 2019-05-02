@@ -1,7 +1,7 @@
 use enums::*;
 use error::{Error, GResult, PredicateType};
 use geos_sys::*;
-use geom::GGeom;
+use geometry::Geometry;
 use std::ffi::CStr;
 use std::sync::Arc;
 use std::str;
@@ -25,12 +25,12 @@ pub(crate) unsafe fn managed_string(raw_ptr: *mut i8, context: &GContextHandle) 
 
 #[allow(dead_code)]
 pub fn clip_by_rect<'a>(
-    g: &GGeom<'a>,
+    g: &Geometry<'a>,
     xmin: f64,
     ymin: f64,
     xmax: f64,
     ymax: f64,
-) -> GResult<GGeom<'a>> {
+) -> GResult<Geometry<'a>> {
     unsafe {
         let context = g.clone_context();
         let ptr = GEOSClipByRect_r(
@@ -41,7 +41,7 @@ pub fn clip_by_rect<'a>(
             xmax,
             ymax,
         );
-        GGeom::new_from_raw(ptr, context, "clip_by_rect")
+        Geometry::new_from_raw(ptr, context, "clip_by_rect")
     }
 }
 
@@ -64,14 +64,14 @@ pub(crate) fn check_ret(val: i32, p: PredicateType) -> GResult<()> {
     }
 }
 
-pub(crate) fn check_same_geometry_type(geoms: &[GGeom], geom_type: GGeomTypes) -> bool {
+pub(crate) fn check_same_geometry_type(geoms: &[Geometry], geom_type: GeometryTypes) -> bool {
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
 pub(crate) fn create_multi_geom<'a>(
-    mut geoms: Vec<GGeom<'a>>,
-    output_type: GGeomTypes,
-) -> GResult<GGeom<'a>> {
+    mut geoms: Vec<Geometry<'a>>,
+    output_type: GeometryTypes,
+) -> GResult<Geometry<'a>> {
     let nb_geoms = geoms.len();
     let context = if geoms.is_empty() {
         match GContextHandle::init() {
@@ -90,11 +90,11 @@ pub(crate) fn create_multi_geom<'a>(
                 geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_geoms as _,
             );
-            GGeom::new_from_raw(ptr, context, "create_multi_geom")
+            Geometry::new_from_raw(ptr, context, "create_multi_geom")
         }
     };
 
-    // we'll transfert the ownership of the ptr to the new GGeom,
+    // we'll transfert the ownership of the ptr to the new Geometry,
     // so the old one needs to forget their c ptr to avoid double cleanup
     for g in geoms.iter_mut() {
         g.ptr = PtrWrap(::std::ptr::null_mut());

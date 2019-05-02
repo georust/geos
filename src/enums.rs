@@ -126,7 +126,7 @@ impl Into<c_int> for ByteOrder {
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(C)]
-pub enum GGeomTypes {
+pub enum GeometryTypes {
     Point,
     LineString,
     LinearRing,
@@ -139,52 +139,52 @@ pub enum GGeomTypes {
     __Unknonwn(u32),
 }
 
-impl From<c_int> for GGeomTypes {
+impl From<c_int> for GeometryTypes {
     fn from(dimensions: c_int) -> Self {
         match dimensions {
-            0 => GGeomTypes::Point,
-            1 => GGeomTypes::LineString,
-            2 => GGeomTypes::LinearRing,
-            3 => GGeomTypes::Polygon,
-            4 => GGeomTypes::MultiPoint,
-            5 => GGeomTypes::MultiLineString,
-            6 => GGeomTypes::MultiPolygon,
-            7 => GGeomTypes::GeometryCollection,
-            x => GGeomTypes::__Unknonwn(x as _),
+            0 => GeometryTypes::Point,
+            1 => GeometryTypes::LineString,
+            2 => GeometryTypes::LinearRing,
+            3 => GeometryTypes::Polygon,
+            4 => GeometryTypes::MultiPoint,
+            5 => GeometryTypes::MultiLineString,
+            6 => GeometryTypes::MultiPolygon,
+            7 => GeometryTypes::GeometryCollection,
+            x => GeometryTypes::__Unknonwn(x as _),
         }
     }
 }
 
-impl TryFrom<c_int> for GGeomTypes {
+impl TryFrom<c_int> for GeometryTypes {
     type Error = &'static str;
 
     fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
         match dimensions {
-            0 => Ok(GGeomTypes::Point),
-            1 => Ok(GGeomTypes::LineString),
-            2 => Ok(GGeomTypes::LinearRing),
-            3 => Ok(GGeomTypes::Polygon),
-            4 => Ok(GGeomTypes::MultiPoint),
-            5 => Ok(GGeomTypes::MultiLineString),
-            6 => Ok(GGeomTypes::MultiPolygon),
-            7 => Ok(GGeomTypes::GeometryCollection),
-            x => Ok(GGeomTypes::__Unknonwn(x as _)),
+            0 => Ok(GeometryTypes::Point),
+            1 => Ok(GeometryTypes::LineString),
+            2 => Ok(GeometryTypes::LinearRing),
+            3 => Ok(GeometryTypes::Polygon),
+            4 => Ok(GeometryTypes::MultiPoint),
+            5 => Ok(GeometryTypes::MultiLineString),
+            6 => Ok(GeometryTypes::MultiPolygon),
+            7 => Ok(GeometryTypes::GeometryCollection),
+            x => Ok(GeometryTypes::__Unknonwn(x as _)),
         }
     }
 }
 
-impl Into<c_int> for GGeomTypes {
+impl Into<c_int> for GeometryTypes {
     fn into(self) -> c_int {
         match self {
-            GGeomTypes::Point => 0,
-            GGeomTypes::LineString => 1,
-            GGeomTypes::LinearRing => 2,
-            GGeomTypes::Polygon => 3,
-            GGeomTypes::MultiPoint => 4,
-            GGeomTypes::MultiLineString => 5,
-            GGeomTypes::MultiPolygon => 6,
-            GGeomTypes::GeometryCollection => 7,
-            GGeomTypes::__Unknonwn(x) => x as _,
+            GeometryTypes::Point => 0,
+            GeometryTypes::LineString => 1,
+            GeometryTypes::LinearRing => 2,
+            GeometryTypes::Polygon => 3,
+            GeometryTypes::MultiPoint => 4,
+            GeometryTypes::MultiLineString => 5,
+            GeometryTypes::MultiPolygon => 6,
+            GeometryTypes::GeometryCollection => 7,
+            GeometryTypes::__Unknonwn(x) => x as _,
         }
     }
 }

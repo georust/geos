@@ -29,7 +29,7 @@ pub use enums::{
     ByteOrder,
     CoordDimensions,
     Dimensions,
-    GGeomTypes,
+    GeometryTypes,
     Ordinate,
     Orientation,
 };
@@ -45,19 +45,19 @@ pub use functions::{
 pub use functions::{
     segment_intersection,
 };
-pub use geom::{
-    GGeom,
+pub use geometry::{
+    Geometry,
 };
-pub use prepared_geom::{
-    PreparedGGeom,
+pub use prepared_geometry::{
+    PreparedGeometry,
 };
 mod context_handle;
 mod coord_seq;
 mod error;
 #[cfg(feature = "geo")]
 pub mod from_geo;
-mod geom;
-mod prepared_geom;
+mod geometry;
+mod prepared_geometry;
 #[cfg(feature = "geo")]
 pub mod to_geo;
 pub use error::{

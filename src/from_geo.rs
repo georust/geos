@@ -1,4 +1,4 @@
-use crate::{CoordDimensions, CoordSeq, GGeom};
+use crate::{CoordDimensions, CoordSeq, Geometry as GGeom};
 use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
 use std;
