@@ -6,7 +6,7 @@ pub enum Error {
     ImpossibleOperation(String),
     GeosError(String),
     GeosFunctionError(PredicateType, i32),
-    NoConstructionFromNullPtr,
+    NoConstructionFromNullPtr(String),
     ConversionError(String),
     GenericError(String),
 }
@@ -22,8 +22,8 @@ impl fmt::Display for Error {
                 "error while calling libgeos method {} (error number = {})",
                 p, e
             ),
-            Error::NoConstructionFromNullPtr => {
-                write!(f, "impossible to build a geometry from a nullptr")
+            Error::NoConstructionFromNullPtr(ref s) => {
+                write!(f, "impossible to build a geometry from a nullptr in \"{}\"", s)
             }
             Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {}", s),
             Error::GenericError(ref s) => write!(f, "generic error: {}", s),

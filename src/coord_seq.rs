@@ -51,11 +51,11 @@ impl<'a> CoordSeq<'a> {
     /// assert!(coord_seq2.get_x(1) == Ok(1.));
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("CoordSeq::new")) {
             Ok(context_handle) => {
                 unsafe {
                     let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
-                    CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into())
+                    CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into(), "new")
                 }
             }
             Err(e) => Err(e),
@@ -96,15 +96,16 @@ impl<'a> CoordSeq<'a> {
                 return Err(Error::GenericError(e.to_owned()));
             }
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
-                return Err(Error::GenericError("All vec entries must have the same size!".to_owned()));
+                return Err(Error::GenericError("All vec entries must have the same size!".into()));
             }
-            match GContextHandle::init() {
+            match GContextHandle::init_e(Some("CoordSeq::new_from_vec")) {
                 Ok(context_handle) => {
                     unsafe {
                         let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(),
                                                         size as _,
                                                         dims as _);
-                        CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size as _, dims as _)
+                        CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size as _, dims as _,
+                                               "new_from_vec")
                     }
                 }
                 Err(e) => return Err(e),
@@ -139,9 +140,10 @@ impl<'a> CoordSeq<'a> {
         context: Arc<GContextHandle<'a>>,
         size: u32,
         dims: u32,
+        caller: &str,
     ) -> GResult<CoordSeq<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr);
+            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}", caller)));
         }
         Ok(CoordSeq { ptr: PtrWrap(ptr), context, nb_dimensions: dims as _, nb_lines: size as _ })
     }

@@ -15,16 +15,17 @@ impl<'a> PreparedGGeom<'a> {
     pub fn new(g: &GGeom<'a>) -> GResult<PreparedGGeom<'a>> {
         unsafe {
             let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
-            PreparedGGeom::new_from_raw(ptr, g.clone_context())
+            PreparedGGeom::new_from_raw(ptr, g.clone_context(), "new")
         }
     }
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSPreparedGeometry,
         context: Arc<GContextHandle<'a>>,
+        caller: &str,
     ) -> GResult<PreparedGGeom<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr);
+            return Err(Error::NoConstructionFromNullPtr(format!("PreparedGGeom::{}", caller)));
         }
         Ok(PreparedGGeom { ptr: PtrWrap(ptr), context })
     }

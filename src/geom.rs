@@ -29,7 +29,7 @@ impl<'a> GGeom<'a> {
     /// let point_geom = GGeom::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
     pub fn new_from_wkt(wkt: &str) -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::new_from_wkt")) {
             Ok(context_handle) => {
                 match CString::new(wkt) {
                     Ok(c_str) => {
@@ -38,7 +38,7 @@ impl<'a> GGeom<'a> {
                             let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader,
                                                            c_str.as_ptr());
                             GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
-                            GGeom::new_from_raw(ptr, Arc::new(context_handle))
+                            GGeom::new_from_raw(ptr, Arc::new(context_handle), "new_from_wkt")
                         }
                     }
                     Err(e) => {
@@ -66,11 +66,11 @@ impl<'a> GGeom<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::new_from_hex")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "new_from_hex")
                 }
             }
             Err(e) => Err(e),
@@ -93,11 +93,11 @@ impl<'a> GGeom<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::new_from_wkb")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "new_from_wkb")
                 }
             }
             Err(e) => Err(e),
@@ -166,7 +166,7 @@ impl<'a> GGeom<'a> {
     pub fn build_area(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "build_area")
         }
     }
 
@@ -175,7 +175,7 @@ impl<'a> GGeom<'a> {
             let context = match geometries.get(0) {
                 Some(g) => g.as_ref().clone_context(),
                 None => {
-                    match GContextHandle::init() {
+                    match GContextHandle::init_e(Some("GGeom::polygonize")) {
                         Ok(context) => Arc::new(context),
                         Err(e) => return Err(e),
                     }
@@ -185,7 +185,7 @@ impl<'a> GGeom<'a> {
                                   .map(|g| g.as_ref().as_raw() as *const _)
                                   .collect::<Vec<_>>();
             let ptr = GEOSPolygonize_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
-            GGeom::new_from_raw(ptr, context)
+            GGeom::new_from_raw(ptr, context, "polygonize")
         }
     }
 
@@ -197,7 +197,7 @@ impl<'a> GGeom<'a> {
             let context = match geometries.get(0) {
                 Some(g) => g.as_ref().clone_context(),
                 None => {
-                    match GContextHandle::init() {
+                    match GContextHandle::init_e(Some("GGeom::polygonizer_get_cut_edges")) {
                         Ok(context) => Arc::new(context),
                         Err(e) => return Err(e),
                     }
@@ -211,7 +211,7 @@ impl<'a> GGeom<'a> {
                 geoms.as_ptr(),
                 geoms.len() as _,
             );
-            GGeom::new_from_raw(ptr, context)
+            GGeom::new_from_raw(ptr, context, "polygonizer_get_cut_edges")
         }
     }
 
@@ -241,7 +241,7 @@ impl<'a> GGeom<'a> {
     pub fn line_merge(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSLineMerge_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "line_merge")
         }
     }
 
@@ -249,14 +249,14 @@ impl<'a> GGeom<'a> {
     pub fn reverse(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "reverse")
         }
     }
 
     pub fn simplify(&self, tolerance: f64) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "simplify")
         }
     }
 
@@ -266,16 +266,17 @@ impl<'a> GGeom<'a> {
                 self.get_raw_context(),
                 self.as_raw(),
                 tolerance);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "topology_preserve_simplify")
         }
     }
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSGeometry,
         context: Arc<GContextHandle<'a>>,
+        caller: &str,
     ) -> GResult<GGeom<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr);
+            return Err(Error::NoConstructionFromNullPtr(format!("GGeom::{}", caller)));
         }
         Ok(GGeom { ptr: PtrWrap(ptr), context, owned: true, })
     }
@@ -360,10 +361,10 @@ impl<'a> GGeom<'a> {
                 if GEOSCoordSeq_getDimensions_r(self.get_raw_context(), coord, &mut dims) == 0 {
                     return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
                 }
-                CoordSeq::new_from_raw(t, self.clone_context(), size, dims)
+                CoordSeq::new_from_raw(t, self.clone_context(), size, dims, "get_coord_seq")
             },
             _ => Err(Error::ImpossibleOperation(
-                "Geometry must be a Point, LineString or LinearRing to extract it's coordinates"
+                "Geometry must be a Point, LineString or LinearRing to extract its coordinates"
                     .into(),
             )),
         }
@@ -536,7 +537,7 @@ impl<'a> GGeom<'a> {
                 width,
                 quadsegs as _,
             );
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "buffer")
         }
     }
 
@@ -553,44 +554,44 @@ impl<'a> GGeom<'a> {
     pub fn difference<'b>(&self, g2: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSDifference_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "difference")
         }
     }
 
     pub fn envelope(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSEnvelope_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "envelope")
         }
     }
 
     pub fn sym_difference<'b>(&self, g2: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSSymDifference_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "sym_difference")
         }
     }
 
     pub fn union(&self, g2: &GGeom<'a>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSUnion_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "union")
         }
     }
 
     pub fn get_centroid(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetCentroid_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "get_centroid")
         }
     }
 
     pub fn create_empty_polygon() -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::create_empty_polygon")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "create_empty_polygon")
                 }
             }
             Err(e) => Err(e),
@@ -598,11 +599,11 @@ impl<'a> GGeom<'a> {
     }
 
     pub fn create_empty_point() -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::create_empty_point")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "create_empty_point")
                 }
             }
             Err(e) => Err(e),
@@ -610,11 +611,11 @@ impl<'a> GGeom<'a> {
     }
 
     pub fn create_empty_line_string() -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::create_empty_line_string")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "create_empty_line_string")
                 }
             }
             Err(e) => Err(e),
@@ -622,11 +623,11 @@ impl<'a> GGeom<'a> {
     }
 
     pub fn create_empty_collection(type_: GGeomTypes) -> GResult<GGeom<'a>> {
-        match GContextHandle::init() {
+        match GContextHandle::init_e(Some("GGeom::create_empty_collection")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
-                    GGeom::new_from_raw(ptr, Arc::new(context))
+                    GGeom::new_from_raw(ptr, Arc::new(context), "create_empty_collection")
                 }
             }
             Err(e) => Err(e),
@@ -644,7 +645,7 @@ impl<'a> GGeom<'a> {
                 geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_interiors as _,
             );
-            GGeom::new_from_raw(ptr, context_handle)
+            GGeom::new_from_raw(ptr, context_handle, "create_polygon")
         };
 
         // We transfered the ownership of the ptr to the new GGeom,
@@ -691,7 +692,7 @@ impl<'a> GGeom<'a> {
     pub fn create_point(mut s: CoordSeq<'a>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGeom_createPoint_r(s.get_raw_context(), s.as_raw());
-            let res = GGeom::new_from_raw(ptr, s.clone_context());
+            let res = GGeom::new_from_raw(ptr, s.clone_context(), "create_point");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
         }
@@ -700,7 +701,7 @@ impl<'a> GGeom<'a> {
     pub fn create_line_string(mut s: CoordSeq<'a>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGeom_createLineString_r(s.get_raw_context(), s.as_raw());
-            let res = GGeom::new_from_raw(ptr, s.clone_context());
+            let res = GGeom::new_from_raw(ptr, s.clone_context(), "create_line_string");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
         }
@@ -709,7 +710,7 @@ impl<'a> GGeom<'a> {
     pub fn create_linear_ring(mut s: CoordSeq<'a>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGeom_createLinearRing_r(s.get_raw_context(), s.as_raw());
-            let res = GGeom::new_from_raw(ptr, s.clone_context());
+            let res = GGeom::new_from_raw(ptr, s.clone_context(), "create_linear_ring");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
         }
@@ -718,7 +719,7 @@ impl<'a> GGeom<'a> {
     pub fn unary_union(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSUnaryUnion_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "unary_union")
         }
     }
 
@@ -738,7 +739,7 @@ impl<'a> GGeom<'a> {
                 tolerance,
                 only_edges as _,
             );
-            Self::new_from_raw(raw_voronoi, self.clone_context())
+            Self::new_from_raw(raw_voronoi, self.clone_context(), "voronoi")
         }
     }
 
@@ -750,21 +751,21 @@ impl<'a> GGeom<'a> {
     pub fn intersection<'b>(&self, other: &GGeom<'b>) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSIntersection_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "intersection")
         }
     }
 
     pub fn convex_hull(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSConvexHull_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "convex_hull")
         }
     }
 
     pub fn boundary(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSBoundary_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "boundary")
         }
     }
 
@@ -876,14 +877,14 @@ impl<'a> GGeom<'a> {
     pub fn snap<'b>(&self, other: &GGeom<'b>, tolerance: f64) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSSnap_r(self.get_raw_context(), self.as_raw(), other.as_raw(), tolerance);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "snap")
         }
     }
 
     pub fn extract_unique_points(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGeom_extractUniquePoints_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "extract_unique_points")
         }
     }
 
@@ -903,7 +904,7 @@ impl<'a> GGeom<'a> {
             if GEOSCoordSeq_getDimensions_r(self.get_raw_context(), ptr, &mut dims) == 0 {
                 return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
             }
-            CoordSeq::new_from_raw(ptr, self.clone_context(), size, dims)
+            CoordSeq::new_from_raw(ptr, self.clone_context(), size, dims, "nearest_points")
         }
     }
 
@@ -987,7 +988,7 @@ impl<'a> GGeom<'a> {
         }
         unsafe {
             let ptr = GEOSGeomGetPointN_r(self.get_raw_context(), self.as_raw(), n as _);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "get_point_n")
         }
     }
 
@@ -998,7 +999,7 @@ impl<'a> GGeom<'a> {
         }
         unsafe {
             let ptr = GEOSGeomGetStartPoint_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "get_start_point")
         }
     }
 
@@ -1009,7 +1010,7 @@ impl<'a> GGeom<'a> {
         }
         unsafe {
             let ptr = GEOSGeomGetEndPoint_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "get_end_point")
         }
     }
 
@@ -1062,7 +1063,7 @@ impl<'a> GGeom<'a> {
     pub fn get_interior_ring_n(&self, n: u32) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
-            match GGeom::new_from_raw(ptr, self.clone_context()) {
+            match GGeom::new_from_raw(ptr, self.clone_context(), "get_interior_ring_n") {
                 Ok(mut g) => {
                     g.owned = false;
                     Ok(g)
@@ -1094,7 +1095,7 @@ impl<'a> GGeom<'a> {
     pub fn get_exterior_ring(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
-            match GGeom::new_from_raw(ptr, self.clone_context()) {
+            match GGeom::new_from_raw(ptr, self.clone_context(), "get_exterior_ring") {
                 Ok(mut g) => {
                     g.owned = false;
                     Ok(g)
@@ -1154,7 +1155,7 @@ impl<'a> GGeom<'a> {
     pub fn make_valid(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "make_valid")
         }
     }
 
@@ -1172,7 +1173,7 @@ impl<'a> GGeom<'a> {
     pub fn get_geometry_n(&self, n: usize) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSGetGeometryN_r(self.get_raw_context(), self.as_raw(), n as _);
-            GGeom::new_from_raw(ptr, self.clone_context()).map(|mut x| {
+            GGeom::new_from_raw(ptr, self.clone_context(), "get_geometry_n").map(|mut x| {
                 x.owned = false;
                 x
             })
@@ -1231,7 +1232,7 @@ impl<'a> GGeom<'a> {
                                               self.as_raw(),
                                               grid_size,
                                               flags.into());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "set_precision")
         }
     }
 
@@ -1339,7 +1340,7 @@ impl<'a> GGeom<'a> {
     pub fn minimum_clearance_line(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMinimumClearanceLine_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "minimum_clearance_line")
         }
     }
 
@@ -1347,7 +1348,7 @@ impl<'a> GGeom<'a> {
     pub fn minimum_rotated_rectangle(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMinimumRotatedRectangle_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "minimum_rotated_rectangle")
         }
     }
 
@@ -1355,7 +1356,7 @@ impl<'a> GGeom<'a> {
     pub fn minimum_width(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSMinimumWidth_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "minimum_width")
         }
     }
 
@@ -1367,7 +1368,7 @@ impl<'a> GGeom<'a> {
                 tolerance,
                 only_edges as _,
             );
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "delaunay_triangulation")
         }
     }
 
@@ -1377,7 +1378,7 @@ impl<'a> GGeom<'a> {
         }
         unsafe {
             let ptr = GEOSInterpolate_r(self.get_raw_context(), self.as_raw(), d);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "interpolate")
         }
     }
 
@@ -1387,7 +1388,21 @@ impl<'a> GGeom<'a> {
         }
         unsafe {
             let ptr = GEOSInterpolateNormalized_r(self.get_raw_context(), self.as_raw(), d);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "interpolate_normalized")
+        }
+    }
+
+    pub fn project(&self, p: &GGeom<'_>) -> GResult<f64> {
+        if p.geometry_type() != GGeomTypes::Point {
+            return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
+        }
+        unsafe {
+            let ret = GEOSProject_r(self.get_raw_context(), self.as_raw(), p.as_raw());
+            if ret == -1. {
+                Err(Error::GenericError("GEOSProject_r failed".to_owned()))
+            } else {
+                Ok(ret)
+            }
         }
     }
 
@@ -1408,7 +1423,7 @@ impl<'a> GGeom<'a> {
     pub fn node(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSNode_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "node")
         }
     }
 
@@ -1451,14 +1466,14 @@ impl<'a> GGeom<'a> {
         unsafe {
             let ptr = GEOSOffsetCurve_r(self.get_raw_context(), self.as_raw(), width,
                                         quadrant_segments, join_style.into(), mitre_limit);
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "offset_curve")
         }
     }
 
     pub fn point_on_surface(&self) -> GResult<GGeom<'a>> {
         unsafe {
             let ptr = GEOSPointOnSurface_r(self.get_raw_context(), self.as_raw());
-            GGeom::new_from_raw(ptr, self.clone_context())
+            GGeom::new_from_raw(ptr, self.clone_context(), "point_on_surface")
         }
     }
 
@@ -1484,21 +1499,29 @@ impl<'a> GGeom<'a> {
                 &mut invalids,
             );
             let cuts = if !cuts.is_null() {
-                GGeom::new_from_raw(cuts, self.clone_context()).ok()
+                GGeom::new_from_raw(cuts, self.clone_context(), "polygonize_full").ok()
             } else {
                 None
             };
             let dangles = if !dangles.is_null() {
-                GGeom::new_from_raw(dangles, self.clone_context()).ok()
+                GGeom::new_from_raw(dangles, self.clone_context(), "polygonize_full").ok()
             } else {
                 None
             };
             let invalids = if !invalids.is_null() {
-                GGeom::new_from_raw(invalids, self.clone_context()).ok()
+                GGeom::new_from_raw(invalids, self.clone_context(), "polygonize_full").ok()
             } else {
                 None
             };
-            GGeom::new_from_raw(ptr, self.clone_context()).map(|x| (x, cuts, dangles, invalids))
+            GGeom::new_from_raw(ptr, self.clone_context(), "polygonize_full")
+                  .map(|x| (x, cuts, dangles, invalids))
+        }
+    }
+
+    pub fn shared_paths(&self, other: GGeom<'_>) -> GResult<GGeom<'a>> {
+        unsafe {
+            let ptr = GEOSSharedPaths_r(self.get_raw_context(), self.as_raw(), other.as_raw());
+            GGeom::new_from_raw(ptr, self.clone_context(), "shared_paths")
         }
     }
 }
