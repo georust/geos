@@ -70,9 +70,17 @@ impl<'a> GContextHandle<'a> {
     /// let context_handle = GContextHandle::init().expect("invalid init");
     /// ```
     pub fn init() -> GResult<Self> {
+        Self::init_e(None)
+    }
+
+    pub(crate) fn init_e(caller: Option<&str>) -> GResult<Self> {
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
-            return Err(Error::GenericError("GEOS_init_r failed".to_owned()));
+            return if let Some(ref caller) = caller {
+                Err(Error::GenericError(format!("GEOS_init_r failed from \"{}\"", caller)))
+            } else {
+                Err(Error::GenericError("GEOS_init_r failed".to_owned()))
+            };
         }
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);

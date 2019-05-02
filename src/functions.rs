@@ -41,7 +41,7 @@ pub fn clip_by_rect<'a>(
             xmax,
             ymax,
         );
-        GGeom::new_from_raw(ptr, context)
+        GGeom::new_from_raw(ptr, context, "clip_by_rect")
     }
 }
 
@@ -90,7 +90,7 @@ pub(crate) fn create_multi_geom<'a>(
                 geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
                 nb_geoms as _,
             );
-            GGeom::new_from_raw(ptr, context)
+            GGeom::new_from_raw(ptr, context, "create_multi_geom")
         }
     };
 
