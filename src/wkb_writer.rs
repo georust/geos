@@ -7,6 +7,27 @@ use error::Error;
 use enums::TryFrom;
 use c_vec::CVec;
 
+/// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`].
+///
+/// # Example
+///
+/// ```
+/// use geos::{ContextHandling, Geometry, WKBWriter};
+///
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+/// let mut writer = WKBWriter::new_with_context(point_geom.clone_context())
+///                            .expect("Failed to create WKBWriter");
+///
+/// // Output as WKB
+/// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
+/// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
+///            "POINT (2.5 2.5)");
+///
+/// // Output as HEX
+/// let v: Vec<u8> = writer.write_hex(&point_geom).unwrap().into();
+/// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt_precision(1).unwrap(),
+///            "POINT (2.5 2.5)");
+/// ```
 pub struct WKBWriter<'a> {
     ptr: PtrWrap<*mut GEOSWKBWriter>,
     context: Arc<ContextHandle<'a>>,

@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use crate::{
     CoordSeq, ContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry,
     WKTWriter,
@@ -14,6 +15,17 @@ use std::{self, str};
 use c_vec::CVec;
 use std::sync::Arc;
 
+/// Representation of a GEOS geometry.
+///
+/// # Example
+///
+/// ```
+/// use geos::Geometry;
+///
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 3.5)").expect("Invalid geometry");
+/// assert_eq!(point_geom.get_x(), Ok(2.5));
+/// assert_eq!(point_geom.get_y(), Ok(3.5));
+/// ```
 pub struct Geometry<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
     context: Arc<ContextHandle<'a>>,
@@ -66,7 +78,7 @@ impl<'a> Geometry<'a> {
     /// // The interesting part is here:
     /// let new_geom = Geometry::new_from_hex(hex_buf.as_ref())
     ///                      .expect("conversion from HEX failed");
-    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// assert_eq!(point_geom.equals(&new_geom), Ok(true));
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::new_from_hex")) {
@@ -93,7 +105,7 @@ impl<'a> Geometry<'a> {
     /// // The interesting part is here:
     /// let new_geom = Geometry::new_from_wkb(wkb_buf.as_ref())
     ///                      .expect("conversion from WKB failed");
-    /// assert!(point_geom.equals(&new_geom) == Ok(true));
+    /// assert_eq!(point_geom.equals(&new_geom), Ok(true));
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::new_from_wkb")) {
@@ -107,7 +119,8 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    /// Converts a [`Geometry`] to the HEX format.
+    /// Converts a [`Geometry`] to the HEX format. For more control over the generated output,
+    /// use the [`WKBWriter`] type.
     ///
     /// # Example
     ///
@@ -131,7 +144,8 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    /// Converts a [`Geometry`] to the WKB format.
+    /// Converts a [`Geometry`] to the WKB format. For more control over the generated output,
+    /// use the [`WKBWriter`] type.
     ///
     /// # Example
     ///
@@ -177,10 +191,48 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    pub fn polygonize<T: AsRef<Geometry<'a>>>(geometries: &[T]) -> GResult<Geometry<'a>> {
+    /// Description from [postgis](https://postgis.net/docs/ST_Polygonize.html):
+    ///
+    /// > Creates a GeometryCollection containing possible polygons formed from the constituent
+    /// > linework of a set of geometries.
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((-71.040878 42.285678,\
+    ///                                              -71.040943 42.2856,\
+    ///                                              -71.04096 42.285752,\
+    ///                                              -71.040878 42.285678))")
+    ///                      .expect("Failed to create geometry");
+    /// let geom2 = Geometry::new_from_wkt("POLYGON((-71.17166 42.353675,\
+    ///                                              -71.172026 42.354044,\
+    ///                                              -71.17239 42.354358,\
+    ///                                              -71.171794 42.354971,\
+    ///                                              -71.170511 42.354855,\
+    ///                                              -71.17112 42.354238,\
+    ///                                              -71.17166 42.353675))")
+    ///                      .expect("Failed to create geometry");
+    ///
+    /// let polygonized = Geometry::polygonize(&[geom1, geom2]).expect("polygonize failed");
+    /// assert_eq!(polygonized.to_wkt().unwrap(),
+    ///            "GEOMETRYCOLLECTION (POLYGON ((-71.0408780000000064 42.2856779999999972, \
+    ///                                           -71.0409429999999986 42.2856000000000023, \
+    ///                                           -71.0409599999999983 42.2857520000000022, \
+    ///                                           -71.0408780000000064 42.2856779999999972)), \
+    ///                                 POLYGON ((-71.1716600000000028 42.3536750000000026, \
+    ///                                           -71.1720260000000025 42.3540440000000018, \
+    ///                                           -71.1723899999999929 42.3543579999999977, \
+    ///                                           -71.1717940000000056 42.3549709999999990, \
+    ///                                           -71.1705110000000047 42.3548550000000006, \
+    ///                                           -71.1711200000000019 42.3542380000000023, \
+    ///                                           -71.1716600000000028 42.3536750000000026)))");
+    /// ```
+    pub fn polygonize<T: Borrow<Geometry<'a>>>(geometries: &[T]) -> GResult<Geometry<'a>> {
         unsafe {
             let context = match geometries.get(0) {
-                Some(g) => g.as_ref().clone_context(),
+                Some(g) => g.borrow().clone_context(),
                 None => {
                     match ContextHandle::init_e(Some("Geometry::polygonize")) {
                         Ok(context) => Arc::new(context),
@@ -189,20 +241,20 @@ impl<'a> Geometry<'a> {
                 }
             };
             let geoms = geometries.iter()
-                                  .map(|g| g.as_ref().as_raw() as *const _)
+                                  .map(|g| g.borrow().as_raw() as *const _)
                                   .collect::<Vec<_>>();
             let ptr = GEOSPolygonize_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
             Geometry::new_from_raw(ptr, context, "polygonize")
         }
     }
 
-    pub fn polygonizer_get_cut_edges<T: AsRef<Geometry<'a>>>(
+    pub fn polygonizer_get_cut_edges<T: Borrow<Geometry<'a>>>(
         &self,
         geometries: &[T],
     ) -> GResult<Geometry<'a>> {
         unsafe {
             let context = match geometries.get(0) {
-                Some(g) => g.as_ref().clone_context(),
+                Some(g) => g.borrow().clone_context(),
                 None => {
                     match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
                         Ok(context) => Arc::new(context),
@@ -211,7 +263,7 @@ impl<'a> Geometry<'a> {
                 }
             };
             let geoms = geometries.iter()
-                                  .map(|g| g.as_ref().as_raw() as *const _)
+                                  .map(|g| g.borrow().as_raw() as *const _)
                                   .collect::<Vec<_>>();
             let ptr = GEOSPolygonizer_getCutEdges_r(
                 context.as_raw(),
@@ -375,6 +427,16 @@ impl<'a> Geometry<'a> {
         GeometryTypes::from(type_geom)
     }
 
+    /// Returns the area of the geometry. Units are specified by the SRID of the given geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+    /// assert_eq!(geom1.area(), Ok(60.));
+    /// ```
     pub fn area(&self) -> GResult<f64> {
         let mut n = 0.;
 
@@ -535,6 +597,18 @@ impl<'a> Geometry<'a> {
         check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
+    /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.contains(&geom2), Ok(true));
+    /// ```
     pub fn contains<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
         let ret_val = unsafe { GEOSContains_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::Contains)
