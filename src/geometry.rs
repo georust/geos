@@ -117,14 +117,16 @@ impl<'a> Geometry<'a> {
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let hex_buf = point_geom.to_hex().expect("conversion to WKB failed");
     /// ```
-    pub fn to_hex(&self) -> Option<CVec<u8>> {
+    pub fn to_hex(&self) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToHEX_buf_r(self.get_raw_context(), self.as_raw(), &mut size);
             if ptr.is_null() {
-                None
+                Err(Error::NoConstructionFromNullPtr(
+                    "Geometry::to_hex failed: GEOSGeomToHEX_buf_r returned null pointer".to_owned())
+                )
             } else {
-                Some(CVec::new(ptr, size as _))
+                Ok(CVec::new(ptr, size as _))
             }
         }
     }
@@ -137,16 +139,18 @@ impl<'a> Geometry<'a> {
     /// use geos::Geometry;
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let hex_buf = point_geom.to_wkb().expect("conversion to WKB failed");
+    /// let wkb_buf = point_geom.to_wkb().expect("conversion to WKB failed");
     /// ```
-    pub fn to_wkb(&self) -> Option<CVec<u8>> {
+    pub fn to_wkb(&self) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSGeomToWKB_buf_r(self.get_raw_context(), self.as_raw(), &mut size);
             if ptr.is_null() {
-                None
+                Err(Error::NoConstructionFromNullPtr(
+                    "Geometry::to_wkb failed: GEOSGeomToWKB_buf_r returned null pointer".to_owned())
+                )
             } else {
-                Some(CVec::new(ptr, size as _))
+                Ok(CVec::new(ptr, size as _))
             }
         }
     }
