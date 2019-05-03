@@ -20,7 +20,7 @@ doctest!("../README.md");
 pub(crate) mod functions;
 
 pub use context_handle::{
-    GContextHandle,
+    ContextHandle,
 };
 pub use coord_seq::{
     CoordSeq,

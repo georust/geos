@@ -1,5 +1,5 @@
 use geos_sys::GEOSContextHandle_t;
-use crate::GContextHandle;
+use crate::ContextHandle;
 
 pub trait AsRaw {
     type RawType;
@@ -16,10 +16,10 @@ pub trait ContextHandling {
 }
 
 pub trait ContextInteractions<'a> {
-    fn set_context_handle(&mut self, context: GContextHandle<'a>);
-    fn get_context_handle(&self) -> &GContextHandle<'a>;
+    fn set_context_handle(&mut self, context: ContextHandle<'a>);
+    fn get_context_handle(&self) -> &ContextHandle<'a>;
 
-    /// Gets the last error (if any) from the [`GContextHandle`] held by this object.
+    /// Gets the last error (if any) from the [`ContextHandle`] held by this object.
     ///
     /// # Example
     ///
@@ -36,7 +36,7 @@ pub trait ContextInteractions<'a> {
         self.get_context_handle().get_last_error()
     }
 
-    /// Gets the last notification (if any) from the [`GContextHandle`] held by this object.
+    /// Gets the last notification (if any) from the [`ContextHandle`] held by this object.
     ///
     /// # Example
     ///

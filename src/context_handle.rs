@@ -54,20 +54,20 @@ pub(crate) struct InnerContext<'a> {
     error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>>,
 }
 
-pub struct GContextHandle<'a> {
+pub struct ContextHandle<'a> {
     ptr: PtrWrap<GEOSContextHandle_t>,
     pub(crate) inner: PtrWrap<*mut InnerContext<'a>>,
 }
 
-impl<'a> GContextHandle<'a> {
-    /// Creates a new `GContextHandle`.
+impl<'a> ContextHandle<'a> {
+    /// Creates a new `ContextHandle`.
     ///
     /// # Example
     ///
     /// ```
-    /// use geos::GContextHandle;
+    /// use geos::ContextHandle;
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// ```
     pub fn init() -> GResult<Self> {
         Self::init_e(None)
@@ -98,7 +98,7 @@ impl<'a> GContextHandle<'a> {
         set_notif(ptr, inner);
         set_error(ptr, inner);
 
-        Ok(GContextHandle {
+        Ok(ContextHandle {
             ptr: PtrWrap(ptr),
             inner: PtrWrap(inner),
         })
@@ -119,9 +119,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::GContextHandle;
+    /// use geos::ContextHandle;
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
@@ -143,9 +143,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::GContextHandle;
+    /// use geos::ContextHandle;
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
@@ -165,9 +165,9 @@ impl<'a> GContextHandle<'a> {
     /// Please note that calling this function will remove the current last error!
     ///
     /// ```
-    /// use geos::GContextHandle;
+    /// use geos::ContextHandle;
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// // make some functions calls...
     /// if let Some(last_error) = context_handle.get_last_error() {
     ///     println!("We have an error: {}", last_error);
@@ -189,9 +189,9 @@ impl<'a> GContextHandle<'a> {
     /// Please note that calling this function will remove the current last notification!
     ///
     /// ```
-    /// use geos::GContextHandle;
+    /// use geos::ContextHandle;
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// // make some functions calls...
     /// if let Some(last_notif) = context_handle.get_last_notification() {
     ///     println!("We have a notification: {}", last_notif);
@@ -213,9 +213,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{GContextHandle, Dimensions};
+    /// use geos::{ContextHandle, Dimensions};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
     /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
@@ -229,9 +229,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{GContextHandle, Dimensions};
+    /// use geos::{ContextHandle, Dimensions};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
     /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
@@ -245,9 +245,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{GContextHandle, ByteOrder};
+    /// use geos::{ContextHandle, ByteOrder};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
@@ -261,9 +261,9 @@ impl<'a> GContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{GContextHandle, ByteOrder};
+    /// use geos::{ContextHandle, ByteOrder};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
@@ -273,7 +273,7 @@ impl<'a> GContextHandle<'a> {
     }
 }
 
-impl<'a> Drop for GContextHandle<'a> {
+impl<'a> Drop for ContextHandle<'a> {
     fn drop(&mut self) {
         unsafe {
             if !self.ptr.is_null() {

@@ -1,4 +1,4 @@
-use crate::{GContextHandle, Geometry, GResult, AsRaw, ContextHandling, ContextInteractions};
+use crate::{ContextHandle, Geometry, GResult, AsRaw, ContextHandling, ContextInteractions};
 use error::PredicateType;
 use context_handle::PtrWrap;
 use geos_sys::*;
@@ -8,7 +8,7 @@ use error::Error;
 
 pub struct PreparedGeometry<'a> {
     ptr: PtrWrap<*mut GEOSPreparedGeometry>,
-    context: Arc<GContextHandle<'a>>,
+    context: Arc<ContextHandle<'a>>,
 }
 
 impl<'a> PreparedGeometry<'a> {
@@ -21,7 +21,7 @@ impl<'a> PreparedGeometry<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSPreparedGeometry,
-        context: Arc<GContextHandle<'a>>,
+        context: Arc<ContextHandle<'a>>,
         caller: &str,
     ) -> GResult<PreparedGeometry<'a>> {
         if ptr.is_null() {
@@ -114,16 +114,16 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// Set the context handle to the `PreparedGeometry`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, GContextHandle, Geometry, PreparedGeometry};
+    /// use geos::{ContextInteractions, ContextHandle, Geometry, PreparedGeometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// let mut prepared_geom = point_geom.to_prepared_geom()
     ///                                   .expect("failed to create prepared geom");
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// prepared_geom.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -138,7 +138,7 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// let context = prepared_geom.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &GContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle<'a> {
         &self.context
     }
 }
@@ -152,13 +152,13 @@ impl<'a> AsRaw for PreparedGeometry<'a> {
 }
 
 impl<'a> ContextHandling for PreparedGeometry<'a> {
-    type Context = Arc<GContextHandle<'a>>;
+    type Context = Arc<ContextHandle<'a>>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<GContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
         Arc::clone(&self.context)
     }
 }

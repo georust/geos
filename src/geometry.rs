@@ -1,5 +1,5 @@
 use crate::{
-    CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry,
+    CoordSeq, ContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry,
     WKTWriter,
 };
 #[cfg(feature = "v3_6_0")]
@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 pub struct Geometry<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
-    context: Arc<GContextHandle<'a>>,
+    context: Arc<ContextHandle<'a>>,
     owned: bool,
 }
 
@@ -32,7 +32,7 @@ impl<'a> Geometry<'a> {
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
     pub fn new_from_wkt(wkt: &str) -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::new_from_wkt")) {
+        match ContextHandle::init_e(Some("Geometry::new_from_wkt")) {
             Ok(context_handle) => {
                 match CString::new(wkt) {
                     Ok(c_str) => {
@@ -69,7 +69,7 @@ impl<'a> Geometry<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::new_from_hex")) {
+        match ContextHandle::init_e(Some("Geometry::new_from_hex")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
@@ -96,7 +96,7 @@ impl<'a> Geometry<'a> {
     /// assert!(point_geom.equals(&new_geom) == Ok(true));
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::new_from_wkb")) {
+        match ContextHandle::init_e(Some("Geometry::new_from_wkb")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
@@ -178,7 +178,7 @@ impl<'a> Geometry<'a> {
             let context = match geometries.get(0) {
                 Some(g) => g.as_ref().clone_context(),
                 None => {
-                    match GContextHandle::init_e(Some("Geometry::polygonize")) {
+                    match ContextHandle::init_e(Some("Geometry::polygonize")) {
                         Ok(context) => Arc::new(context),
                         Err(e) => return Err(e),
                     }
@@ -200,7 +200,7 @@ impl<'a> Geometry<'a> {
             let context = match geometries.get(0) {
                 Some(g) => g.as_ref().clone_context(),
                 None => {
-                    match GContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
+                    match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
                         Ok(context) => Arc::new(context),
                         Err(e) => return Err(e),
                     }
@@ -275,7 +275,7 @@ impl<'a> Geometry<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSGeometry,
-        context: Arc<GContextHandle<'a>>,
+        context: Arc<ContextHandle<'a>>,
         caller: &str,
     ) -> GResult<Geometry<'a>> {
         if ptr.is_null() {
@@ -595,7 +595,7 @@ impl<'a> Geometry<'a> {
     }
 
     pub fn create_empty_polygon() -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::create_empty_polygon")) {
+        match ContextHandle::init_e(Some("Geometry::create_empty_polygon")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
@@ -607,7 +607,7 @@ impl<'a> Geometry<'a> {
     }
 
     pub fn create_empty_point() -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::create_empty_point")) {
+        match ContextHandle::init_e(Some("Geometry::create_empty_point")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
@@ -619,7 +619,7 @@ impl<'a> Geometry<'a> {
     }
 
     pub fn create_empty_line_string() -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::create_empty_line_string")) {
+        match ContextHandle::init_e(Some("Geometry::create_empty_line_string")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
@@ -631,7 +631,7 @@ impl<'a> Geometry<'a> {
     }
 
     pub fn create_empty_collection(type_: GeometryTypes) -> GResult<Geometry<'a>> {
-        match GContextHandle::init_e(Some("Geometry::create_empty_collection")) {
+        match ContextHandle::init_e(Some("Geometry::create_empty_collection")) {
             Ok(context) => {
                 unsafe {
                     let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
@@ -1600,14 +1600,14 @@ impl<'a> ContextInteractions<'a> for Geometry<'a> {
     /// Set the context handle to the geometry.
     ///
     /// ```
-    /// use geos::{ContextInteractions, GContextHandle, Geometry};
+    /// use geos::{ContextInteractions, ContextHandle, Geometry};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// point_geom.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -1620,7 +1620,7 @@ impl<'a> ContextInteractions<'a> for Geometry<'a> {
     /// let context = point_geom.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &GContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle<'a> {
         &self.context
     }
 }
@@ -1634,13 +1634,13 @@ impl<'a> AsRaw for Geometry<'a> {
 }
 
 impl<'a> ContextHandling for Geometry<'a> {
-    type Context = Arc<GContextHandle<'a>>;
+    type Context = Arc<ContextHandle<'a>>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<GContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
         Arc::clone(&self.context)
     }
 }

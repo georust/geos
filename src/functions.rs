@@ -5,7 +5,7 @@ use geometry::Geometry;
 use std::ffi::CStr;
 use std::sync::Arc;
 use std::str;
-use crate::{GContextHandle, AsRaw, ContextHandling};
+use crate::{ContextHandle, AsRaw, ContextHandling};
 use context_handle::PtrWrap;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
@@ -27,7 +27,7 @@ pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8, caller: &str) -> GResu
 
 pub(crate) unsafe fn managed_string(
     raw_ptr: *mut i8,
-    context: &GContextHandle,
+    context: &ContextHandle,
     caller: &str,
 ) -> GResult<String> {
     if raw_ptr.is_null() {
@@ -89,7 +89,7 @@ pub(crate) fn create_multi_geom<'a>(
 ) -> GResult<Geometry<'a>> {
     let nb_geoms = geoms.len();
     let context = if geoms.is_empty() {
-        match GContextHandle::init() {
+        match ContextHandle::init() {
             Ok(ch) => Arc::new(ch),
             _ => return Err(Error::GenericError("GEOS_init_r failed".to_owned())),
         }
@@ -126,7 +126,7 @@ pub fn orientation_index(
     px: f64,
     py: f64,
 ) -> GResult<Orientation> {
-    match GContextHandle::init() {
+    match ContextHandle::init() {
         Ok(context) => {
             unsafe {
                 match Orientation::try_from(
@@ -153,7 +153,7 @@ pub fn segment_intersection(
     bx1: f64,
     by1: f64,
 ) -> GResult<Option<(f64, f64)>> {
-    match GContextHandle::init() {
+    match ContextHandle::init() {
         Ok(context) => {
             unsafe {
                 let mut cx = 0.;
