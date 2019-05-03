@@ -13,6 +13,18 @@ use crate::{
 use crate::enums::TryFrom;
 use std::sync::Arc;
 
+/// `CoordSeq` represents a list of coordinates inside a [`Geometry`].
+///
+/// # Example
+///
+/// ```
+/// use geos::{CoordDimensions, CoordSeq};
+///
+/// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
+///                           .expect("failed to create CoordSeq");
+/// coords.set_x(0, 10.);
+/// assert!(coords.get_x(0) == Ok(10.));
+/// ```
 pub struct CoordSeq<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
     pub(crate) context: Arc<ContextHandle<'a>>,

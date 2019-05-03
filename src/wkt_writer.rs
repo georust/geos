@@ -6,6 +6,18 @@ use std::sync::Arc;
 use error::Error;
 use enums::TryFrom;
 
+/// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`].
+///
+/// # Example
+///
+/// ```
+/// use geos::{Geometry, WKTWriter};
+///
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+/// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+///
+/// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+/// ```
 pub struct WKTWriter<'a> {
     ptr: PtrWrap<*mut GEOSWKTWriter>,
     context: Arc<ContextHandle<'a>>,

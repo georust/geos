@@ -6,12 +6,37 @@ use functions::*;
 use std::sync::Arc;
 use error::Error;
 
+/// `PreparedGeometry` is an interface which prepares [`Geometry`] for greater performance
+/// on repeated calls.
+///
+/// # Example
+///
+/// ```
+/// use geos::Geometry;
+///
+/// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+/// let mut prepared_geom = geom1.to_prepared_geom()
+///                              .expect("failed to create prepared geom");
+/// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+///
+/// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
+/// ```
 pub struct PreparedGeometry<'a> {
     ptr: PtrWrap<*mut GEOSPreparedGeometry>,
     context: Arc<ContextHandle<'a>>,
 }
 
 impl<'a> PreparedGeometry<'a> {
+    /// Creates a new `PreparedGeometry` from a [`Geometry`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geometry, PreparedGeometry};
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+    /// let prepared_geom = PreparedGeometry::new(&geom1);
+    /// ```
     pub fn new(g: &Geometry<'a>) -> GResult<PreparedGeometry<'a>> {
         unsafe {
             let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
@@ -30,6 +55,18 @@ impl<'a> PreparedGeometry<'a> {
         Ok(PreparedGeometry { ptr: PtrWrap(ptr), context })
     }
 
+    /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+    /// let mut prepared_geom = geom1.to_prepared_geom()
+    ///                              .expect("failed to create prepared geom");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
+    /// ```
     pub fn contains<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains_r(self.get_raw_context(), self.as_raw(), g2.as_raw())
