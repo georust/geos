@@ -52,6 +52,9 @@ pub use geometry::{
 pub use prepared_geometry::{
     PreparedGeometry,
 };
+pub use wkb_writer::{
+    WKBWriter,
+};
 pub use wkt_writer::{
     WKTWriter,
 };
@@ -77,6 +80,7 @@ pub use voronoi::{
 };
 mod enums;
 mod traits;
+mod wkb_writer;
 mod wkt_writer;
 
 pub(crate) use traits::{

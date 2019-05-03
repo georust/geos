@@ -1,4 +1,4 @@
-use enums::{ByteOrder, Dimensions};
+use enums::{ByteOrder, OutputDimension, TryFrom};
 use error::{Error, GResult};
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
@@ -213,15 +213,18 @@ impl<'a> ContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, Dimensions};
+    /// use geos::{ContextHandle, OutputDimension};
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
-    /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
-    /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
+    /// context_handle.set_wkb_output_dimensions(OutputDimension::TwoD);
+    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(OutputDimension::TwoD));
     /// ```
-    pub fn get_wkb_output_dimensions(&self) -> Dimensions {
-        Dimensions::from(unsafe { GEOS_getWKBOutputDims_r(self.as_raw()) })
+    pub fn get_wkb_output_dimensions(&self) -> GResult<OutputDimension> {
+        unsafe {
+            let out = GEOS_getWKBOutputDims_r(self.as_raw());
+            OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
+        }
     }
 
     /// Sets WKB output dimensions.
@@ -229,15 +232,21 @@ impl<'a> ContextHandle<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, Dimensions};
+    /// use geos::{ContextHandle, OutputDimension};
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
-    /// context_handle.set_wkb_output_dimensions(Dimensions::TwoD);
-    /// assert!(context_handle.get_wkb_output_dimensions() == Dimensions::TwoD);
+    /// context_handle.set_wkb_output_dimensions(OutputDimension::TwoD);
+    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(OutputDimension::TwoD));
     /// ```
-    pub fn set_wkb_output_dimensions(&self, dimensions: Dimensions) -> Dimensions {
-        Dimensions::from(unsafe { GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into()) })
+    pub fn set_wkb_output_dimensions(
+        &mut self,
+        dimensions: OutputDimension,
+    ) -> GResult<OutputDimension> {
+        unsafe {
+            let out = GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into());
+            OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
+        }
     }
 
     /// Gets WKB byte order.
@@ -247,7 +256,7 @@ impl<'a> ContextHandle<'a> {
     /// ```
     /// use geos::{ContextHandle, ByteOrder};
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
@@ -263,12 +272,12 @@ impl<'a> ContextHandle<'a> {
     /// ```
     /// use geos::{ContextHandle, ByteOrder};
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
-    pub fn set_wkb_byte_order(&self, byte_order: ByteOrder) -> ByteOrder {
+    pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> ByteOrder {
         ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
     }
 }
