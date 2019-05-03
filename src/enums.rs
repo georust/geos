@@ -88,6 +88,42 @@ impl Into<c_int> for Dimensions {
         }
     }
 }
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum OutputDimension {
+    TwoD,
+    ThreeD,
+}
+
+impl From<c_int> for OutputDimension {
+    fn from(dimensions: c_int) -> Self {
+        match dimensions {
+            2 => OutputDimension::TwoD,
+            3 => OutputDimension::ThreeD,
+            _ => panic!("dimension must be 2 or 3"),
+        }
+    }
+}
+
+impl TryFrom<c_int> for OutputDimension {
+    type Error = &'static str;
+
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
+        match dimensions {
+            2 => Ok(OutputDimension::TwoD),
+            3 => Ok(OutputDimension::ThreeD),
+            _ => Err("dimension must be 2 or 3"),
+        }
+    }
+}
+
+impl Into<c_int> for OutputDimension {
+    fn into(self) -> c_int {
+        match self {
+            OutputDimension::TwoD => 2,
+            OutputDimension::ThreeD => 3,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ByteOrder {

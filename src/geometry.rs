@@ -1,4 +1,7 @@
-use crate::{CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry};
+use crate::{
+    CoordSeq, GContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry,
+    WKTWriter,
+};
 #[cfg(feature = "v3_6_0")]
 use crate::Precision;
 use context_handle::PtrWrap;
@@ -231,7 +234,7 @@ impl<'a> Geometry<'a> {
     ///                                                  (-45 -33,-46 -32))")
     ///                   .expect("Invalid geometry");
     /// let lines_merged = lines.line_merge().expect("line merge failed");
-    /// assert_eq!(lines_merged.to_wkt(),
+    /// assert_eq!(lines_merged.to_wkt().unwrap(),
     ///            "LINESTRING (-29.0000000000000000 -27.0000000000000000, \
     ///                         -30.0000000000000000 -29.6999999999999993, \
     ///                         -36.0000000000000000 -31.0000000000000000, \
@@ -305,16 +308,12 @@ impl<'a> Geometry<'a> {
     ///
     /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
     ///                        .expect("Invalid geometry");
-    /// assert!(point_geom.is_valid_reason() == Some("Self-intersection[0 0]".to_owned()));
+    /// assert_eq!(point_geom.is_valid_reason(), Ok("Self-intersection[0 0]".to_owned()));
     /// ```
-    pub fn is_valid_reason(&self) -> Option<String> {
+    pub fn is_valid_reason(&self) -> GResult<String> {
         unsafe {
             let ptr = GEOSisValidReason_r(self.get_raw_context(), self.as_raw());
-            if ptr.is_null() {
-                None
-            } else {
-                Some(managed_string(ptr, self.get_context_handle()))
-            }
+            managed_string(ptr, self.get_context_handle(), "GGeom::is_valid_reason")
         }
     }
 
@@ -327,16 +326,12 @@ impl<'a> Geometry<'a> {
     ///
     /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
     ///                        .expect("Invalid geometry");
-    /// assert_eq!(point_geom.get_type(), Some("Polygon".to_owned()));
+    /// assert_eq!(point_geom.get_type(), Ok("Polygon".to_owned()));
     /// ```
-    pub fn get_type(&self) -> Option<String> {
+    pub fn get_type(&self) -> GResult<String> {
         unsafe {
             let ptr = GEOSGeomType_r(self.get_raw_context(), self.as_raw());
-            if ptr.is_null() {
-                None
-            } else {
-                Some(managed_string(ptr, self.get_context_handle()))
-            }
+            managed_string(ptr, self.get_context_handle(), "GGeom::get_type")
         }
     }
 
@@ -387,45 +382,58 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    /// Returns a WKT representation of the geometry.
+    /// Returns a WKT representation of the geometry. It defaults to 2 dimensions output. Use
+    /// [`WKTWriter`] type directly if you want more control.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geometry, OutputDimension, WKTWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// assert_eq!(point_geom.to_wkt(), "POINT (2.5000000000000000 2.5000000000000000)");
+    /// assert_eq!(point_geom.to_wkt().unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+    ///
+    /// // A three dimension point will be output just as a 2 dimension:
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 3)").expect("Invalid geometry");
+    /// assert_eq!(point_geom.to_wkt().unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+    ///
+    /// // To "fix" it, use `WKTWriter` instead:
+    /// let mut wkt_writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// wkt_writer.set_output_dimension(OutputDimension::ThreeD);
+    /// assert_eq!(wkt_writer.write(&point_geom).unwrap(),
+    ///            "POINT Z (2.5000000000000000 2.5000000000000000 3.0000000000000000)");
     /// ```
-    pub fn to_wkt(&self) -> String {
-        unsafe {
-            let writer = GEOSWKTWriter_create_r(self.get_raw_context());
-            let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
-            GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
-            managed_string(c_result, self.get_context_handle())
+    pub fn to_wkt(&self) -> GResult<String> {
+        match WKTWriter::new_with_context(self.clone_context()) {
+            Ok(w) => w.write(self),
+            Err(e) => Err(e),
         }
     }
 
 
-    /// Returns a WKT representation of the geometry with the given `precision`.
+    /// Returns a WKT representation of the geometry with the given `precision`. It is a wrapper
+    /// around [`WKTWriter::set_rounding_precision`].
     ///
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geometry, WKTWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// assert_eq!(point_geom.to_wkt_precision(Some(2)), "POINT (2.50 2.50)");
+    /// assert_eq!(point_geom.to_wkt_precision(2).unwrap(), "POINT (2.50 2.50)");
+    ///
+    /// // It is a wrapper around:
+    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// writer.set_rounding_precision(2);
+    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.50 2.50)");
     /// ```
-    pub fn to_wkt_precision(&self, precision: Option<u32>) -> String {
+    pub fn to_wkt_precision(&self, precision: u32) -> GResult<String> {
         unsafe {
             let writer = GEOSWKTWriter_create_r(self.get_raw_context());
-            if let Some(x) = precision {
-                GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), writer, x as _)
-            };
+            GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), writer, precision as _);
             let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
             GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
-            managed_string(c_result, self.get_context_handle())
+            managed_string(c_result, self.get_context_handle(), "GResult::to_wkt_precision")
         }
     }
 
@@ -658,7 +666,7 @@ impl<'a> Geometry<'a> {
         res
     }
 
-    pub fn create_geometrycollection(geoms: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
+    pub fn create_geometry_collection(geoms: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         create_multi_geom(geoms, GeometryTypes::GeometryCollection)
     }
 
@@ -671,7 +679,7 @@ impl<'a> Geometry<'a> {
         create_multi_geom(polygons, GeometryTypes::MultiPolygon)
     }
 
-    pub fn create_multilinestring(linestrings: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
+    pub fn create_multiline_string(linestrings: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         if !check_same_geometry_type(&linestrings, GeometryTypes::LineString) {
             return Err(Error::ImpossibleOperation(
                 "all the provided geometry have to be of type LineString".to_owned(),
@@ -1053,7 +1061,7 @@ impl<'a> Geometry<'a> {
     ///                                               (8 5, 8 4, 9 4, 9 5, 8 5))")
     ///                        .expect("Invalid geometry");
     /// let interior = point_geom.get_interior_ring_n(0).expect("failed to get interior ring");
-    /// assert_eq!(interior.to_wkt(),
+    /// assert_eq!(interior.to_wkt().unwrap(),
     ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
     ///                         2.0000000000000000 1.0000000000000000, \
     ///                         2.0000000000000000 5.0000000000000000, \
@@ -1085,7 +1093,7 @@ impl<'a> Geometry<'a> {
     ///                        .expect("Invalid geometry");
     ///
     /// let exterior = point_geom.get_exterior_ring().expect("failed to get exterior ring");
-    /// assert_eq!(exterior.to_wkt(),
+    /// assert_eq!(exterior.to_wkt().unwrap(),
     ///            "LINEARRING (0.0000000000000000 0.0000000000000000, \
     ///                         10.0000000000000000 0.0000000000000000, \
     ///                         10.0000000000000000 6.0000000000000000, \
@@ -1159,6 +1167,23 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the number of geometries.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.get_num_geometries(), Ok(1));
+    ///
+    /// let geom = Geometry::new_from_wkt("GEOMETRYCOLLECTION(MULTIPOINT(-2 3 , -2 2),\
+    ///                                                       LINESTRING(5 5 ,10 10),\
+    ///                                                       POLYGON((-7 4.2,-7.1 5,-7.1 4.3,-7 4.2)))")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.get_num_geometries(), Ok(3));
+    /// ```
     pub fn get_num_geometries(&self) -> GResult<usize> {
         unsafe {
             let ret = GEOSGetNumGeometries_r(self.get_raw_context(), self.as_raw());
@@ -1170,6 +1195,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the 1-based nth geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("MULTIPOINT(1 1, 2 2, 3 3, 4 4)")
+    ///                     .expect("Invalid geometry");
+    /// let point_nb3 = geom.get_geometry_n(2).expect("failed to get third point");
+    /// assert_eq!(point_nb3.to_wkt().unwrap(), "POINT (3.0000000000000000 3.0000000000000000)");
+    /// ```
     pub fn get_geometry_n(&self, n: usize) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGetGeometryN_r(self.get_raw_context(), self.as_raw(), n as _);

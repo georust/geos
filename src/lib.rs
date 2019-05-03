@@ -32,6 +32,7 @@ pub use enums::{
     GeometryTypes,
     Ordinate,
     Orientation,
+    OutputDimension,
 };
 #[cfg(feature = "v3_6_0")]
 pub use enums::{
@@ -51,6 +52,10 @@ pub use geometry::{
 pub use prepared_geometry::{
     PreparedGeometry,
 };
+pub use wkt_writer::{
+    WKTWriter,
+};
+
 mod context_handle;
 mod coord_seq;
 mod error;
@@ -72,12 +77,14 @@ pub use voronoi::{
 };
 mod enums;
 mod traits;
+mod wkt_writer;
+
 pub(crate) use traits::{
     AsRaw,
-    ContextHandling,
 };
 pub use traits::{
     ContextInteractions,
+    ContextHandling
 };
 
 #[cfg(test)]
