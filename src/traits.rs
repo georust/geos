@@ -10,6 +10,7 @@ pub trait AsRaw {
 pub trait ContextHandling {
     type Context;
 
+    #[doc(hidden)]
     fn get_raw_context(&self) -> GEOSContextHandle_t;
     fn clone_context(&self) -> Self::Context;
 }

@@ -68,8 +68,8 @@ mod test {
     #[test]
     fn test_wkt_rounding_precision() {
         let g = Geometry::new_from_wkt("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
-        let wkt = g.to_wkt_precision(Some(0));
-        assert_eq!(wkt, "LINESTRING (0 0, 7 7, 45 50, 100 100)");
+        let wkt = g.to_wkt_precision(0);
+        assert_eq!(wkt, Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()));
         let wkt2 = g.to_wkt();
         assert!(wkt2 != wkt);
     }
@@ -84,8 +84,8 @@ mod test {
         ];
         let multi_point = Geometry::create_multipoint(vec_geoms).unwrap();
         assert_eq!(
-            multi_point.to_wkt_precision(Some(1)),
-            "MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)",
+            multi_point.to_wkt_precision(1),
+            Ok("MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)".to_owned()),
         )
     }
 
@@ -95,10 +95,10 @@ mod test {
             Geometry::new_from_wkt("LINESTRING(1 1,10 50,20 25)").unwrap(),
             Geometry::new_from_wkt("LINESTRING (0 0, 7 7, 45 50, 100 100)").unwrap(),
         ];
-        let multi_linestring = Geometry::create_multilinestring(vec_geoms).unwrap();
+        let multi_linestring = Geometry::create_multiline_string(vec_geoms).unwrap();
         assert_eq!(
-            multi_linestring.to_wkt_precision(Some(0)),
-            "MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))",
+            multi_linestring.to_wkt_precision(0),
+            Ok("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))".to_owned()),
         )
     }
 
@@ -110,8 +110,8 @@ mod test {
         ];
         let multi_polygon = Geometry::create_multipolygon(vec_geoms).unwrap();
         assert_eq!(
-            multi_polygon.to_wkt_precision(Some(0)),
-            "MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))",
+            multi_polygon.to_wkt_precision(0),
+            Ok("MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))".to_owned()),
         );
     }
 
@@ -122,10 +122,10 @@ mod test {
             Geometry::new_from_wkt("LINESTRING(1 1,10 50,20 25)").unwrap(),
             Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap(),
         ];
-        let gc = Geometry::create_geometrycollection(vec_geoms).unwrap();
+        let gc = Geometry::create_geometry_collection(vec_geoms).unwrap();
         assert_eq!(
-            gc.to_wkt_precision(Some(0)),
-            "GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 1, 10 50, 20 25), POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0)))",
+            gc.to_wkt_precision(0),
+            Ok("GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 1, 10 50, 20 25), POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0)))".to_owned()),
         );
     }
 

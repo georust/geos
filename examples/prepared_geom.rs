@@ -5,7 +5,7 @@ use geos::{version, Error, Geometry, PreparedGeometry};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
-    println!("geos_c version: {}", version());
+    println!("geos_c version: {}", version()?);
     let g1 = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
     let g2 = Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
     let pg1 = PreparedGeometry::new(&g1)?;

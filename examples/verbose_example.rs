@@ -2,7 +2,7 @@ extern crate geos;
 use geos::{version, Error, Geometry};
 
 fn fun() -> Result<(), Error> {
-    println!("geos_c version: {}", version());
+    println!("geos_c version: {}", version().expect("failed to get version"));
     let g1 = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
     println!("Geometry 1 created");
     println!("Area : {}", g1.area()?);
@@ -23,7 +23,7 @@ fn fun() -> Result<(), Error> {
     println!("Centroid of g1 : {:?}", g4.to_wkt());
     println!(
         "Centroid of g1 with round precision of 1: {:?}",
-        g4.to_wkt_precision(Some(1))
+        g4.to_wkt_precision(1)
     );
     println!("Geom4 contains centroid of geom1 : {:?}", g3.contains(&g4)?);
     println!("Geom4 is valid ? : {}", g3.is_valid());

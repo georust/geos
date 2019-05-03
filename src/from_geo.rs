@@ -37,19 +37,6 @@ impl<'a> TryInto<GGeom<'a>> for &'a Point<f64> {
     }
 }
 
-/*impl<'a> TryInto<GGeom<'a>> for &'a [Point<f64>] {
-    type Err = Error;
-
-    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
-        let geom_points = self
-            .into_iter()
-            .map(|p| p.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
-
-        GGeom::create_multipoint(geom_points)
-    }
-}*/
-
 impl<'a, T: Borrow<Point<f64>>> TryInto<GGeom<'a>> for &'a [T] {
     type Err = Error;
 

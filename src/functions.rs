@@ -12,13 +12,28 @@ use context_handle::PtrWrap;
 // this has to be checked method by method in geos
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
-pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8) -> String {
+pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8, caller: &str) -> GResult<String> {
+    if raw_ptr.is_null() {
+        return Err(Error::NoConstructionFromNullPtr(format!("{}::unmanaged_string", caller)));
+    }
     let c_str = CStr::from_ptr(raw_ptr);
-    str::from_utf8(c_str.to_bytes()).unwrap().to_string()
+    match str::from_utf8(c_str.to_bytes()) {
+        Ok(s) => Ok(s.to_string()),
+        Err(e) => {
+            Err(Error::GenericError(format!("{}::unmanaged_string failed: {}", caller, e)))
+        }
+    }
 }
 
-pub(crate) unsafe fn managed_string(raw_ptr: *mut i8, context: &GContextHandle) -> String {
-    let s = unmanaged_string(raw_ptr);
+pub(crate) unsafe fn managed_string(
+    raw_ptr: *mut i8,
+    context: &GContextHandle,
+    caller: &str,
+) -> GResult<String> {
+    if raw_ptr.is_null() {
+        return Err(Error::NoConstructionFromNullPtr(format!("{}::managed_string", caller)));
+    }
+    let s = unmanaged_string(raw_ptr, caller);
     GEOSFree_r(context.as_raw(), raw_ptr as *mut _);
     s
 }
@@ -45,8 +60,8 @@ pub fn clip_by_rect<'a>(
     }
 }
 
-pub fn version() -> String {
-    unsafe { unmanaged_string(GEOSversion()) }
+pub fn version() -> GResult<String> {
+    unsafe { unmanaged_string(GEOSversion(), "version") }
 }
 
 pub(crate) fn check_geos_predicate(val: i32, p: PredicateType) -> GResult<bool> {
