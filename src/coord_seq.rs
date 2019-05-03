@@ -6,7 +6,7 @@ use crate::{
     ContextHandling,
     ContextInteractions,
     CoordDimensions,
-    GContextHandle,
+    ContextHandle,
     Geometry,
     Ordinate,
 };
@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 pub struct CoordSeq<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
-    pub(crate) context: Arc<GContextHandle<'a>>,
+    pub(crate) context: Arc<ContextHandle<'a>>,
     nb_dimensions: usize,
     nb_lines: usize,
 }
@@ -51,7 +51,7 @@ impl<'a> CoordSeq<'a> {
     /// assert!(coord_seq2.get_x(1) == Ok(1.));
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
-        match GContextHandle::init_e(Some("CoordSeq::new")) {
+        match ContextHandle::init_e(Some("CoordSeq::new")) {
             Ok(context_handle) => {
                 unsafe {
                     let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
@@ -98,7 +98,7 @@ impl<'a> CoordSeq<'a> {
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
                 return Err(Error::GenericError("All vec entries must have the same size!".into()));
             }
-            match GContextHandle::init_e(Some("CoordSeq::new_from_vec")) {
+            match ContextHandle::init_e(Some("CoordSeq::new_from_vec")) {
                 Ok(context_handle) => {
                     unsafe {
                         let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(),
@@ -137,7 +137,7 @@ impl<'a> CoordSeq<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSCoordSequence,
-        context: Arc<GContextHandle<'a>>,
+        context: Arc<ContextHandle<'a>>,
         size: u32,
         dims: u32,
         caller: &str,
@@ -503,14 +503,14 @@ impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
     /// Set the context handle to the `CoordSeq`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, CoordDimensions, CoordSeq, GContextHandle};
+    /// use geos::{ContextInteractions, CoordDimensions, CoordSeq, ContextHandle};
     ///
-    /// let context_handle = GContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init().expect("invalid init");
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// let mut coord_seq = CoordSeq::new(2, CoordDimensions::TwoD).expect("failed to create CoordSeq");
     /// coord_seq.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: GContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
         self.context = Arc::new(context);
     }
 
@@ -523,7 +523,7 @@ impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
     /// let context = coord_seq.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &GContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle<'a> {
         &self.context
     }
 }
@@ -537,13 +537,13 @@ impl<'a> AsRaw for CoordSeq<'a> {
 }
 
 impl<'a> ContextHandling for CoordSeq<'a> {
-    type Context = Arc<GContextHandle<'a>>;
+    type Context = Arc<ContextHandle<'a>>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<GContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
         Arc::clone(&self.context)
     }
 }
