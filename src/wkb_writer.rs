@@ -83,7 +83,12 @@ impl<'a> WKBWriter<'a> {
         caller: &str,
     ) -> GResult<WKBWriter<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr(format!("WKBWriter::{}", caller)));
+            let extra = if let Some(x) = context.get_last_error() {
+                format!("\nLast error: {}", x)
+            } else {
+                String::new()
+            };
+            return Err(Error::NoConstructionFromNullPtr(format!("WKBWriter::{}{}", caller, extra)));
         }
         Ok(WKBWriter { ptr: PtrWrap(ptr), context })
     }

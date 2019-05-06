@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
 ///                           .expect("failed to create CoordSeq");
 /// coords.set_x(0, 10.);
-/// assert!(coords.get_x(0) == Ok(10.));
+/// assert_eq!(coords.get_x(0), Ok(10.));
 /// ```
 pub struct CoordSeq<'a> {
     pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
@@ -50,7 +50,7 @@ impl<'a> CoordSeq<'a> {
     ///     coord_seq.set_y(pos, *y).expect("failed to set y...");
     ///     coord_seq.set_z(pos, *z).expect("failed to set z...");
     /// }
-    /// assert!(coord_seq.get_z(1) == Ok(1.));
+    /// assert_eq!(coord_seq.get_z(1), Ok(1.));
     ///
     /// // An example with 2 dimensions (and 3 lines) as well:
     /// let mut coord_seq2 = CoordSeq::new(3, CoordDimensions::TwoD)
@@ -60,7 +60,7 @@ impl<'a> CoordSeq<'a> {
     ///     coord_seq2.set_x(pos, *x).expect("failed to set x...");
     ///     coord_seq2.set_y(pos, *y).expect("failed to set y...");
     /// }
-    /// assert!(coord_seq2.get_x(1) == Ok(1.));
+    /// assert_eq!(coord_seq2.get_x(1), Ok(1.));
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
         match ContextHandle::init_e(Some("CoordSeq::new")) {
@@ -83,14 +83,14 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[0., 1.], &[2., 3.]])
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.get_y(1) == Ok(3.));
+    /// assert_eq!(coords.get_y(1), Ok(3.));
     ///
     /// // Doing it from a Vec<Vec<f64>>.
     /// let positions = vec![vec![0., 1.], vec![2., 3.]];
     /// let s_positions = positions.iter().map(|x| x.as_slice()).collect::<Vec<_>>();
     /// let coords = CoordSeq::new_from_vec(&s_positions)
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.get_y(1) == Ok(3.));
+    /// assert_eq!(coords.get_y(1), Ok(3.));
     ///
     /// // All vectors don't have the same length, this is an error!
     /// assert!(CoordSeq::new_from_vec(&[vec![0., 1.], vec![3.]]).is_err());
@@ -155,7 +155,12 @@ impl<'a> CoordSeq<'a> {
         caller: &str,
     ) -> GResult<CoordSeq<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}", caller)));
+            let extra = if let Some(x) = context.get_last_error() {
+                format!("\nLast error: {}", x)
+            } else {
+                String::new()
+            };
+            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}{}", caller, extra)));
         }
         Ok(CoordSeq { ptr: PtrWrap(ptr), context, nb_dimensions: dims as _, nb_lines: size as _ })
     }
@@ -170,7 +175,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_x(0, 10.);
-    /// assert!(coords.get_x(0) == Ok(10.));
+    /// assert_eq!(coords.get_x(0), Ok(10.));
     /// ```
     pub fn set_x(&mut self, line: usize, val: f64) -> GResult<()> {
         assert!(line < self.nb_lines);
@@ -197,7 +202,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::TwoD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_y(0, 10.);
-    /// assert!(coords.get_y(0) == Ok(10.));
+    /// assert_eq!(coords.get_y(0), Ok(10.));
     /// ```
     pub fn set_y(&mut self, line: usize, val: f64) -> GResult<()> {
         assert!(line < self.nb_lines);
@@ -225,7 +230,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_z(0, 10.);
-    /// assert!(coords.get_z(0) == Ok(10.));
+    /// assert_eq!(coords.get_z(0), Ok(10.));
     /// ```
     pub fn set_z(&mut self, line: usize, val: f64) -> GResult<()> {
         assert!(line < self.nb_lines);
@@ -253,8 +258,8 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_ordinate(0, Ordinate::Z, 10.);
-    /// assert!(coords.get_z(0) == Ok(10.));
-    /// assert!(coords.get_ordinate(0, Ordinate::Z) == 10.);
+    /// assert_eq!(coords.get_z(0), Ok(10.));
+    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
     /// ```
     pub fn set_ordinate(&mut self, line: usize, ordinate: Ordinate, val: f64) -> GResult<()> {
         let ordinate = ordinate.into();
@@ -282,7 +287,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_x(0, 10.);
-    /// assert!(coords.get_x(0) == Ok(10.));
+    /// assert_eq!(coords.get_x(0), Ok(10.));
     /// ```
     pub fn get_x(&self, line: usize) -> GResult<f64> {
         assert!(line < self.nb_lines);
@@ -310,7 +315,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::TwoD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_y(0, 10.);
-    /// assert!(coords.get_y(0) == Ok(10.));
+    /// assert_eq!(coords.get_y(0), Ok(10.));
     /// ```
     pub fn get_y(&self, line: usize) -> GResult<f64> {
         assert!(line < self.nb_lines);
@@ -339,7 +344,7 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_z(0, 10.);
-    /// assert!(coords.get_z(0) == Ok(10.));
+    /// assert_eq!(coords.get_z(0), Ok(10.));
     /// ```
     pub fn get_z(&self, line: usize) -> GResult<f64> {
         assert!(line < self.nb_lines);
@@ -368,8 +373,8 @@ impl<'a> CoordSeq<'a> {
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_ordinate(0, Ordinate::Z, 10.);
-    /// assert!(coords.get_z(0) == Ok(10.));
-    /// assert!(coords.get_ordinate(0, Ordinate::Z) == 10.);
+    /// assert_eq!(coords.get_z(0), Ok(10.));
+    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
     /// ```
     pub fn get_ordinate(&self, line: usize, ordinate: Ordinate) -> f64 {
         let ordinate = ordinate.into();
@@ -390,11 +395,11 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let coords = CoordSeq::new(2, CoordDimensions::ThreeD)
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.size() == Ok(2));
+    /// assert_eq!(coords.size(), Ok(2));
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.size() == Ok(4));
+    /// assert_eq!(coords.size(), Ok(4));
     /// ```
     pub fn size(&self) -> GResult<usize> {
         let mut n = 0;
@@ -419,11 +424,11 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let coords = CoordSeq::new(2, CoordDimensions::ThreeD)
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.number_of_lines() == Ok(2));
+    /// assert_eq!(coords.number_of_lines(), Ok(2));
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.number_of_lines() == Ok(4));
+    /// assert_eq!(coords.number_of_lines(), Ok(4));
     /// ```
     pub fn number_of_lines(&self) -> GResult<usize> {
         self.size()
@@ -438,11 +443,11 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let coords = CoordSeq::new(2, CoordDimensions::OneD)
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.dimensions() == Ok(CoordDimensions::OneD));
+    /// assert_eq!(coords.dimensions(), Ok(CoordDimensions::OneD));
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3. ,4.]])
     ///                       .expect("failed to create CoordSeq");
-    /// assert!(coords.dimensions() == Ok(CoordDimensions::TwoD));
+    /// assert_eq!(coords.dimensions(), Ok(CoordDimensions::TwoD));
     /// ```
     pub fn dimensions(&self) -> GResult<CoordDimensions> {
         let mut n = 0;
@@ -469,14 +474,45 @@ impl<'a> CoordSeq<'a> {
         }
     }
 
+    /// Creates a point geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_point(coords).expect("Failed to create point");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
+    /// ```
     pub fn create_point(self) -> GResult<Geometry<'a>> {
         Geometry::create_point(self)
     }
 
+    /// Creates a line string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_line_string(coords).expect("Failed to create line string");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(),
+    ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
+    ///                         3.0000000000000000 4.0000000000000000)");
+    /// ```
     pub fn create_line_string(self) -> GResult<Geometry<'a>> {
         Geometry::create_line_string(self)
     }
 
+    /// Creates a linear ring geometry.
     pub fn create_linear_ring(self) -> GResult<Geometry<'a>> {
         Geometry::create_linear_ring(self)
     }
