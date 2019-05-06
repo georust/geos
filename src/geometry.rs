@@ -1124,6 +1124,10 @@ impl<'a> Geometry<'a> {
 
     /// Creates a polygon formed by the given shell and array of holes.
     ///
+    /// ### Note
+    ///
+    /// `exterior` must be a `LinearRing`.
+    ///
     /// # Example
     ///
     /// ```
@@ -1140,6 +1144,9 @@ impl<'a> Geometry<'a> {
         mut exterior: Geometry<'a>,
         mut interiors: Vec<Geometry<'b>>,
     ) -> GResult<Geometry<'a>> {
+        if exterior.geometry_type() != GeometryTypes::LinearRing {
+            return Err(Error::GenericError("exterior must be a LinearRing".to_owned()));
+        }
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
         let res = unsafe {
