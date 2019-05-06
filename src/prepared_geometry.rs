@@ -51,7 +51,14 @@ impl<'a> PreparedGeometry<'a> {
         caller: &str,
     ) -> GResult<PreparedGeometry<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr(format!("PreparedGeometry::{}", caller)));
+            let extra = if let Some(x) = context.get_last_error() {
+                format!("\nLast error: {}", x)
+            } else {
+                String::new()
+            };
+            return Err(Error::NoConstructionFromNullPtr(format!("PreparedGeometry::{}{}",
+                                                                caller,
+                                                                extra)));
         }
         Ok(PreparedGeometry { ptr: PtrWrap(ptr), context })
     }

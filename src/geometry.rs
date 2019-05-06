@@ -373,7 +373,12 @@ impl<'a> Geometry<'a> {
         caller: &str,
     ) -> GResult<Geometry<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr(format!("Geometry::{}", caller)));
+            let extra = if let Some(x) = context.get_last_error() {
+                format!("\nLast error: {}", x)
+            } else {
+                String::new()
+            };
+            return Err(Error::NoConstructionFromNullPtr(format!("Geometry::{}{}", caller, extra)));
         }
         Ok(Geometry { ptr: PtrWrap(ptr), context, owned: true, })
     }

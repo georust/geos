@@ -155,7 +155,12 @@ impl<'a> CoordSeq<'a> {
         caller: &str,
     ) -> GResult<CoordSeq<'a>> {
         if ptr.is_null() {
-            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}", caller)));
+            let extra = if let Some(x) = context.get_last_error() {
+                format!("\nLast error: {}", x)
+            } else {
+                String::new()
+            };
+            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}{}", caller, extra)));
         }
         Ok(CoordSeq { ptr: PtrWrap(ptr), context, nb_dimensions: dims as _, nb_lines: size as _ })
     }
