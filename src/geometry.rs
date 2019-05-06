@@ -183,6 +183,33 @@ impl<'a> Geometry<'a> {
         PreparedGeometry::new(self)
     }
 
+    /// Creates an areal geometry formed by the constituent linework of given geometry.
+    ///
+    /// You can find new illustrations on [postgis](https://postgis.net/docs/ST_BuildArea.html)
+    /// documentation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(100 90)").expect("Invalid geometry");
+    /// let small_geom = geom.buffer(25., 8).expect("buffer failed");
+    /// let big_geom = geom.buffer(50., 8).expect("buffer failed");
+    ///
+    /// let union_geom = small_geom.union(&big_geom).expect("union failed");
+    /// let build_area_geom = union_geom.build_area().expect("build_area failed");
+    ///
+    /// // Looks like a donut.
+    /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((150.0 90.0, 149.0 80.2, 146.2 70.9, 141.6 62.2, 135.4 54.6, \
+    ///                       127.8 48.4, 119.1 43.8, 109.8 41.0, 100.0 40.0, 90.2 41.0, \
+    ///                       80.9 43.8, 72.2 48.4, 64.6 54.6, 58.4 62.2, 53.8 70.9, 51.0 80.2, \
+    ///                       50.0 90.0, 51.0 99.8, 53.8 109.1, 58.4 117.8, 64.6 125.4, \
+    ///                       72.2 131.6, 80.9 136.2, 90.2 139.0, 100.0 140.0, 109.8 139.0, \
+    ///                       119.1 136.2, 127.8 131.6, 135.4 125.4, 141.6 117.8, 146.2 109.1, \
+    ///                       149.0 99.8, 150.0 90.0))");
+    /// ```
     #[cfg(feature = "v3_8_0")]
     pub fn build_area(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -290,12 +317,8 @@ impl<'a> Geometry<'a> {
     ///                                                  (-45 -33,-46 -32))")
     ///                   .expect("Invalid geometry");
     /// let lines_merged = lines.line_merge().expect("line merge failed");
-    /// assert_eq!(lines_merged.to_wkt().unwrap(),
-    ///            "LINESTRING (-29.0000000000000000 -27.0000000000000000, \
-    ///                         -30.0000000000000000 -29.6999999999999993, \
-    ///                         -36.0000000000000000 -31.0000000000000000, \
-    ///                         -45.0000000000000000 -33.0000000000000000, \
-    ///                         -46.0000000000000000 -32.0000000000000000)");
+    /// assert_eq!(lines_merged.to_wkt_precision(1).unwrap(),
+    ///            "LINESTRING (-29.0 -27.0, -30.0 -29.7, -36.0 -31.0, -45.0 -33.0, -46.0 -32.0)");
     /// ```
     pub fn line_merge(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -304,6 +327,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Reverses the order of the vertexes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let line = Geometry::new_from_wkt("LINESTRING(1 10,1 2)").expect("invalid geometry");
+    /// let reversed_line = line.reverse().expect("reverse failed");
+    ///
+    /// assert_eq!(reversed_line.to_wkt_precision(1).unwrap(), "LINESTRING (1.0 2.0, 1.0 10.0)");
+    /// ```
     #[cfg(feature = "v3_7_0")]
     pub fn reverse(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -312,6 +347,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns a simplified version of the given geometry.
     pub fn simplify(&self, tolerance: f64) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
@@ -319,6 +355,8 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns a simplified version of the given geometry. It will avoid creating invalid derived
+    /// geometries.
     pub fn topology_preserve_simplify(&self, tolerance: f64) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSTopologyPreserveSimplify_r(
@@ -347,9 +385,9 @@ impl<'a> Geometry<'a> {
     /// ```
     /// use geos::Geometry;
     ///
-    /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
-    ///                        .expect("Invalid geometry");
-    /// assert!(point_geom.is_valid() == false);
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                     .expect("Invalid geometry");
+    /// assert!(geom.is_valid() == false);
     /// ```
     pub fn is_valid(&self) -> bool {
         unsafe { GEOSisValid_r(self.get_raw_context(), self.as_raw()) == 1 }
@@ -362,9 +400,9 @@ impl<'a> Geometry<'a> {
     /// ```
     /// use geos::Geometry;
     ///
-    /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
-    ///                        .expect("Invalid geometry");
-    /// assert_eq!(point_geom.is_valid_reason(), Ok("Self-intersection[0 0]".to_owned()));
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.is_valid_reason(), Ok("Self-intersection[0 0]".to_owned()));
     /// ```
     pub fn is_valid_reason(&self) -> GResult<String> {
         unsafe {
@@ -380,9 +418,9 @@ impl<'a> Geometry<'a> {
     /// ```
     /// use geos::Geometry;
     ///
-    /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
-    ///                        .expect("Invalid geometry");
-    /// assert_eq!(point_geom.get_type(), Ok("Polygon".to_owned()));
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.get_type(), Ok("Polygon".to_owned()));
     /// ```
     pub fn get_type(&self) -> GResult<String> {
         unsafe {
@@ -396,7 +434,19 @@ impl<'a> Geometry<'a> {
     /// Note: this clones the underlying CoordSeq to avoid double free
     /// (because CoordSeq handles the object ptr and the CoordSeq is still owned by the geos
     /// geometry) if this method's performance becomes a bottleneck, feel free to open an issue,
-    /// we could skip this clone with cleaner code
+    /// we could skip this clone with cleaner code.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT (2 3)").expect("Invalid geometry");
+    /// let coord_seq = geom.get_coord_seq().expect("get_coord_seq failed");
+    ///
+    /// assert_eq!(coord_seq.get_x(0), Ok(2.));
+    /// assert_eq!(coord_seq.get_y(0), Ok(3.));
+    /// ```
     pub fn get_coord_seq(&self) -> GResult<CoordSeq<'a>> {
         let type_geom = self.geometry_type();
         match type_geom {
@@ -518,33 +568,145 @@ impl<'a> Geometry<'a> {
         check_geos_predicate(rv as _, PredicateType::IsRing)
     }
 
-    pub fn intersects<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSIntersects_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if `self` shares any portion of space with `other`. So if any of this is
+    /// `true`:
+    ///
+    /// * `self` overlaps `other`
+    /// * `self` touches `other`
+    /// * `self` is within `other`
+    ///
+    /// Then `intersects` will return `true` as well.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.intersects(&geom2), Ok(false));
+    /// assert_eq!(geom1.intersects(&geom3), Ok(true));
+    /// ```
+    pub fn intersects<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSIntersects_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Intersects)
     }
 
-    pub fn crosses<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSCrosses_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if `self` and `other` have at least one interior into each other.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.crosses(&geom2), Ok(true));
+    /// ```
+    pub fn crosses<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Crosses)
     }
 
-    pub fn disjoint<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSDisjoint_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if `self` doesn't:
+    ///
+    /// * Overlap `other`
+    /// * Touch `other`
+    /// * Is within `other`
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.disjoint(&geom2), Ok(true));
+    /// assert_eq!(geom1.disjoint(&geom3), Ok(false));
+    /// ```
+    pub fn disjoint<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSDisjoint_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Disjoint)
     }
 
-    pub fn touches<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSTouches_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if the only points in common between `self` and `other` lie in the union of
+    /// the boundaries of `self` and `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT(1 1)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.touches(&geom2), Ok(false));
+    ///
+    /// let geom2 = Geometry::new_from_wkt("POINT(0 2)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.touches(&geom2), Ok(true));
+    /// ```
+    pub fn touches<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Touches)
     }
 
-    pub fn overlaps<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSOverlaps_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if `self` spatially overlaps `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)").expect("invalid geometry");
+    ///
+    /// assert_eq!(geom1.overlaps(&geom2), Ok(false));
+    ///
+    /// let geom1 = geom1.buffer(3., 8).expect("buffer failed");
+    /// let geom2 = geom2.buffer(0.5, 8).expect("buffer failed");
+    ///
+    /// assert_eq!(geom1.overlaps(&geom2), Ok(true));
+    /// ```
+    pub fn overlaps<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSOverlaps_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Overlaps)
     }
 
-    pub fn within<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSWithin_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if `self` is completely inside `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(50 50)").expect("invalid geometry");
+    /// let small_geom = geom.buffer(20., 8).expect("buffer failed");
+    /// let big_geom = geom.buffer(40., 8).expect("buffer failed");
+    ///
+    /// assert_eq!(small_geom.within(&small_geom), Ok(true));
+    /// assert_eq!(small_geom.within(&big_geom), Ok(true));
+    /// assert_eq!(big_geom.within(&small_geom), Ok(false));
+    /// ```
+    pub fn within<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Within)
     }
 
@@ -575,29 +737,77 @@ impl<'a> Geometry<'a> {
     /// assert!(geom1 != geom2);
     /// assert!(geom1 == geom3);
     /// ```
-    pub fn equals<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSEquals_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    pub fn equals<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSEquals_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Equals)
     }
 
-    pub fn equals_exact<'b>(&self, g2: &Geometry<'b>, precision: f64) -> GResult<bool> {
+    /// Checks if the two [`Geometry`] objects are exactly equal.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.equals_exact(&geom2, 0.1), Ok(false));
+    /// assert_eq!(geom1.equals_exact(&geom3, 0.1), Ok(true));
+    /// ```
+    pub fn equals_exact<'b>(&self, other: &Geometry<'b>, precision: f64) -> GResult<bool> {
         let ret_val = unsafe {
-            GEOSEqualsExact_r(self.get_raw_context(), self.as_raw(), g2.as_raw(), precision)
+            GEOSEqualsExact_r(self.get_raw_context(), self.as_raw(), other.as_raw(), precision)
         };
         check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
-    pub fn covers<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSCovers_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if no point of `other` is outside of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
+    /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
+    ///
+    /// assert_eq!(little_geom.covers(&big_geom), Ok(false));
+    /// assert_eq!(big_geom.covers(&little_geom), Ok(true));
+    /// ```
+    pub fn covers<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Covers)
     }
 
-    pub fn covered_by<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSCoveredBy_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    /// Returns `true` if no point of `self` is outside of `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
+    /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
+    ///
+    /// assert_eq!(little_geom.covered_by(&big_geom), Ok(true));
+    /// assert_eq!(big_geom.covered_by(&little_geom), Ok(false));
+    /// ```
+    pub fn covered_by<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSCoveredBy_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
-    /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
+    /// Returns `true` if no points of the `other` geometry is outside the exterior of `self`.
     ///
     /// # Example
     ///
@@ -609,11 +819,31 @@ impl<'a> Geometry<'a> {
     ///
     /// assert_eq!(geom1.contains(&geom2), Ok(true));
     /// ```
-    pub fn contains<'b>(&self, g2: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe { GEOSContains_r(self.get_raw_context(), self.as_raw(), g2.as_raw()) };
+    pub fn contains<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+        let ret_val = unsafe {
+            GEOSContains_r(self.get_raw_context(), self.as_raw(), other.as_raw())
+        };
         check_geos_predicate(ret_val as _, PredicateType::Contains)
     }
 
+    /// Returns a geometry which represents all points whose distance from `self` is less than or
+    /// equal to distance.
+    ///
+    /// You can find nice examples about this in [postgis](https://postgis.net/docs/ST_Buffer.html)
+    /// documentation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
+    /// let buffer_geom = geom.buffer(50., 2).expect("buffer failed");
+    ///
+    /// assert_eq!(buffer_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((51.0 3.0, 36.4 -32.4, 1.0 -47.0, -34.4 -32.4, -49.0 3.0, -34.4 38.4, \
+    ///                       1.0 53.0, 36.4 38.4, 51.0 3.0))");
+    /// ```
     pub fn buffer(&self, width: f64, quadsegs: i32) -> GResult<Geometry<'a>> {
         assert!(quadsegs > 0);
         unsafe {
@@ -627,23 +857,88 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns `true` if the given geometry is empty.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::create_empty_polygon().expect("Invalid geometry");
+    /// assert_eq!(geom.is_empty(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON EMPTY").expect("Invalid geometry");
+    /// assert_eq!(geom.is_empty(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
+    /// assert_eq!(geom.is_empty(), Ok(false));
+    /// ```
     pub fn is_empty(&self) -> GResult<bool> {
         let ret_val = unsafe { GEOSisEmpty_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::IsEmpty)
     }
 
+    /// Returns true if the given geometry has no anomalous geometric points, such as self
+    /// intersection or self tangency.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.is_simple(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(1 1,2 2,2 3.5,1 3,1 2,2 1)")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.is_simple(), Ok(false));
+    /// ```
     pub fn is_simple(&self) -> GResult<bool> {
         let ret_val = unsafe { GEOSisSimple_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
-    pub fn difference<'b>(&self, g2: &Geometry<'b>) -> GResult<Geometry<'a>> {
+    /// Returns a geometry which represents part of `self` that doesn't intersect with `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(50 100, 50 200)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(50 50, 50 150)").expect("Invalid geometry");
+    ///
+    /// let difference_geom = geom1.difference(&geom2).expect("envelope failed");
+    ///
+    /// assert_eq!(difference_geom.to_wkt_precision(1).unwrap(),
+    ///            "LINESTRING (50.0 150.0, 50.0 200.0)");
+    /// ```
+    pub fn difference<'b>(&self, other: &Geometry<'b>) -> GResult<Geometry<'a>> {
         unsafe {
-            let ptr = GEOSDifference_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
+            let ptr = GEOSDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "difference")
         }
     }
 
+    /// Returns the minimum bouding box of the given geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
+    /// let envelope_geom = geom.envelope().expect("envelope failed");
+    ///
+    /// assert_eq!(envelope_geom.to_wkt_precision(1).unwrap(), "POINT (1.0 3.0)");
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(0 0, 1 3)").expect("Invalid geometry");
+    /// let envelope_geom = geom.envelope().expect("envelope failed");
+    ///
+    /// assert_eq!(envelope_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((0.0 0.0, 1.0 0.0, 1.0 3.0, 0.0 3.0, 0.0 0.0))");
+    /// ```
     pub fn envelope(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSEnvelope_r(self.get_raw_context(), self.as_raw());
@@ -651,20 +946,63 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    pub fn sym_difference<'b>(&self, g2: &Geometry<'b>) -> GResult<Geometry<'a>> {
+    /// Returns a geometry which represents the parts of `self` and `other` that don't intersect.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(50 100, 50 200)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(50 50, 50 150)").expect("Invalid geometry");
+    ///
+    /// let sym_diff_geom = geom1.sym_difference(&geom2).expect("sym_difference failed");
+    ///
+    /// assert_eq!(sym_diff_geom.to_wkt_precision(1).unwrap(),
+    ///            "MULTILINESTRING ((50.0 150.0, 50.0 200.0), (50.0 50.0, 50.0 100.0))");
+    /// ```
+    pub fn sym_difference<'b>(&self, other: &Geometry<'b>) -> GResult<Geometry<'a>> {
         unsafe {
-            let ptr = GEOSSymDifference_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
+            let ptr = GEOSSymDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "sym_difference")
         }
     }
 
-    pub fn union(&self, g2: &Geometry<'a>) -> GResult<Geometry<'a>> {
+    /// Aggregates the given geometry with another one.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT(1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT(3 4)").expect("Invalid geometry");
+    ///
+    /// let union_geom = geom1.union(&geom2).expect("union failed");
+    ///
+    /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(), "MULTIPOINT (1.0 2.0, 3.0 4.0)");
+    /// ```
+    pub fn union(&self, other: &Geometry<'a>) -> GResult<Geometry<'a>> {
         unsafe {
-            let ptr = GEOSUnion_r(self.get_raw_context(), self.as_raw(), g2.as_raw());
+            let ptr = GEOSUnion_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "union")
         }
     }
 
+    /// Returns the geometric center or (equivalently) the center of mass of the given geometry as
+    /// a point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("MULTIPOINT(-1 0, -1 2, -1 3, -1 4, -1 7, 0 1, 0 3, 1 1)")
+    ///                     .expect("Invalid geometry");
+    /// let centroid = geom.get_centroid().expect("failed to get centroid");
+    ///
+    /// assert_eq!(centroid.to_wkt_precision(1).unwrap(), "POINT (-0.5 2.6)");
+    /// ```
     pub fn get_centroid(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGetCentroid_r(self.get_raw_context(), self.as_raw());
@@ -672,6 +1010,17 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates an empty polygon geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::create_empty_polygon().expect("Failed to build empty polygon");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "POLYGON EMPTY");
+    /// ```
     pub fn create_empty_polygon() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_polygon")) {
             Ok(context) => {
@@ -684,6 +1033,17 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates an empty point geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::create_empty_point().expect("Failed to build empty point");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "POINT EMPTY");
+    /// ```
     pub fn create_empty_point() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_point")) {
             Ok(context) => {
@@ -696,6 +1056,17 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates an empty line string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::create_empty_line_string().expect("Failed to build empty line string");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "LINESTRING EMPTY");
+    /// ```
     pub fn create_empty_line_string() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_line_string")) {
             Ok(context) => {
@@ -708,7 +1079,33 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates an empty collection.
+    ///
+    /// The `type_` must be one of:
+    ///
+    /// * [`GeometryTypes::GeometryCollection`]
+    /// * [`GeometryTypes::MultiPoint`]
+    /// * [`GeometryTypes::MultiLineString`]
+    /// * [`GeometryTypes::MultiPolygon`]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geometry, GeometryTypes};
+    ///
+    /// let geom = Geometry::create_empty_collection(GeometryTypes::MultiPolygon)
+    ///                     .expect("Failed to build empty collection");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "MULTIPOLYGON EMPTY");
+    /// ```
     pub fn create_empty_collection(type_: GeometryTypes) -> GResult<Geometry<'a>> {
+        match type_ {
+            GeometryTypes::GeometryCollection |
+            GeometryTypes::MultiPoint |
+            GeometryTypes::MultiLineString |
+            GeometryTypes::MultiPolygon => {}
+            _ => return Err(Error::GenericError("Invalid geometry type".to_owned())),
+        }
         match ContextHandle::init_e(Some("Geometry::create_empty_collection")) {
             Ok(context) => {
                 unsafe {
@@ -720,11 +1117,30 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    pub fn create_polygon<'b>(mut exterior: Geometry<'a>, mut interiors: Vec<Geometry<'b>>) -> GResult<Geometry<'a>> {
+    /// Creates a polygon formed by the given shell and array of holes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINEARRING(75.15 29.53,77 29,77.6 29.5, 75.15 29.53)")
+    ///                     .expect("Invalid geometry");
+    /// let polygon_geom = Geometry::create_polygon(geom, vec![]).expect("create_polygon failed");
+    ///
+    /// assert_eq!(polygon_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5))");
+    /// ```
+    pub fn create_polygon<'b>(
+        mut exterior: Geometry<'a>,
+        mut interiors: Vec<Geometry<'b>>,
+    ) -> GResult<Geometry<'a>> {
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
         let res = unsafe {
-            let mut geoms: Vec<*mut GEOSGeometry> = interiors.iter_mut().map(|g| g.as_raw()).collect();
+            let mut geoms: Vec<*mut GEOSGeometry> = interiors.iter_mut()
+                                                             .map(|g| g.as_raw())
+                                                             .collect();
             let ptr = GEOSGeom_createPolygon_r(
                 context_handle.as_raw(),
                 exterior.as_raw(),
@@ -744,10 +1160,47 @@ impl<'a> Geometry<'a> {
         res
     }
 
+    /// Create a geometry collection.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (3.0 4.0)").expect("Invalid geometry");
+    ///
+    /// let geom = Geometry::create_geometry_collection(vec![geom1, geom2])
+    ///                     .expect("Failed to build multipolygon");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "GEOMETRYCOLLECTION (POLYGON ((0.0 0.0, 10.0 0.0, 10.0 6.0, 0.0 6.0, 0.0 0.0)), \
+    ///                                 POINT (3.0 4.0))");
+    /// ```
     pub fn create_geometry_collection(geoms: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         create_multi_geom(geoms, GeometryTypes::GeometryCollection)
     }
 
+    /// Create a multi polygon geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POLYGON((3 3, 10 3, 10 6, 3 6, 3 3))")
+    ///                      .expect("Invalid geometry");
+    ///
+    /// let geom = Geometry::create_multipolygon(vec![geom1, geom2])
+    ///                     .expect("Failed to build multipolygon");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "MULTIPOLYGON (((0.0 0.0, 10.0 0.0, 10.0 6.0, 0.0 6.0, 0.0 0.0)), \
+    ///                           ((3.0 3.0, 10.0 3.0, 10.0 6.0, 3.0 6.0, 3.0 3.0)))");
+    /// ```
     pub fn create_multipolygon(polygons: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         if !check_same_geometry_type(&polygons, GeometryTypes::Polygon) {
             return Err(Error::ImpossibleOperation(
@@ -757,6 +1210,22 @@ impl<'a> Geometry<'a> {
         create_multi_geom(polygons, GeometryTypes::MultiPolygon)
     }
 
+    /// Create a multiline string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING (1.0 2.0, 3.0 4.0)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING (5.0 6.0, 7.0 8.0)").expect("invalid geometry");
+    ///
+    /// let geom = Geometry::create_multiline_string(vec![geom1, geom2])
+    ///                     .expect("Failed to build multiline string");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "MULTILINESTRING ((1.0 2.0, 3.0 4.0), (5.0 6.0, 7.0 8.0))");
+    /// ```
     pub fn create_multiline_string(linestrings: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         if !check_same_geometry_type(&linestrings, GeometryTypes::LineString) {
             return Err(Error::ImpossibleOperation(
@@ -766,6 +1235,21 @@ impl<'a> Geometry<'a> {
         create_multi_geom(linestrings, GeometryTypes::MultiLineString)
     }
 
+    /// Creates a multi point geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1.0 2.0)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (3.0 4.0)").expect("Invalid geometry");
+    ///
+    /// let geom = Geometry::create_multipoint(vec![geom1, geom2])
+    ///                     .expect("Failed to build multipoint");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "MULTIPOINT (1.0 2.0, 3.0 4.0)");
+    /// ```
     pub fn create_multipoint(points: Vec<Geometry<'a>>) -> GResult<Geometry<'a>> {
         if !check_same_geometry_type(&points, GeometryTypes::Point) {
             return Err(Error::ImpossibleOperation(
@@ -775,6 +1259,20 @@ impl<'a> Geometry<'a> {
         create_multi_geom(points, GeometryTypes::MultiPoint)
     }
 
+    /// Creates a point geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_point(coords).expect("Failed to create a point");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "POINT (1.0 2.0)");
+    /// ```
     pub fn create_point(mut s: CoordSeq<'a>) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGeom_createPoint_r(s.get_raw_context(), s.as_raw());
@@ -784,6 +1282,20 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates a line string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_line_string(coords).expect("Failed to create a line string");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "LINESTRING (1.0 2.0, 3.0 4.0)");
+    /// ```
     pub fn create_line_string(mut s: CoordSeq<'a>) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGeom_createLineString_r(s.get_raw_context(), s.as_raw());
@@ -793,6 +1305,24 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Creates a linear ring geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[75.15, 29.53],
+    ///                                       &[77., 29.],
+    ///                                       &[77.6, 29.5],
+    ///                                       &[75.15, 29.53]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_linear_ring(coords).expect("Failed to create a linea ring");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "LINEARRING (75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5)");
+    /// ```
     pub fn create_linear_ring(mut s: CoordSeq<'a>) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGeom_createLinearRing_r(s.get_raw_context(), s.as_raw());
@@ -802,6 +1332,35 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Documentation from [postgis](https://postgis.net/docs/ST_UnaryUnion.html):
+    ///
+    /// > Unlike ST_Union, ST_UnaryUnion does dissolve boundaries between components of a
+    /// > multipolygon (invalid) and does perform union between the components of a
+    /// > geometrycollection. Each components of the input geometry is assumed to be valid, so you
+    /// > won't get a valid multipolygon out of a bow-tie polygon (invalid).
+    /// >
+    /// > You may use this function to node a set of linestrings. You may mix ST_UnaryUnion with
+    /// > ST_Collect to fine-tune how many geometries at once you want to dissolve to be nice on
+    /// > both memory size and CPU time, finding the balance between ST_Union and ST_MemUnion.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POLYGON((1 1, 2 1, 2 5, 1 5, 1 1))")
+    ///                      .expect("Invalid geometry");
+    ///
+    /// let geom = Geometry::create_multipolygon(vec![geom1, geom2])
+    ///                     .expect("Failed to build multipolygon");
+    ///
+    /// let union_geom = geom.unary_union().expect("unary_union failed");
+    ///
+    /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((0.0 0.0, 0.0 6.0, 10.0 6.0, 10.0 0.0, 0.0 0.0))");
+    /// ```
     pub fn unary_union(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSUnaryUnion_r(self.get_raw_context(), self.as_raw());
@@ -809,6 +1368,35 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Create a voronoi diagram.
+    ///
+    /// # Example
+    ///
+    /// 
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let input = Geometry::new_from_wkt("MULTIPOINT((100 200), (105 202), (110 200), (140 230),
+    ///                                                (210 240), (220 190), (170 170), (170 260),
+    ///                                                (213 245), (220 190))")
+    ///                   .expect("Invalid geometry");
+    /// let mut expected = Geometry::new_from_wkt(
+    ///     "GEOMETRYCOLLECTION(POLYGON ((-20 50, -20 380, -3.75 380, 105 235, 105 115, 77.14285714285714 50, -20 50)),\
+    ///                          POLYGON ((247 50, 77.14285714285714 50, 105 115, 145 195, 178.33333333333334 211.66666666666666, 183.51851851851853 208.7037037037037, 247 50)),\
+    ///                          POLYGON ((-3.75 380, 20.000000000000007 380, 176.66666666666666 223.33333333333334, 178.33333333333334 211.66666666666666, 145 195, 105 235, -3.75 380)),\
+    ///                          POLYGON ((105 115, 105 235, 145 195, 105 115)),\
+    ///                          POLYGON ((20.000000000000007 380, 255 380, 176.66666666666666 223.33333333333334, 20.000000000000007 380)),\
+    ///                          POLYGON ((255 380, 340 380, 340 240, 183.51851851851853 208.7037037037037, 178.33333333333334 211.66666666666666, 176.66666666666666 223.33333333333334, 255 380)),\
+    ///                          POLYGON ((340 240, 340 50, 247 50, 183.51851851851853 208.7037037037037, 340 240)))")
+    ///                             .expect("Invalid geometry");
+    ///
+    /// let mut voronoi = input.voronoi(None, 6., false).expect("voronoi failed");
+    ///
+    /// expected.normalize().expect("normalize failed");
+    /// voronoi.normalize().expect("normalize failed");
+    ///
+    /// assert_eq!(expected.equals(&voronoi), Ok(true));
+    /// ```
     pub fn voronoi<'b>(
         &self,
         envelope: Option<&Geometry<'b>>,
@@ -829,11 +1417,52 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Normalizes `self` in its normalized/canonical form. May reorder vertices in polygon rings,
+    /// rings in a polygon, elements in a multi-geometry complex.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let mut geom = Geometry::new_from_wkt("GEOMETRYCOLLECTION(POINT(2 3),
+    ///                                                           MULTILINESTRING((0 0, 1 1),(2 2, 3 3)))")
+    ///                         .expect("Invalid geometry");
+    ///
+    /// geom.normalize();
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "GEOMETRYCOLLECTION (MULTILINESTRING ((2.0 2.0, 3.0 3.0), (0.0 0.0, 1.0 1.0)), \
+    ///                                 POINT (2.0 3.0))");
+    /// ```
     pub fn normalize(&mut self) -> GResult<bool> {
         let ret_val = unsafe { GEOSNormalize_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::Normalize)
     }
 
+    /// Returns a geometry representing the intersection between `self` and `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let mut geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("Invalid geometry");
+    /// let mut geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("Invalid geometry");
+    ///
+    /// let intersection_geom = geom1.intersection(&geom2).expect("intersection failed");
+    ///
+    /// // No intersection.
+    /// assert_eq!(intersection_geom.to_wkt_precision(1).unwrap(), "POINT EMPTY");
+    ///
+    /// // We slighty change the linestring so we have an intersection:
+    /// let mut geom2 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("Invalid geometry");
+    ///
+    /// let intersection_geom = geom1.intersection(&geom2).expect("intersection failed");
+    ///
+    /// // Intersection!
+    /// assert_eq!(intersection_geom.to_wkt_precision(1).unwrap(), "POINT (0.0 0.0)");
+    /// ```
     pub fn intersection<'b>(&self, other: &Geometry<'b>) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSIntersection_r(self.get_raw_context(), self.as_raw(), other.as_raw());
@@ -841,6 +1470,38 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Documentation from [postgis](https://postgis.net/docs/ST_ConvexHull.html):
+    ///
+    /// > The convex hull of a geometry represents the minimum convex geometry that encloses all
+    /// > geometries within the set.
+    /// >
+    /// > One can think of the convex hull as the geometry you get by wrapping an elastic band
+    /// > around a set of geometries. This is different from a concave hull which is analogous to
+    /// > shrink-wrapping your geometries.
+    /// >
+    /// > It is usually used with MULTI and Geometry Collections. Although it is not an aggregate -
+    /// > you can use it in conjunction with ST_Collect to get the convex hull of a set of points.
+    /// > ST_ConvexHull(ST_Collect(somepointfield)).
+    /// >
+    /// > It is often used to determine an affected area based on a set of point observations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let mut geom1 = Geometry::new_from_wkt("MULTILINESTRING((100 190,10 8),
+    ///                                                         (150 10, 20 30))")
+    ///                          .expect("Invalid geometry");
+    /// let mut geom2 = Geometry::new_from_wkt("MULTIPOINT(50 5, 150 30, 50 10, 10 10)")
+    ///                          .expect("Invalid geometry");
+    ///
+    /// let geom = geom1.union(&geom2).expect("union failed");
+    /// let convex_hull_geom = geom.convex_hull().expect("convex_hull failed");
+    ///
+    /// assert_eq!(convex_hull_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((50.0 5.0, 10.0 8.0, 10.0 10.0, 100.0 190.0, 150.0 30.0, 150.0 10.0, 50.0 5.0))");
+    /// ```
     pub fn convex_hull(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSConvexHull_r(self.get_raw_context(), self.as_raw());
@@ -848,6 +1509,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the closure of the combinatorial boundary of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(1 1,0 0, -1 1)").expect("Invalid geometry");
+    /// let boundary_geom = geom.boundary().expect("boundary failed");
+    ///
+    /// assert_eq!(boundary_geom.to_wkt_precision(1).unwrap(), "MULTIPOINT (1.0 1.0, -1.0 1.0)");
+    /// ```
     pub fn boundary(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSBoundary_r(self.get_raw_context(), self.as_raw());
@@ -855,16 +1528,64 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns `true` if `self` has a Z coordinate.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 2 3)").expect("Invalid geometry");
+    /// assert_eq!(geom.has_z(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 2)").expect("Invalid geometry");
+    /// assert_eq!(geom.has_z(), Ok(false));
+    /// ```
     pub fn has_z(&self) -> GResult<bool> {
         let ret_val = unsafe { GEOSHasZ_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
+    /// Returns `true` if start and end point are coincident.
+    ///
+    /// Only works on `LineString` and `MultiLineString`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(0 0, 1 1)").expect("Invalid geometry");
+    /// assert_eq!(geom.is_closed(), Ok(false));
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(0 0, 0 1, 1 1, 0 0)").expect("Invalid geometry");
+    /// assert_eq!(geom.is_closed(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("MULTILINESTRING((0 0, 0 1, 1 1, 0 0),(0 0, 1 1))")
+    ///                     .expect("Invalid geometry");
+    /// assert_eq!(geom.is_closed(), Ok(false));
+    /// ```
     pub fn is_closed(&self) -> GResult<bool> {
+        if self.geometry_type() != GeometryTypes::LineString &&
+           self.geometry_type() != GeometryTypes::MultiLineString {
+            return Err(Error::GenericError("Geometry must be a LineString or a MultiLineString".to_owned()));
+        }
         let ret_val = unsafe { GEOSisClosed_r(self.get_raw_context(), self.as_raw()) };
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
+    /// Returns the length of `self`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(743238 2967416,743238 2967450)")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.length().map(|x| format!("{:.2}", x)).unwrap(), "34.00");
+    /// ```
     pub fn length(&self) -> GResult<f64> {
         let mut length = 0.;
         unsafe {
@@ -873,6 +1594,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
+    /// ```
     pub fn distance<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -885,6 +1618,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the indexed distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.distance_indexed(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
+    /// ```
     #[cfg(feature = "v3_7_0")]
     pub fn distance_indexed<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         unsafe {
@@ -900,6 +1645,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.hausdorff_distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
+    /// ```
     pub fn hausdorff_distance<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -912,6 +1669,19 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.hausdorff_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
+    ///                                                        .unwrap(), "1.00");
+    /// ```
     pub fn hausdorff_distance_densify<'b>(&self, other: &Geometry<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -925,6 +1695,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING (0 0, 100 0)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING (0 0, 50 50, 100 0)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.frechet_distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "70.71");
+    /// ```
     #[cfg(feature = "v3_7_0")]
     pub fn frechet_distance<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         let mut distance = 0.;
@@ -938,6 +1720,19 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING (0 0, 100 0)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING (0 0, 50 50, 100 0)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.frechet_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
+    ///                                                      .unwrap(), "70.71");
+    /// ```
     #[cfg(feature = "v3_7_0")]
     pub fn frechet_distance_densify<'b>(&self, other: &Geometry<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
@@ -952,6 +1747,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the length of the given geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4, 5 6)")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.get_length().map(|x| format!("{:.2}", x)).unwrap(), "5.66");
+    /// ```
     pub fn get_length(&self) -> GResult<f64> {
         let mut length = 0.;
         unsafe {
@@ -960,6 +1767,41 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Documentation from [postgis](https://postgis.net/docs/ST_Snap.html):
+    ///
+    /// >  Snaps the vertices and segments of a geometry another Geometry's vertices. A snap
+    /// > distance tolerance is used to control where snapping is performed. The result geometry is
+    /// > the input geometry with the vertices snapped. If no snapping occurs then the input
+    /// > geometry is returned unchanged.
+    /// >
+    /// > Snapping one geometry to another can improve robustness for overlay operations by
+    /// > eliminating nearly-coincident edges (which cause problems during noding and intersection
+    /// > calculation).
+    /// >
+    /// > Too much snapping can result in invalid topology being created, so the number and location
+    /// > of snapped vertices is decided using heuristics to determine when it is safe to snap. This
+    /// > can result in some potential snaps being omitted, however.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("MULTIPOLYGON(((26 125, 26 200, 126 200, 126 125, 26 125),
+    ///                                                   (51 150, 101 150, 76 175, 51 150)),
+    ///                                                  ((151 100, 151 200, 176 175, 151 100)))")
+    ///                      .expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(5 107, 54 84, 101 100)")
+    ///                      .expect("Invalid geometry");
+    ///
+    /// let distance = geom1.distance(&geom2).expect("distance failed");
+    /// let snap_geom = geom1.snap(&geom2, distance * 1.25).expect("snap failed");
+    ///
+    /// assert_eq!(snap_geom.to_wkt_precision(1).unwrap(),
+    ///            "MULTIPOLYGON (((5.0 107.0, 26.0 200.0, 126.0 200.0, 126.0 125.0, 101.0 100.0, 54.0 84.0, 5.0 107.0), \
+    ///                            (51.0 150.0, 101.0 150.0, 76.0 175.0, 51.0 150.0)), \
+    ///                           ((151.0 100.0, 151.0 200.0, 176.0 175.0, 151.0 100.0)))");
+    /// ```
     pub fn snap<'b>(&self, other: &Geometry<'b>, tolerance: f64) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSSnap_r(self.get_raw_context(), self.as_raw(), other.as_raw(), tolerance);
@@ -967,6 +1809,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns unique points of `self`.
     pub fn extract_unique_points(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGeom_extractUniquePoints_r(self.get_raw_context(), self.as_raw());
@@ -1067,7 +1910,21 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the nth point of the given geometry.
+    ///
     /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4, 5 6)")
+    ///                     .expect("Invalid geometry");
+    /// let nth_point = geom.get_point_n(1).expect("get_point_n failed");
+    ///
+    /// assert_eq!(nth_point.to_wkt_precision(1).unwrap(), "POINT (3.0 4.0)");
+    /// ```
     pub fn get_point_n(&self, n: usize) -> GResult<Geometry<'a>> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
@@ -1078,7 +1935,21 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the start point of `self`.
+    ///
     /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
+    ///                     .expect("Invalid geometry");
+    /// let start_point = geom.get_start_point().expect("get_start_point failed");
+    ///
+    /// assert_eq!(start_point.to_wkt_precision(1).unwrap(), "POINT (1.0 2.0)");
+    /// ```
     pub fn get_start_point(&self) -> GResult<Geometry<'a>> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
@@ -1089,7 +1960,21 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the end point of `self`.
+    ///
     /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
+    ///                     .expect("Invalid geometry");
+    /// let end_point = geom.get_end_point().expect("get_end_point failed");
+    ///
+    /// assert_eq!(end_point.to_wkt_precision(1).unwrap(), "POINT (3.0 4.0)");
+    /// ```
     pub fn get_end_point(&self) -> GResult<Geometry<'a>> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
@@ -1100,7 +1985,20 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the number of points of `self`.
+    ///
     /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.get_num_points(), Ok(2));
+    /// ```
     pub fn get_num_points(&self) -> GResult<usize> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
@@ -1116,6 +2014,19 @@ impl<'a> Geometry<'a> {
     }
 
     /// Returns the number of interior rings.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+    ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
+    ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.get_num_interior_rings(), Ok(2));
+    /// ```
     pub fn get_num_interior_rings(&self) -> GResult<usize> {
         unsafe {
             let ret = GEOSGetNumInteriorRings_r(self.get_raw_context(), self.as_raw());
@@ -1134,11 +2045,11 @@ impl<'a> Geometry<'a> {
     /// ```
     /// use geos::Geometry;
     ///
-    /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
-    ///                                               (1 1, 2 1, 2 5, 1 5, 1 1),\
-    ///                                               (8 5, 8 4, 9 4, 9 5, 8 5))")
-    ///                        .expect("Invalid geometry");
-    /// let interior = point_geom.get_interior_ring_n(0).expect("failed to get interior ring");
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+    ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
+    ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
+    ///                     .expect("Invalid geometry");
+    /// let interior = geom.get_interior_ring_n(0).expect("failed to get interior ring");
     /// assert_eq!(interior.to_wkt().unwrap(),
     ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
     ///                         2.0000000000000000 1.0000000000000000, \
@@ -1191,6 +2102,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the number of coordinates inside `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.get_num_coordinates(), Ok(5));
+    /// ```
     pub fn get_num_coordinates(&self) -> GResult<usize> {
         unsafe {
             let ret = GEOSGetNumCoordinates_r(self.get_raw_context(), self.as_raw());
@@ -1202,6 +2125,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the number of dimensions used in `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                     .expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom.get_num_dimensions(), Ok(2));
+    /// ```
     pub fn get_num_dimensions(&self) -> GResult<usize> {
         unsafe {
             let ret = GEOSGeom_getDimensions_r(self.get_raw_context(), self.as_raw());
@@ -1237,6 +2172,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// This functions attempts to return a valid representation of `self`.
     #[cfg(feature = "v3_8_0")]
     pub fn make_valid(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -1295,7 +2231,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    /// Get SRID of the geometry.
+    /// Get SRID of `self`.
     ///
     /// # Example
     ///
@@ -1317,7 +2253,17 @@ impl<'a> Geometry<'a> {
         }
     }
 
-    /// Set SRID of the geometry.
+    /// Set SRID of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// point_geom.set_srid(4326);
+    /// assert_eq!(point_geom.get_srid(), Ok(4326));
+    /// ```
     pub fn set_srid(&self, srid: usize) -> GResult<()> {
         unsafe {
             if GEOSSetSRID_r(self.get_raw_context(), self.as_raw(), srid as _) == 0 {
@@ -1328,6 +2274,16 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the precision of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// assert_eq!(point_geom.get_precision().map(|x| format!("{:.2}", x)).unwrap(), "0.00");
+    /// ```
     #[cfg(feature = "v3_6_0")]
     pub fn get_precision(&self) -> GResult<f64> {
         unsafe {
@@ -1340,6 +2296,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the precision of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geometry, Precision};
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    ///
+    /// point_geom.set_precision(1., Precision::KeepCollapsed);
+    /// assert_eq!(point_geom.get_precision().map(|x| format!("{:.2}", x)).unwrap(), "0.00");
+    /// ```
     #[cfg(feature = "v3_6_0")]
     pub fn set_precision(&self, grid_size: f64, flags: Precision) -> GResult<Geometry<'a>> {
         unsafe {
@@ -1439,6 +2407,17 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the smallest distance by which a vertex of `self` could be moved to produce an
+    /// invalid geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
+    /// assert_eq!(geom.minimum_clearance().map(|x| format!("{:.8}", x)).unwrap(), "5.00000000");
+    /// ```
     #[cfg(feature = "v3_6_0")]
     pub fn minimum_clearance(&self) -> GResult<f64> {
         unsafe {
@@ -1451,6 +2430,18 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the two-point LineString spanning of `self`'s minimum clearance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON ((0 0, 1 0, 1 1, 0.5 3.2e-4, 0 0))")
+    ///                     .expect("Invalid WKT");
+    /// let line = geom.minimum_clearance_line().expect("minimum_clearance_line failed");
+    /// assert_eq!(line.to_wkt_precision(1).unwrap(), "LINESTRING (0.5 0.0, 0.5 0.0)");
+    /// ```
     #[cfg(feature = "v3_6_0")]
     pub fn minimum_clearance_line(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -1459,6 +2450,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the minimum rotated rectangle inside of `self`.
     #[cfg(feature = "v3_6_0")]
     pub fn minimum_rotated_rectangle(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -1467,6 +2459,7 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns the minimum width inside of `self`.
     #[cfg(feature = "v3_6_0")]
     pub fn minimum_width(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -1475,6 +2468,24 @@ impl<'a> Geometry<'a> {
         }
     }
 
+    /// Returns a [delaunay triangulation](https://en.wikipedia.org/wiki/Delaunay_triangulation)
+    /// around the vertices of `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((175 150, 20 40, 50 60, 125 100, 175 150))")
+    ///                      .expect("Invalid WKT");
+    /// let geom2 = Geometry::new_from_wkt("POINT(110 170)").expect("Invalid WKT");
+    /// let geom2 = geom2.buffer(20., 8).expect("buffer failed");
+    ///
+    /// let geom = geom1.union(&geom2).expect("union failed");
+    ///
+    /// let final_geom = geom.delaunay_triangulation(0.001, false).expect("delaunay_triangulation failed");
+    /// assert_eq!(final_geom.to_wkt_precision(1).unwrap(), "GEOMETRYCOLLECTION (POLYGON ((20.0 40.0, 125.0 100.0, 50.0 60.0, 20.0 40.0)), POLYGON ((20.0 40.0, 50.0 60.0, 90.4 166.1, 20.0 40.0)), POLYGON ((20.0 40.0, 90.4 166.1, 90.0 170.0, 20.0 40.0)), POLYGON ((20.0 40.0, 90.0 170.0, 90.4 173.9, 20.0 40.0)), POLYGON ((20.0 40.0, 90.4 173.9, 91.5 177.7, 20.0 40.0)), POLYGON ((91.5 177.7, 90.4 173.9, 93.4 181.1, 91.5 177.7)), POLYGON ((93.4 181.1, 90.4 173.9, 95.9 155.9, 93.4 181.1)), POLYGON ((93.4 181.1, 95.9 155.9, 102.3 151.5, 93.4 181.1)), POLYGON ((93.4 181.1, 102.3 151.5, 121.1 153.4, 93.4 181.1)), POLYGON ((93.4 181.1, 121.1 153.4, 117.7 188.5, 93.4 181.1)), POLYGON ((93.4 181.1, 117.7 188.5, 102.3 188.5, 93.4 181.1)), POLYGON ((93.4 181.1, 102.3 188.5, 98.9 186.6, 93.4 181.1)), POLYGON ((93.4 181.1, 98.9 186.6, 95.9 184.1, 93.4 181.1)), POLYGON ((102.3 188.5, 117.7 188.5, 106.1 189.6, 102.3 188.5)), POLYGON ((106.1 189.6, 117.7 188.5, 113.9 189.6, 106.1 189.6)), POLYGON ((106.1 189.6, 113.9 189.6, 110.0 190.0, 106.1 189.6)), POLYGON ((117.7 188.5, 121.1 153.4, 124.1 184.1, 117.7 188.5)), POLYGON ((117.7 188.5, 124.1 184.1, 121.1 186.6, 117.7 188.5)), POLYGON ((121.1 186.6, 124.1 184.1, 175.0 150.0, 121.1 186.6)), POLYGON ((175.0 150.0, 124.1 184.1, 126.6 181.1, 175.0 150.0)), POLYGON ((175.0 150.0, 126.6 181.1, 128.5 177.7, 175.0 150.0)), POLYGON ((175.0 150.0, 128.5 177.7, 129.6 173.9, 175.0 150.0)), POLYGON ((175.0 150.0, 129.6 173.9, 130.0 170.0, 175.0 150.0)), POLYGON ((175.0 150.0, 130.0 170.0, 129.6 166.1, 175.0 150.0)), POLYGON ((175.0 150.0, 129.6 166.1, 128.5 162.3, 175.0 150.0)), POLYGON ((175.0 150.0, 128.5 162.3, 126.6 158.9, 175.0 150.0)), POLYGON ((175.0 150.0, 126.6 158.9, 124.1 155.9, 175.0 150.0)), POLYGON ((175.0 150.0, 124.1 155.9, 125.0 100.0, 175.0 150.0)), POLYGON ((125.0 100.0, 124.1 155.9, 121.1 153.4, 125.0 100.0)), POLYGON ((125.0 100.0, 121.1 153.4, 117.7 151.5, 125.0 100.0)), POLYGON ((125.0 100.0, 117.7 151.5, 113.9 150.4, 125.0 100.0)), POLYGON ((125.0 100.0, 113.9 150.4, 110.0 150.0, 125.0 100.0)), POLYGON ((125.0 100.0, 110.0 150.0, 106.1 150.4, 125.0 100.0)), POLYGON ((125.0 100.0, 106.1 150.4, 102.3 151.5, 125.0 100.0)), POLYGON ((125.0 100.0, 102.3 151.5, 98.9 153.4, 125.0 100.0)), POLYGON ((125.0 100.0, 98.9 153.4, 50.0 60.0, 125.0 100.0)), POLYGON ((50.0 60.0, 98.9 153.4, 95.9 155.9, 50.0 60.0)), POLYGON ((50.0 60.0, 95.9 155.9, 93.4 158.9, 50.0 60.0)), POLYGON ((50.0 60.0, 93.4 158.9, 91.5 162.3, 50.0 60.0)), POLYGON ((50.0 60.0, 91.5 162.3, 90.4 166.1, 50.0 60.0)), POLYGON ((90.4 166.1, 91.5 162.3, 93.4 158.9, 90.4 166.1)), POLYGON ((90.4 166.1, 93.4 158.9, 95.9 155.9, 90.4 166.1)), POLYGON ((90.4 166.1, 95.9 155.9, 90.4 173.9, 90.4 166.1)), POLYGON ((90.4 166.1, 90.4 173.9, 90.0 170.0, 90.4 166.1)), POLYGON ((95.9 155.9, 98.9 153.4, 102.3 151.5, 95.9 155.9)), POLYGON ((102.3 151.5, 106.1 150.4, 121.1 153.4, 102.3 151.5)), POLYGON ((121.1 153.4, 106.1 150.4, 110.0 150.0, 121.1 153.4)), POLYGON ((121.1 153.4, 110.0 150.0, 117.7 151.5, 121.1 153.4)), POLYGON ((117.7 151.5, 110.0 150.0, 113.9 150.4, 117.7 151.5)), POLYGON ((121.1 153.4, 124.1 155.9, 126.6 158.9, 121.1 153.4)), POLYGON ((121.1 153.4, 126.6 158.9, 130.0 170.0, 121.1 153.4)), POLYGON ((121.1 153.4, 130.0 170.0, 124.1 184.1, 121.1 153.4)), POLYGON ((124.1 184.1, 130.0 170.0, 128.5 177.7, 124.1 184.1)), POLYGON ((124.1 184.1, 128.5 177.7, 126.6 181.1, 124.1 184.1)), POLYGON ((128.5 177.7, 130.0 170.0, 129.6 173.9, 128.5 177.7)), POLYGON ((130.0 170.0, 126.6 158.9, 129.6 166.1, 130.0 170.0)), POLYGON ((129.6 166.1, 126.6 158.9, 128.5 162.3, 129.6 166.1)))");
+    /// ```
     pub fn delaunay_triangulation(&self, tolerance: f64, only_edges: bool) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSDelaunayTriangulation_r(
