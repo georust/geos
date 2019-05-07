@@ -3,7 +3,7 @@ use crate::{
     CoordSeq, ContextHandle, AsRaw, ContextHandling, ContextInteractions, PreparedGeometry,
     WKTWriter,
 };
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use context_handle::PtrWrap;
 use enums::*;
@@ -33,8 +33,7 @@ pub struct Geometry<'a> {
 }
 
 impl<'a> Geometry<'a> {
-    /// Same as [`new_from_wkt_s`] except it internally uses a reader instead of just using the
-    /// given string.
+    /// Creates a `Geometry` from the WKT format.
     ///
     /// # Example
     ///
@@ -188,6 +187,8 @@ impl<'a> Geometry<'a> {
     /// You can find new illustrations on [postgis](https://postgis.net/docs/ST_BuildArea.html)
     /// documentation.
     ///
+    /// Available using the `v3_8_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -210,7 +211,7 @@ impl<'a> Geometry<'a> {
     ///                       119.1 136.2, 127.8 131.6, 135.4 125.4, 141.6 117.8, 146.2 109.1, \
     ///                       149.0 99.8, 150.0 90.0))");
     /// ```
-    #[cfg(feature = "v3_8_0")]
+    #[cfg(any(feature = "v3_8_0", feature = "dox"))]
     pub fn build_area(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
@@ -329,6 +330,8 @@ impl<'a> Geometry<'a> {
 
     /// Reverses the order of the vertexes.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -339,7 +342,7 @@ impl<'a> Geometry<'a> {
     ///
     /// assert_eq!(reversed_line.to_wkt_precision(1).unwrap(), "LINESTRING (1.0 2.0, 1.0 10.0)");
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn reverse(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
@@ -1632,6 +1635,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the indexed distance between `self` and `other`. The unit depends of the SRID.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -1642,7 +1647,7 @@ impl<'a> Geometry<'a> {
     ///
     /// assert_eq!(geom1.distance_indexed(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn distance_indexed<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         unsafe {
             let mut distance = 0.;
@@ -1709,6 +1714,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -1719,7 +1726,7 @@ impl<'a> Geometry<'a> {
     ///
     /// assert_eq!(geom1.frechet_distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "70.71");
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn frechet_distance<'b>(&self, other: &Geometry<'b>) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -1734,6 +1741,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -1745,7 +1754,7 @@ impl<'a> Geometry<'a> {
     /// assert_eq!(geom1.frechet_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
     ///                                                      .unwrap(), "70.71");
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn frechet_distance_densify<'b>(&self, other: &Geometry<'b>, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
@@ -1899,6 +1908,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the Z position. The given `Geometry` must be a `Point`, otherwise it'll fail.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -1907,7 +1918,7 @@ impl<'a> Geometry<'a> {
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert!(point_geom.get_z() == Ok(4.0));
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn get_z(&self) -> GResult<f64> {
         if self.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
@@ -2185,7 +2196,9 @@ impl<'a> Geometry<'a> {
     }
 
     /// This functions attempts to return a valid representation of `self`.
-    #[cfg(feature = "v3_8_0")]
+    ///
+    /// Available using the `v3_8_0` feature.
+    #[cfg(any(feature = "v3_8_0", feature = "dox"))]
     pub fn make_valid(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
@@ -2288,6 +2301,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the precision of `self`.
     ///
+    /// Available using the `v3_6_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2296,7 +2311,7 @@ impl<'a> Geometry<'a> {
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert_eq!(point_geom.get_precision().map(|x| format!("{:.2}", x)).unwrap(), "0.00");
     /// ```
-    #[cfg(feature = "v3_6_0")]
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn get_precision(&self) -> GResult<f64> {
         unsafe {
             let ret = GEOSGeom_getPrecision_r(self.get_raw_context(), self.as_raw());
@@ -2310,6 +2325,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the precision of `self`.
     ///
+    /// Available using the `v3_6_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2320,7 +2337,7 @@ impl<'a> Geometry<'a> {
     /// point_geom.set_precision(1., Precision::KeepCollapsed);
     /// assert_eq!(point_geom.get_precision().map(|x| format!("{:.2}", x)).unwrap(), "0.00");
     /// ```
-    #[cfg(feature = "v3_6_0")]
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn set_precision(&self, grid_size: f64, flags: Precision) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSGeom_setPrecision_r(self.get_raw_context(),
@@ -2333,6 +2350,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the biggest X of the geometry.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2341,7 +2360,7 @@ impl<'a> Geometry<'a> {
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_x_max(), Ok(5.));
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn get_x_max(&self) -> GResult<f64> {
         unsafe {
             let mut value = 0.;
@@ -2355,6 +2374,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the smallest X of the geometry.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2363,7 +2384,7 @@ impl<'a> Geometry<'a> {
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_x_min(), Ok(1.));
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn get_x_min(&self) -> GResult<f64> {
         unsafe {
             let mut value = 0.;
@@ -2377,6 +2398,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the biggest Y of the geometry.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2385,7 +2408,7 @@ impl<'a> Geometry<'a> {
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_y_max(), Ok(6.));
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn get_y_max(&self) -> GResult<f64> {
         unsafe {
             let mut value = 0.;
@@ -2399,6 +2422,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the smallest Y of the geometry.
     ///
+    /// Available using the `v3_7_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2407,7 +2432,7 @@ impl<'a> Geometry<'a> {
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_y_min(), Ok(3.));
     /// ```
-    #[cfg(feature = "v3_7_0")]
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn get_y_min(&self) -> GResult<f64> {
         unsafe {
             let mut value = 0.;
@@ -2422,6 +2447,8 @@ impl<'a> Geometry<'a> {
     /// Returns the smallest distance by which a vertex of `self` could be moved to produce an
     /// invalid geometry.
     ///
+    /// Available using the `v3_6_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2430,7 +2457,7 @@ impl<'a> Geometry<'a> {
     /// let geom = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(geom.minimum_clearance().map(|x| format!("{:.8}", x)).unwrap(), "5.00000000");
     /// ```
-    #[cfg(feature = "v3_6_0")]
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn minimum_clearance(&self) -> GResult<f64> {
         unsafe {
             let mut value = 0.;
@@ -2444,6 +2471,8 @@ impl<'a> Geometry<'a> {
 
     /// Returns the two-point LineString spanning of `self`'s minimum clearance.
     ///
+    /// Available using the `v3_6_0` feature.
+    ///
     /// # Example
     ///
     /// ```
@@ -2454,7 +2483,7 @@ impl<'a> Geometry<'a> {
     /// let line = geom.minimum_clearance_line().expect("minimum_clearance_line failed");
     /// assert_eq!(line.to_wkt_precision(1).unwrap(), "LINESTRING (0.5 0.0, 0.5 0.0)");
     /// ```
-    #[cfg(feature = "v3_6_0")]
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn minimum_clearance_line(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSMinimumClearanceLine_r(self.get_raw_context(), self.as_raw());
@@ -2463,7 +2492,9 @@ impl<'a> Geometry<'a> {
     }
 
     /// Returns the minimum rotated rectangle inside of `self`.
-    #[cfg(feature = "v3_6_0")]
+    ///
+    /// Available using the `v3_6_0` feature.
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn minimum_rotated_rectangle(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSMinimumRotatedRectangle_r(self.get_raw_context(), self.as_raw());
@@ -2472,7 +2503,9 @@ impl<'a> Geometry<'a> {
     }
 
     /// Returns the minimum width inside of `self`.
-    #[cfg(feature = "v3_6_0")]
+    ///
+    /// Available using the `v3_6_0` feature.
+    #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     pub fn minimum_width(&self) -> GResult<Geometry<'a>> {
         unsafe {
             let ptr = GEOSMinimumWidth_r(self.get_raw_context(), self.as_raw());

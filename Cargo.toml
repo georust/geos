@@ -14,6 +14,7 @@ geo = ["geo-types", "wkt"]
 v3_6_0 = ["geos-sys/v3_6_0"]
 v3_7_0 = ["geos-sys/v3_7_0", "v3_6_0"]
 v3_8_0 = ["geos-sys/v3_8_0", "v3_7_0"]
+dox = ["geo-types", "wkt"]
 
 [dependencies]
 libc = "0.2"
@@ -23,3 +24,6 @@ geo-types = { version = "0.4", optional = true }
 wkt = { version = "0.5", optional = true }
 geos-sys = "1.0"
 doc-comment = "0.3"
+
+[package.metadata.docs.rs]
+features = ["dox"]

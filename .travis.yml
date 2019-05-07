@@ -21,6 +21,8 @@ script:
   - cargo build --features v3_6_0
   - cargo test --features geo
   - cargo test
+  - cargo doc --features dox
+  - cargo doc
   - cargo run --example verbose_example
   - cargo run --example prepared_geom
   - cargo run --features geo --example prepared_geom

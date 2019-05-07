@@ -311,14 +311,14 @@ impl Into<size_t> for Ordinate {
     }
 }
 
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Precision {
     NoTopo,
     KeepCollapsed,
 }
 
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 impl From<c_int> for Precision {
     fn from(order: c_int) -> Self {
         match order {
@@ -329,7 +329,7 @@ impl From<c_int> for Precision {
     }
 }
 
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 impl TryFrom<c_int> for Precision {
     type Error = &'static str;
 
@@ -342,7 +342,7 @@ impl TryFrom<c_int> for Precision {
     }
 }
 
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 impl Into<c_int> for Precision {
     fn into(self) -> c_int {
         match self {
