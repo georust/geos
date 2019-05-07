@@ -189,7 +189,7 @@ impl<'a> WKTWriter<'a> {
         }
     }
 
-    /// Enables/disables 3D/4D WKT style generation.
+    /// Enables/disables old 3D/4D WKT style generation.
     ///
     /// # Example
     ///
