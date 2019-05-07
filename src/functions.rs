@@ -142,7 +142,9 @@ pub fn orientation_index(
 }
 
 /// Returns [`None`] if the segments don't intersect, otherwise returns `Some(x_pos, y_pos)`.
-#[cfg(feature = "v3_7_0")]
+///
+/// Available using the `v3_7_0` feature.
+#[cfg(any(feature = "v3_7_0", feature = "dox"))]
 pub fn segment_intersection(
     ax0: f64,
     ay0: f64,

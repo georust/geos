@@ -4,9 +4,9 @@
 extern crate c_vec;
 extern crate libc;
 extern crate num;
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 extern crate geo_types;
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 extern crate wkt;
 extern crate geos_sys;
 
@@ -34,7 +34,7 @@ pub use enums::{
     Orientation,
     OutputDimension,
 };
-#[cfg(feature = "v3_6_0")]
+#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 pub use enums::{
     Precision,
 };
@@ -42,7 +42,7 @@ pub use functions::{
     orientation_index,
     version,
 };
-#[cfg(feature = "v3_7_0")]
+#[cfg(any(feature = "v3_7_0", feature = "dox"))]
 pub use functions::{
     segment_intersection,
 };
@@ -62,19 +62,19 @@ pub use wkt_writer::{
 mod context_handle;
 mod coord_seq;
 mod error;
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 pub mod from_geo;
 mod geometry;
 mod prepared_geometry;
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 pub mod to_geo;
 pub use error::{
     Error,
     GResult,
 };
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 mod voronoi;
-#[cfg(feature = "geo")]
+#[cfg(any(feature = "geo", feature = "dox"))]
 pub use voronoi::{
     compute_voronoi,
 };

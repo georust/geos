@@ -462,7 +462,9 @@ impl<'a> CoordSeq<'a> {
     }
 
     /// Returns `true` if the geometry has a counter-clockwise orientation.
-    #[cfg(feature = "v3_7_0")]
+    ///
+    /// Available using the `v3_7_0` feature.
+    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn is_ccw(&self) -> GResult<bool> {
         unsafe {
             let mut is_ccw = 0;

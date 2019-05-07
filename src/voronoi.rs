@@ -4,6 +4,7 @@ use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 use std::borrow::Borrow;
 
+/// Available using the `geo` feature.
 pub fn compute_voronoi<T: Borrow<Point<f64>>>(
     points: &[T],
     envelope: Option<&GGeom>,
@@ -33,7 +34,8 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
 mod test {
     use super::GGeom;
     use geo_types::{Coordinate, LineString, Point, Polygon};
-    /// create a voronoi diagram. Same unit test as https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
+    // create a voronoi diagram. Same unit test as
+    // https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
     fn simple_voronoi() {
         let points = "MULTIPOINT ((150 200), (180 270), (275 163))";
@@ -55,7 +57,8 @@ mod test {
         assert!(same);
     }
 
-    /// test precision. Same unit test as https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L160
+    // test precision. Same unit test as
+    // https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L160
     #[test]
     fn wkt_voronoi_precision() {
         let points = "MULTIPOINT ((100 200), (105 202), (110 200), (140 230), 
