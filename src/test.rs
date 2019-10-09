@@ -144,6 +144,22 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_get_geometry_n() {
+        let multilinestring = Geometry::new_from_wkt("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))").unwrap();
+        let l0 = multilinestring.get_geometry_n(0).unwrap();
+        let l1 = multilinestring.get_geometry_n(1).unwrap();
+
+        assert_eq!(
+            l0.to_wkt_precision(0),
+            Ok("LINESTRING (1 1, 10 50, 20 25)".to_owned()),
+        );
+        assert_eq!(
+            l1.to_wkt_precision(0),
+            Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()),
+        );
+    }
+
     fn assert_almost_eq(a: f64, b: f64) {
         let f: f64 = a / b;
         assert!(f < 1.0001);

@@ -72,6 +72,8 @@ mod geometry;
 mod prepared_geometry;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod to_geo;
+#[cfg(all(feature = "json"))]
+pub mod to_geojson;
 pub use error::{
     Error,
     GResult,
