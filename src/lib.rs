@@ -8,6 +8,8 @@ extern crate num;
 extern crate geo_types;
 #[cfg(any(feature = "geo", feature = "dox"))]
 extern crate wkt;
+#[cfg(all(feature = "json"))]
+extern crate geojson;
 extern crate geos_sys;
 
 #[cfg(all(feature = "geo", test))]
@@ -64,6 +66,8 @@ mod coord_seq;
 mod error;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod from_geo;
+#[cfg(all(feature = "json"))]
+pub mod from_geojson;
 mod geometry;
 mod prepared_geometry;
 #[cfg(any(feature = "geo", feature = "dox"))]
