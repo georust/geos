@@ -117,177 +117,154 @@ impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
 }
 
 
-// #[cfg(test)]
-// mod test {
-//     use super::GGeom;
-//     use super::LineRing;
-//     use from_geojson::TryInto;
-//     use geojson::{Geometry, Value};
-//
-//     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
-//         tuples.into_iter().map(Coordinate::from).collect()
-//     }
-//
-//     #[test]
-//     fn polygon_contains_test() {
-//         let exterior = LineString(coords(vec![
-//             (0., 0.),
-//             (0., 1.),
-//             (1., 1.),
-//             (1., 0.),
-//             (0., 0.),
-//         ]));
-//         let interiors = vec![LineString(coords(vec![
-//             (0.1, 0.1),
-//             (0.1, 0.9),
-//             (0.9, 0.9),
-//             (0.9, 0.1),
-//             (0.1, 0.1),
-//         ]))];
-//         let p = Polygon::new(exterior.clone(), interiors.clone());
-//
-//         assert_eq!(p.exterior(), &exterior);
-//         assert_eq!(p.interiors(), interiors.as_slice());
-//
-//         let geom: GGeom = (&p).try_into().unwrap();
-//
-//         assert!(geom.contains(&geom).unwrap());
-//         assert!(!geom.contains(&(&exterior).try_into().unwrap()).unwrap());
-//
-//         assert!(geom.covers(&(&exterior).try_into().unwrap()).unwrap());
-//         assert!(geom.touches(&(&exterior).try_into().unwrap()).unwrap());
-//     }
-//
-//     #[test]
-//     fn multipolygon_contains_test() {
-//         let exterior = LineString(coords(vec![
-//             (0., 0.),
-//             (0., 1.),
-//             (1., 1.),
-//             (1., 0.),
-//             (0., 0.),
-//         ]));
-//         let interiors = vec![LineString(coords(vec![
-//             (0.1, 0.1),
-//             (0.1, 0.9),
-//             (0.9, 0.9),
-//             (0.9, 0.1),
-//             (0.1, 0.1),
-//         ]))];
-//         let p = Polygon::new(exterior, interiors);
-//         let mp = MultiPolygon(vec![p.clone()]);
-//
-//         let geom: GGeom = (&mp).try_into().unwrap();
-//
-//         assert!(geom.contains(&geom).unwrap());
-//         assert!(geom.contains(&(&p).try_into().unwrap()).unwrap());
-//     }
-//
-//     #[test]
-//     fn incorrect_multipolygon_test() {
-//         let exterior = LineString(coords(vec![(0., 0.)]));
-//         let interiors = vec![];
-//         let p = Polygon::new(exterior, interiors);
-//         let mp = MultiPolygon(vec![p.clone()]);
-//
-//         let geom = (&mp).try_into();
-//
-//         assert!(geom.is_err());
-//     }
-//
-//     #[test]
-//     fn incorrect_polygon_not_closed() {
-//         // even if the polygon is not closed we can convert it to geos (we close it)
-//         let exterior = LineString(coords(vec![
-//             (0., 0.),
-//             (0., 2.),
-//             (2., 2.),
-//             (2., 0.),
-//             (0., 0.),
-//         ]));
-//         let interiors = vec![LineString(coords(vec![
-//             (0., 0.),
-//             (0., 1.),
-//             (1., 1.),
-//             (1., 0.),
-//             (0., 10.),
-//         ]))];
-//         let p = Polygon::new(exterior, interiors);
-//         let mp = MultiPolygon(vec![p]);
-//
-//         let _g = (&mp).try_into().unwrap(); // no error
-//     }
-//
-//     /// a linear ring can be empty
-//     #[test]
-//     fn empty_linear_ring() {
-//         let ls = LineString(vec![]);
-//         let geom: GGeom = LineRing(&ls).try_into().unwrap();
-//
-//         assert!(geom.is_valid());
-//         assert!(geom.is_ring().unwrap());
-//         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 0);
-//     }
-//
-//     /// a linear ring should have at least 3 elements
-//     #[test]
-//     fn one_elt_linear_ring() {
-//         let ls = LineString(coords(vec![(0., 0.)]));
-//         let geom: Result<GGeom, _> = LineRing(&ls).try_into();
-//         let error = geom.err().unwrap();
-//         assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
-//     }
-//
-//     /// a linear ring should have at least 3 elements
-//     #[test]
-//     fn two_elt_linear_ring() {
-//         let ls = LineString(coords(vec![(0., 0.), (0., 1.)]));
-//         let geom: Result<GGeom, _> = LineRing(&ls).try_into();
-//         let error = geom.err().unwrap();
-//         assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
-//     }
-//
-//     /// an unclosed linearring is valid since we close it before giving it to geos
-//     #[test]
-//     fn unclosed_linear_ring() {
-//         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.)]));
-//         let geom: GGeom = LineRing(&ls).try_into().unwrap();
-//
-//         assert!(geom.is_valid());
-//         assert!(geom.is_ring().unwrap());
-//         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
-//     }
-//
-//     /// a bit tricky
-//     /// a ring should have at least 3 points.
-//     /// in the case of a closed ring with only element eg:
-//     ///
-//     /// let's take a point list: [p1, p2, p1]
-//     ///
-//     /// p1 ----- p2
-//     ///  ^-------|
-//     ///
-//     /// we consider it like a 3 points not closed ring (with the 2 last elements being equals...)
-//     ///
-//     /// shapely (the python geos wrapper) considers that too
-//     #[test]
-//     fn closed_2_points_linear_ring() {
-//         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 1.)]));
-//         let geom: GGeom = LineRing(&ls).try_into().unwrap();
-//
-//         assert!(geom.is_valid());
-//         assert!(geom.is_ring().expect("is_ring failed"));
-//         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
-//     }
-//
-//     /// a linear ring can be empty
-//     #[test]
-//     fn good_linear_ring() {
-//         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.), (0., 0.)]));
-//         let geom: GGeom = LineRing(&ls).try_into().unwrap();
-//
-//         assert!(geom.is_valid());
-//         assert!(geom.is_ring().unwrap());
-//         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
-//     }
-// }
+#[cfg(test)]
+mod test {
+    use super::GGeom;
+    use crate::from_geojson::TryInto;
+    use geojson::{Geometry, Value};
+
+    #[test]
+    fn geom_from_geojson_point() {
+        let geojson_pt = Geometry::new(Value::Point(vec![1., 1.]));
+        let gpoint: GGeom = geojson_pt.try_into().unwrap();
+
+        assert_eq!(
+            gpoint.to_wkt_precision(0),
+            Ok("POINT (1 1)".to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_multipoint() {
+        let geojson_pts = Geometry::new(Value::MultiPoint(vec![
+            vec![1., 1.],
+            vec![2., 2.],
+        ]));
+        let gpts: GGeom = geojson_pts.try_into().unwrap();
+        assert_eq!(
+            gpts.to_wkt_precision(0),
+            Ok("MULTIPOINT (1 1, 2 2)".to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_line() {
+        let geojson_line = Geometry::new(Value::LineString(vec![
+            vec![1., 1.],
+            vec![2., 2.],
+        ]));
+        let gline: GGeom = geojson_line.try_into().unwrap();
+        assert_eq!(
+            gline.to_wkt_precision(0),
+            Ok("LINESTRING (1 1, 2 2)".to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_multiline() {
+        let geojson_lines = Geometry::new(Value::MultiLineString(vec![
+            vec![
+                vec![1., 1.],
+                vec![2., 2.],
+            ],
+            vec![
+                vec![3., 3.],
+                vec![4., 4.],
+            ],
+        ]));
+        let glines: GGeom = geojson_lines.try_into().unwrap();
+        assert_eq!(
+            glines.to_wkt_precision(0),
+            Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_polygon() {
+        let geojson_polygon = Geometry::new(Value::Polygon(
+            vec![
+                vec![
+                    vec![0., 0.],
+                    vec![0., 3.],
+                    vec![3., 3.],
+                    vec![3., 0.],
+                    vec![0., 0.],
+                ],
+                vec![
+                    vec![0.2, 0.2],
+                    vec![0.2, 2.],
+                    vec![2., 2.],
+                    vec![2., 0.2],
+                    vec![0.2, 0.2],
+                ],
+            ],
+        ));
+        let gpolygon: GGeom = geojson_polygon.try_into().unwrap();
+        assert_eq!(
+            gpolygon.to_wkt_precision(1),
+            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
+                .to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_polygon_with_unclosed_interior_ring() {
+        let geojson_polygon = Geometry::new(Value::Polygon(
+            vec![
+                vec![
+                    vec![0., 0.],
+                    vec![0., 3.],
+                    vec![3., 3.],
+                    vec![3., 0.],
+                    vec![0., 0.],
+                ],
+                vec![
+                    vec![0.2, 0.2],
+                    vec![0.2, 2.],
+                    vec![2., 2.],
+                    vec![2., 0.2],
+                ],
+            ],
+        ));
+        let gpolygon: GGeom = geojson_polygon.try_into().unwrap();
+        assert_eq!(
+            gpolygon.to_wkt_precision(1),
+            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
+                .to_string()),
+        );
+    }
+
+
+    #[test]
+    fn geom_from_geojson_multipolygon() {
+        let geojson_multipolygon = Geometry::new(Value::MultiPolygon(
+            vec![vec![vec![
+                vec![0., 0.],
+                vec![0., 1.],
+                vec![1., 1.],
+                vec![1., 0.],
+                vec![0., 0.],
+            ]]]
+        ));
+        let gmultipolygon: GGeom = geojson_multipolygon.try_into().unwrap();
+        assert_eq!(
+            gmultipolygon.to_wkt_precision(0),
+            Ok("MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))".to_string()),
+        );
+    }
+
+    #[test]
+    fn geom_from_geojson_geometry_collection() {
+        let geojson_gc = Geometry::new(Value::GeometryCollection(
+            vec![
+                Geometry::new(Value::Point(vec![1., 1.])),
+                Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
+            ]
+        ));
+        let gc: GGeom = geojson_gc.try_into().unwrap();
+        assert_eq!(
+            gc.to_wkt_precision(0),
+            Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),
+        );
+    }
+}

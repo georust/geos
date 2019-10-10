@@ -50,7 +50,7 @@ impl<'a> TryInto<Geometry> for GGeom<'a> {
                 }
                 Ok(Geometry::new(Value::MultiPoint(coords)))
             },
-            GeometryTypes::LineString => {
+            GeometryTypes::LineString | GeometryTypes::LinearRing => {
                 let cs = self.get_coord_seq()?;
                 let coords = coords_seq_to_vec_position(&cs)?;
                 Ok(Geometry::new(Value::LineString(coords)))
@@ -108,7 +108,6 @@ impl<'a> TryInto<Geometry> for GGeom<'a> {
                 }
                 Ok(Geometry::new(Value::GeometryCollection(result_geoms)))
             },
-            GeometryTypes::LinearRing => Err(Error::ConversionError("Can't convert 'LinearRing geometries to GeoJSON.".to_string())),
             _ => unreachable!(),
         }
     }
@@ -119,7 +118,6 @@ mod test {
     use super::GGeom;
     use crate::to_geojson::TryInto;
     use geojson::{Geometry, Value};
-    use crate::error::Error;
 
     #[test]
     fn geom_to_geojson_point() {
@@ -165,13 +163,15 @@ mod test {
         let line = "LINEARRING(1 1, 2 1, 2 2, 1 1)";
         let line = GGeom::new_from_wkt(line).unwrap();
 
-        let err: Result<Geometry, _> = line.try_into();
+        let geojson_line: Geometry = line.try_into().unwrap();
 
-        assert_eq!(
-            err,
-            Err(Error::ConversionError(
-                "Can't convert 'LinearRing geometries to GeoJSON.".to_string()),
-        ));
+        let expected_line = Geometry::new(Value::LineString(vec![
+            vec![1., 1.],
+            vec![2., 1.],
+            vec![2., 2.],
+            vec![1., 1.],
+        ]));
+        assert_eq!(geojson_line, expected_line);
     }
 
     #[test]
@@ -197,19 +197,28 @@ mod test {
 
     #[test]
     fn geom_to_geojson_polygon() {
-        let poly = "POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))";
+        let poly = "POLYGON((0 0, 0 3, 3 3, 3 0, 0 0) ,(0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))";
         let poly = GGeom::new_from_wkt(poly).unwrap();
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
         let expected_polygon = Geometry::new(Value::Polygon(
-            vec![vec![
-                vec![0., 0.],
-                vec![0., 1.],
-                vec![1., 1.],
-                vec![1., 0.],
-                vec![0., 0.],
-            ]]
+            vec![
+                vec![
+                    vec![0., 0.],
+                    vec![0., 3.],
+                    vec![3., 3.],
+                    vec![3., 0.],
+                    vec![0., 0.],
+                ],
+                vec![
+                    vec![0.2, 0.2],
+                    vec![0.2, 2.],
+                    vec![2., 2.],
+                    vec![2., 0.2],
+                    vec![0.2, 0.2],
+                ],
+            ]
         ));
         assert_eq!(geojson_polygon, expected_polygon);
     }
