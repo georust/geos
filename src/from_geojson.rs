@@ -2,9 +2,8 @@ use crate::{CoordDimensions, CoordSeq, Geometry as GGeom};
 use error::{GResult, Error};
 use geojson::{Value, Geometry};
 use std;
-// use std::borrow::Borrow;
 
-// define our own TryInto while the std trait is not stable
+
 pub trait TryInto<T> {
     type Err;
     fn try_into(self) -> Result<T, Self::Err>;
@@ -26,6 +25,24 @@ where
         coord_seq.set_y(i, p[1])?;
     }
     Ok(coord_seq)
+}
+
+// We need to ensure that rings of polygons are closed
+// to create valid GEOS LinearRings (geojson crate doesn't enforce this for now)
+fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
+    let nb_points = points.len();
+    // if the geom is not closed we close it
+    let is_closed = nb_points > 0 && points.first() == points.last();
+    // Note: we also need to close a 2 points closed linearring, cf test closed_2_points_linear_ring
+    let need_closing = nb_points > 0 && (!is_closed || nb_points == 3);
+    if need_closing {
+        create_coord_seq(
+            points.iter().chain(std::iter::once(&points[0])),
+            nb_points + 1,
+        )
+    } else {
+        create_coord_seq(points.iter(), nb_points)
+    }
 }
 
 impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
@@ -59,13 +76,13 @@ impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
             },
             Value::Polygon(ref rings) => {
                 let exterior_ring = GGeom::create_linear_ring(
-                    create_coord_seq_from_vec(rings[0].as_slice())?
+                    create_closed_coord_seq_from_vec(rings[0].as_slice())?
                 )?;
                 let interiors = rings.iter()
                     .skip(1)
                     .map(|r| {
                         GGeom::create_linear_ring(
-                            create_coord_seq_from_vec(r.as_slice())?)
+                            create_closed_coord_seq_from_vec(r.as_slice())?)
                     })
                     .collect::<GResult<Vec<GGeom>>>()?;
                 GGeom::create_polygon(exterior_ring, interiors)
@@ -74,13 +91,13 @@ impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
                 let ggpolys = polygons.iter()
                     .map(|rings|{
                         let exterior_ring = GGeom::create_linear_ring(
-                            create_coord_seq_from_vec(rings[0].as_slice())?
+                            create_closed_coord_seq_from_vec(rings[0].as_slice())?
                         )?;
                         let interiors = rings.iter()
                             .skip(1)
                             .map(|r| {
                                 GGeom::create_linear_ring(
-                                    create_coord_seq_from_vec(r.as_slice())?)
+                                    create_closed_coord_seq_from_vec(r.as_slice())?)
                             })
                             .collect::<GResult<Vec<GGeom>>>()?;
                         GGeom::create_polygon(exterior_ring, interiors)
