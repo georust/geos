@@ -33,7 +33,8 @@ fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordS
     let nb_points = points.len();
     // if the geom is not closed we close it
     let is_closed = nb_points > 0 && points.first() == points.last();
-    // Note: we also need to close a 2 points closed linearring, cf test closed_2_points_linear_ring
+    // Note: we also need to close a 2 points closed linearring,
+    // as in `from_geo` module
     let need_closing = nb_points > 0 && (!is_closed || nb_points == 3);
     if need_closing {
         create_coord_seq(
