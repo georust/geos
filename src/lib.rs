@@ -52,6 +52,10 @@ pub use geometry::{
 pub use prepared_geometry::{
     PreparedGeometry,
 };
+pub use spatial_index:: {
+    SpatialIndex,
+    STRtree
+};
 pub use wkb_writer::{
     WKBWriter,
 };
@@ -66,6 +70,7 @@ mod error;
 pub mod from_geo;
 mod geometry;
 mod prepared_geometry;
+mod spatial_index;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod to_geo;
 pub use error::{
