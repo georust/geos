@@ -8,7 +8,6 @@ pub trait TryInto<T> {
     fn try_into(self) -> Result<T, Self::Err>;
 }
 
-
 fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     let n_coords = cs.size()?;
     let mut coords = Vec::with_capacity(n_coords);
