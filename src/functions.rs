@@ -1,4 +1,5 @@
 use enums::*;
+use std::os::raw::{c_char};
 use error::{Error, GResult, PredicateType};
 use geos_sys::*;
 use geometry::Geometry;
@@ -12,7 +13,7 @@ use context_handle::PtrWrap;
 // this has to be checked method by method in geos
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
-pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8, caller: &str) -> GResult<String> {
+pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char, caller: &str) -> GResult<String> {
     if raw_ptr.is_null() {
         return Err(Error::NoConstructionFromNullPtr(format!("{}::unmanaged_string", caller)));
     }
@@ -26,7 +27,7 @@ pub(crate) unsafe fn unmanaged_string(raw_ptr: *const i8, caller: &str) -> GResu
 }
 
 pub(crate) unsafe fn managed_string(
-    raw_ptr: *mut i8,
+    raw_ptr: *mut c_char,
     context: &ContextHandle,
     caller: &str,
 ) -> GResult<String> {
