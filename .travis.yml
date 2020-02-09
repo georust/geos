@@ -20,6 +20,7 @@ script:
   - cargo build --features v3_7_0
   - cargo build --features v3_6_0
   - cargo test --features geo
+  - cargo test --features json
   - cargo test
   - cargo doc --features dox
   - cargo doc
