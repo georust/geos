@@ -1,14 +1,14 @@
 use crate::Geometry as GGeom;
 use error::Error;
-use from_geo::TryInto;
 use geo_types::Geometry;
+use std::convert::TryInto;
 use wkt;
 use wkt::conversion::try_into_geometry;
 
 impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
-    type Err = Error;
+    type Error = Error;
 
-    fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
+    fn try_into(self) -> Result<Geometry<f64>, Self::Error> {
         // This is a first draft, it's very inefficient, we use wkt as a pivot format to
         // translate the geometry.
         // We should at least use wkb, or even better implement a direct translation
@@ -16,7 +16,7 @@ impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
         let wkt_obj = wkt::Wkt::from_str(&wkt_str)
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
 
-        let o: &wkt::Geometry = wkt_obj
+        let o: &wkt::Geometry<f64> = wkt_obj
             .items
             .iter()
             .next()
@@ -30,8 +30,8 @@ impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
 #[cfg(test)]
 mod test {
     use super::GGeom;
-    use from_geo::TryInto;
     use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
+    use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()

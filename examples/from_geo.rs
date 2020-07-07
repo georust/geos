@@ -4,10 +4,11 @@ extern crate geos;
 
 #[cfg(feature = "geo")]
 use geo_types::{Coordinate, LineString, Polygon};
-#[cfg(feature = "geo")]
-use geos::from_geo::TryInto;
+// #[cfg(feature = "geo")]
+// use geos::from_geo::TryInto;
 #[cfg(feature = "geo")]
 use geos::{Error, Geometry};
+use std::convert::{TryFrom, TryInto};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -30,7 +31,7 @@ fn fun() -> Result<(), Error> {
     assert_eq!(p.exterior(), &exterior);
     assert_eq!(p.interiors(), interiors.as_slice());
 
-    let geom: Geometry = (&p).try_into()?;
+    let geom = Geometry::try_from(&p)?;
 
     assert!(geom.contains(&geom)?);
     assert!(!geom.contains(&(&exterior).try_into()?)?);
@@ -45,8 +46,7 @@ fn main() {
     fun().unwrap();
 }
 
-
 #[cfg(not(feature = "geo"))]
 fn main() {
-    eprintln!("You need to enable the \"geo\" feature to run this example!", );
+    eprintln!("You need to enable the \"geo\" feature to run this example!",);
 }
