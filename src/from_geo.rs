@@ -84,11 +84,13 @@ impl<'a, 'b> TryFrom<&'a LineRing<'b>> for GGeom<'b> {
         }
 
         let mut points = linering.0.points_iter();
-        let first = points.next().expect("At least one point"); // This expect is OK because we
-                                                                // took care of the case where there is no points
-        let last = points.last().expect("No last point"); // This expect is OK too, because if there is
-                                                          // at least one point, there is at least 3 points
-                                                          // because of the constraint above.
+
+        // The following expect is OK because we took care of the case where there is no points
+        let first = points.next().expect("At least one point");
+
+        // This expect is OK too, because if there is at least one point, there is at least 3 points
+        // because of the constraint above.
+        let last = points.last().expect("No last point");
 
         // if the geom is not closed we close it
         let is_closed = nb_points > 0 && first == last;

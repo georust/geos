@@ -4,11 +4,8 @@ extern crate geos;
 
 #[cfg(feature = "geo")]
 use geo_types::{Coordinate, LineString, Polygon};
-// #[cfg(feature = "geo")]
-// use geos::from_geo::TryInto;
 #[cfg(feature = "geo")]
 use geos::{Error, Geometry};
-use std::convert::{TryFrom, TryInto};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -48,5 +45,5 @@ fn main() {
 
 #[cfg(not(feature = "geo"))]
 fn main() {
-    eprintln!("You need to enable the \"geo\" feature to run this example!",);
+    eprintln!("You need to enable the \"geo\" feature to run this example!");
 }

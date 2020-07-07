@@ -23,7 +23,7 @@ num = "0.2"
 c_vec = "1.3"
 geojson = { version = "0.17", optional = true }
 geo-types = { version = "0.6", optional = true }
-wkt = { git = "https://github.com/riendegris/wkt.git", branch = "update_dependencies", optional = true }
+wkt = { version = "0.8", optional = true }
 geos-sys = "1.0"
 doc-comment = "0.3"
 
