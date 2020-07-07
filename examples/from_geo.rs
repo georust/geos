@@ -6,6 +6,8 @@ extern crate geos;
 use geo_types::{Coordinate, LineString, Polygon};
 #[cfg(feature = "geo")]
 use geos::{Error, Geometry};
+#[cfg(feature = "geo")]
+use std::convert::{TryFrom, TryInto};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
