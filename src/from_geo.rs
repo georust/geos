@@ -1,10 +1,8 @@
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeom};
 use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
-use std;
 use std::borrow::Borrow;
-use std::convert::TryFrom;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, Error>
 where
