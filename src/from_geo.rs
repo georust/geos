@@ -62,8 +62,20 @@ impl<'a> TryFrom<&'a LineString<f64>> for GGeom<'a> {
 struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a geo_types::LineString to a geos LinearRing
-/// a LinearRing should be closed so close the geometry if needed
-/// What happens if the linestring is empty?
+/// Empty LineRing are valid
+/// The rules for validation and construction are those followed by
+/// [Shapely](https://shapely.readthedocs.io/en/latest/manual.html#linearrings)
+/// If the input LineString is not closed, then the resulting LineRing closes the construction
+/// by copying the first point after the last, as seen in the diagram below.
+///
+///  [(0,0), (1,0), (1,1)] => [(0,0) , (1,0), (1,1), (0,0)]
+///
+///   1        2                  1,4      2
+///   ■ ────── ■                  ■ ────── ■
+///            │           =>     │        │
+///            │                  │        │
+///            ■ 3                └─────── ■ 3
+///
 impl<'a, 'b> TryFrom<&'a LineRing<'b>> for GGeom<'b> {
     type Error = Error;
 
@@ -92,6 +104,7 @@ impl<'a, 'b> TryFrom<&'a LineRing<'b>> for GGeom<'b> {
 
         // if the geom is not closed we close it
         let is_closed = nb_points > 0 && first == last;
+
         // Note: we also need to close a 2 points closed linearring, cf test closed_2_points_linear_ring
         let need_closing = nb_points > 0 && (!is_closed || nb_points == 3);
 
