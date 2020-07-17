@@ -1,16 +1,10 @@
-use error::{Error, GResult};
-use context_handle::PtrWrap;
-use geos_sys::*;
-use crate::{
-    AsRaw,
-    ContextHandling,
-    ContextInteractions,
-    CoordDimensions,
-    ContextHandle,
-    Geometry,
-    Ordinate,
-};
 use crate::enums::TryFrom;
+use crate::{
+    AsRaw, ContextHandle, ContextHandling, ContextInteractions, CoordDimensions, Geometry, Ordinate,
+};
+use context_handle::PtrWrap;
+use error::{Error, GResult};
+use geos_sys::*;
 use std::sync::Arc;
 
 /// `CoordSeq` represents a list of coordinates inside a [`Geometry`].
@@ -64,12 +58,10 @@ impl<'a> CoordSeq<'a> {
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
         match ContextHandle::init_e(Some("CoordSeq::new")) {
-            Ok(context_handle) => {
-                unsafe {
-                    let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
-                    CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into(), "new")
-                }
-            }
+            Ok(context_handle) => unsafe {
+                let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
+                CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into(), "new")
+            },
             Err(e) => Err(e),
         }
     }
@@ -108,33 +100,42 @@ impl<'a> CoordSeq<'a> {
                 return Err(Error::GenericError(e.to_owned()));
             }
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
-                return Err(Error::GenericError("All vec entries must have the same size!".into()));
+                return Err(Error::GenericError(
+                    "All vec entries must have the same size!".into(),
+                ));
             }
             match ContextHandle::init_e(Some("CoordSeq::new_from_vec")) {
-                Ok(context_handle) => {
-                    unsafe {
-                        let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(),
-                                                        size as _,
-                                                        dims as _);
-                        CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size as _, dims as _,
-                                               "new_from_vec")
-                    }
-                }
+                Ok(context_handle) => unsafe {
+                    let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size as _, dims as _);
+                    CoordSeq::new_from_raw(
+                        ptr,
+                        Arc::new(context_handle),
+                        size as _,
+                        dims as _,
+                        "new_from_vec",
+                    )
+                },
                 Err(e) => return Err(e),
-            }.and_then(|coord| {
+            }
+            .and_then(|coord| {
                 let raw_context = coord.get_raw_context();
                 let raw_coord = coord.as_raw();
 
-                let funcs = [GEOSCoordSeq_setX_r,
-                             GEOSCoordSeq_setY_r,
-                             GEOSCoordSeq_setZ_r];
+                let funcs = [
+                    GEOSCoordSeq_setX_r,
+                    GEOSCoordSeq_setY_r,
+                    GEOSCoordSeq_setZ_r,
+                ];
 
                 for (line, line_data) in data.iter().enumerate() {
                     for (pos, elem) in line_data.as_ref().iter().enumerate() {
                         unsafe {
                             if funcs[pos](raw_context, raw_coord, line as _, *elem) == 0 {
-                                let err = format!("Failed to set value at position {} on \
-                                                   line {}", pos, line);
+                                let err = format!(
+                                    "Failed to set value at position {} on \
+                                                   line {}",
+                                    pos, line
+                                );
                                 return Err(Error::GenericError(err));
                             }
                         }
@@ -143,7 +144,9 @@ impl<'a> CoordSeq<'a> {
                 Ok(coord)
             })
         } else {
-            Err(Error::GenericError("Can't determine dimension for the CoordSeq".to_owned()))
+            Err(Error::GenericError(
+                "Can't determine dimension for the CoordSeq".to_owned(),
+            ))
         }
     }
 
@@ -160,9 +163,17 @@ impl<'a> CoordSeq<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("CoordSeq::{}{}", caller, extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "CoordSeq::{}{}",
+                caller, extra
+            )));
         }
-        Ok(CoordSeq { ptr: PtrWrap(ptr), context, nb_dimensions: dims as _, nb_lines: size as _ })
+        Ok(CoordSeq {
+            ptr: PtrWrap(ptr),
+            context,
+            nb_dimensions: dims as _,
+            nb_lines: size as _,
+        })
     }
 
     /// Sets the X position value at the given `line`.
@@ -180,9 +191,8 @@ impl<'a> CoordSeq<'a> {
     pub fn set_x(&mut self, line: usize, val: f64) -> GResult<()> {
         assert!(line < self.nb_lines);
 
-        let ret_val = unsafe {
-            GEOSCoordSeq_setX_r(self.get_raw_context(), self.as_raw(), line as _, val)
-        };
+        let ret_val =
+            unsafe { GEOSCoordSeq_setX_r(self.get_raw_context(), self.as_raw(), line as _, val) };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set x for coord".into()))
         } else {
@@ -208,9 +218,8 @@ impl<'a> CoordSeq<'a> {
         assert!(line < self.nb_lines);
         assert!(self.nb_dimensions >= 2);
 
-        let ret_val = unsafe {
-            GEOSCoordSeq_setY_r(self.get_raw_context(), self.as_raw(), line as _, val)
-        };
+        let ret_val =
+            unsafe { GEOSCoordSeq_setY_r(self.get_raw_context(), self.as_raw(), line as _, val) };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set y for coord".into()))
         } else {
@@ -236,9 +245,8 @@ impl<'a> CoordSeq<'a> {
         assert!(line < self.nb_lines);
         assert!(self.nb_dimensions >= 3);
 
-        let ret_val = unsafe {
-            GEOSCoordSeq_setZ_r(self.get_raw_context(), self.as_raw(), line as _, val)
-        };
+        let ret_val =
+            unsafe { GEOSCoordSeq_setZ_r(self.get_raw_context(), self.as_raw(), line as _, val) };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set z for coord".into()))
         } else {
@@ -257,7 +265,7 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
-    /// coords.set_ordinate(0, Ordinate::Z, 10.);
+    /// coords.set_ordinate(0, Ordinate::Z, 10.).expect("failed to set ordinate");
     /// assert_eq!(coords.get_z(0), Ok(10.));
     /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
     /// ```
@@ -267,11 +275,19 @@ impl<'a> CoordSeq<'a> {
         assert!(self.nb_dimensions > ordinate);
 
         let ret_val = unsafe {
-            GEOSCoordSeq_setOrdinate_r(self.get_raw_context(), self.as_raw(), line as _,
-                                       ordinate, val)
+            GEOSCoordSeq_setOrdinate_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                line as _,
+                ordinate,
+                val,
+            )
         };
         if ret_val == 0 {
-            Err(Error::GeosError(format!("impossible to set value for ordinate {}", ordinate)))
+            Err(Error::GeosError(format!(
+                "impossible to set value for ordinate {}",
+                ordinate
+            )))
         } else {
             Ok(())
         }
@@ -297,7 +313,9 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getX_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
+            Err(Error::GeosError(
+                "failed to get coordinates from CoordSeq".into(),
+            ))
         } else {
             Ok(n as f64)
         }
@@ -326,7 +344,9 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getY_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
+            Err(Error::GeosError(
+                "failed to get coordinates from CoordSeq".into(),
+            ))
         } else {
             Ok(n as f64)
         }
@@ -355,7 +375,9 @@ impl<'a> CoordSeq<'a> {
             GEOSCoordSeq_getZ_r(self.get_raw_context(), self.as_raw(), line as _, &mut n)
         };
         if ret_val == 0 {
-            Err(Error::GeosError("failed to get coordinates from CoordSeq".into()))
+            Err(Error::GeosError(
+                "failed to get coordinates from CoordSeq".into(),
+            ))
         } else {
             Ok(n as f64)
         }
@@ -372,7 +394,7 @@ impl<'a> CoordSeq<'a> {
     ///
     /// let mut coords = CoordSeq::new(1, CoordDimensions::ThreeD)
     ///                           .expect("failed to create CoordSeq");
-    /// coords.set_ordinate(0, Ordinate::Z, 10.);
+    /// coords.set_ordinate(0, Ordinate::Z, 10.).expect("Failed to set ordinate");
     /// assert_eq!(coords.get_z(0), Ok(10.));
     /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
     /// ```
@@ -403,9 +425,8 @@ impl<'a> CoordSeq<'a> {
     /// ```
     pub fn size(&self) -> GResult<usize> {
         let mut n = 0;
-        let ret_val = unsafe {
-            GEOSCoordSeq_getSize_r(self.get_raw_context(), self.as_raw(), &mut n)
-        };
+        let ret_val =
+            unsafe { GEOSCoordSeq_getSize_r(self.get_raw_context(), self.as_raw(), &mut n) };
         if ret_val == 0 {
             Err(Error::GeosError("getting size from CoordSeq".into()))
         } else {
@@ -451,9 +472,8 @@ impl<'a> CoordSeq<'a> {
     /// ```
     pub fn dimensions(&self) -> GResult<CoordDimensions> {
         let mut n = 0;
-        let ret_val = unsafe {
-            GEOSCoordSeq_getDimensions_r(self.get_raw_context(), self.as_raw(), &mut n)
-        };
+        let ret_val =
+            unsafe { GEOSCoordSeq_getDimensions_r(self.get_raw_context(), self.as_raw(), &mut n) };
         if ret_val == 0 {
             Err(Error::GeosError("getting dimensions from CoordSeq".into()))
         } else {
@@ -469,7 +489,9 @@ impl<'a> CoordSeq<'a> {
         unsafe {
             let mut is_ccw = 0;
             if GEOSCoordSeq_isCCW_r(self.get_raw_context(), self.as_raw(), &mut is_ccw) != 1 {
-                Err(Error::GenericError("GEOSCoordSeq_isCCW_r failed".to_owned()))
+                Err(Error::GenericError(
+                    "GEOSCoordSeq_isCCW_r failed".to_owned(),
+                ))
             } else {
                 Ok(is_ccw == 1)
             }

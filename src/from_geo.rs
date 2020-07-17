@@ -76,6 +76,9 @@ struct LineRing<'a>(&'a LineString<f64>);
 ///            │                  │        │
 ///            ■ 3                └─────── ■ 3
 ///
+///  There is a special case of a closed LineString of 3 points...
+///  In that case, since it only contains 3 points, we consider it needs closing,
+///  and we add a fourth point. See test closed_2_points_linear_ring below.
 impl<'a, 'b> TryFrom<&'a LineRing<'b>> for GGeom<'b> {
     type Error = Error;
 
@@ -312,20 +315,16 @@ mod test {
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
 
-    /// a bit tricky
+    /// a tricky corner case: a closed linearstring of 3 points....
     ///
-    /// a ring should have at least 3 points.
-    /// in the case of a closed ring with only element eg:
+    /// Here we'll follow the behavior of Shapely, which adds a fourth point,
+    /// as seen in the diagram below:
     ///
-    /// let's take a point list: [p1, p2, p1]
+    ///   1,3      2                  1,3,4    2
+    ///   ■ ────── ■                  ■ ────── ■
     ///
-    ///  ┌───────┐
-    /// p1       p2
-    ///  └───────┘
+    ///  [(0,0), (1,0), (0,0)] => [(0,0) , (1,0), (0,0), (0,0)]
     ///
-    /// we consider it like a 3 points not closed ring (with the 2 last elements being equals...)
-    ///
-    /// shapely (the python geos wrapper) considers that too
     #[test]
     fn closed_2_points_linear_ring() {
         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (0., 0.)]));
