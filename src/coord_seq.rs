@@ -404,7 +404,15 @@ impl<'a> CoordSeq<'a> {
         assert!(self.nb_dimensions > ordinate);
 
         unsafe {
-            GEOSCoordSeq_getOrdinate_r(self.get_raw_context(), self.as_raw(), line as _, ordinate)
+            let mut ord = 0.;
+            GEOSCoordSeq_getOrdinate_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                line as _,
+                ordinate,
+                &mut ord,
+            );
+            ord
         }
     }
 
