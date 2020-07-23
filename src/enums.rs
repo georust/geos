@@ -301,8 +301,8 @@ impl TryFrom<size_t> for Ordinate {
     }
 }
 
-impl Into<size_t> for Ordinate {
-    fn into(self) -> size_t {
+impl Into<u32> for Ordinate {
+    fn into(self) -> u32 {
         match self {
             Ordinate::X => 0,
             Ordinate::Y => 1,

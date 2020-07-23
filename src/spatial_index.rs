@@ -4,15 +4,15 @@ use std::sync::Arc;
 
 use geos_sys::*;
 
-use ::{ContextHandle, Geometry};
-use ::{AsRaw, GResult};
+use ::{ContextHandle, Geom};
+use ::{AsRaw, AsRawMut, GResult};
 use context_handle::PtrWrap;
 use ContextHandling;
 
 pub trait SpatialIndex<'a, I> {
-    fn insert(&mut self, geometry: &Geometry<'a>, item: I);
+    fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I);
 
-    fn query<V: FnMut(&I)>(&self, geometry: &Geometry, visitor: V);
+    fn query<'b, G: Geom<'b>, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
 }
 
 pub struct STRtree<'a, I> {
@@ -55,24 +55,24 @@ impl<'a, I> STRtree<'a, I> {
 }
 
 impl<'a, I> SpatialIndex<'a, I> for STRtree<'a, I> {
-    fn insert(&mut self, geometry: &Geometry<'a>, item: I) {
+    fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I) {
         unsafe {
             GEOSSTRtree_insert_r(
                 self.get_raw_context(),
                 *self.ptr,
-                *geometry.ptr,
+                geometry.as_raw(),
                 Box::into_raw(Box::new(item)) as *mut c_void,
             );
         }
     }
 
-    fn query<V>(&self, geometry: &Geometry, visitor: V) where V: FnMut(&I) {
+    fn query<'b, G: Geom<'b>, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
         unsafe {
             let (closure, callback) = unpack_closure(&visitor);
             GEOSSTRtree_query_r(
                 self.get_raw_context(),
                 *self.ptr,
-                *geometry.ptr,
+                geometry.as_raw(),
                 Some(callback),
                 closure,
             );
@@ -81,9 +81,17 @@ impl<'a, I> SpatialIndex<'a, I> for STRtree<'a, I> {
 }
 
 impl<'a, I> AsRaw for STRtree<'a, I> {
-    type RawType = *mut GEOSSTRtree;
+    type RawType = GEOSSTRtree;
 
-    fn as_raw(&self) -> Self::RawType {
+    fn as_raw(&self) -> *const Self::RawType {
+        *self.ptr
+    }
+}
+
+impl<'a, I> AsRawMut for STRtree<'a, I> {
+    type RawType = GEOSSTRtree;
+
+    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
         *self.ptr
     }
 }

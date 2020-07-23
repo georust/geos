@@ -1,11 +1,11 @@
-use crate::Geometry as GGeom;
+use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use error::Error;
 use from_geo::TryInto;
 use geo_types::Geometry;
 use wkt;
 use wkt::conversion::try_into_geometry;
 
-impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
+impl<'a> TryInto<Geometry<f64>> for GGeometry<'a> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
@@ -24,6 +24,16 @@ impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
 
         try_into_geometry(o)
             .map_err(|e| Error::ConversionError(format!("impossible to built from wkt: {}", e)))
+    }
+}
+
+impl<'a, 'c> TryInto<Geometry<f64>> for ConstGeometry<'a, 'c> {
+    type Err = Error;
+
+    /// This implementation is very slow because we have to clone the "original" [`Geometry`]. So
+    /// if you can, use the original [`Geometry`] directly, that'll allow you to avoid a clone.
+    fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
+        Geom::clone(self.original).try_into()
     }
 }
 

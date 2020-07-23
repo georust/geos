@@ -1,4 +1,4 @@
-use crate::{CoordSeq, Geometry as GGeom, GeometryTypes};
+use crate::{ConstGeometry, CoordSeq, Geom, Geometry as GGeometry, GeometryTypes};
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
 
@@ -20,7 +20,7 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     Ok(coords)
 }
 
-impl<'a> TryInto<Geometry> for GGeom<'a> {
+impl<'a> TryInto<Geometry> for GGeometry<'a> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry, Self::Err> {
@@ -109,6 +109,16 @@ impl<'a> TryInto<Geometry> for GGeom<'a> {
             },
             _ => unreachable!(),
         }
+    }
+}
+
+impl<'a, 'c> TryInto<Geometry> for ConstGeometry<'a, 'c> {
+    type Err = Error;
+
+    /// This implementation is very slow because we have to clone the "original" [`Geometry`]. So
+    /// if you can, use the original [`Geometry`] directly, that'll allow you to avoid a clone.
+    fn try_into(self) -> Result<Geometry, Self::Err> {
+        Geom::clone(self.original).try_into()
     }
 }
 

@@ -6,7 +6,7 @@ use geometry::Geometry;
 use std::ffi::CStr;
 use std::sync::Arc;
 use std::str;
-use crate::{ContextHandle, AsRaw, ContextHandling};
+use crate::{AsRawMut, ContextHandle, ContextHandling, Geom};
 use context_handle::PtrWrap;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
@@ -40,8 +40,8 @@ pub(crate) unsafe fn managed_string(
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect<'a>(
-    g: &Geometry<'a>,
+pub fn clip_by_rect<'a, G: Geom<'a>>(
+    g: &G,
     xmin: f64,
     ymin: f64,
     xmax: f64,
@@ -65,11 +65,11 @@ pub fn version() -> GResult<String> {
     unsafe { unmanaged_string(GEOSversion(), "version") }
 }
 
-pub(crate) fn check_geos_predicate(val: i32, p: PredicateType) -> GResult<bool> {
+pub(crate) fn check_geos_predicate(val: i8, p: PredicateType) -> GResult<bool> {
     match val {
         1 => Ok(true),
         0 => Ok(false),
-        _ => Err(Error::GeosFunctionError(p, val)),
+        _ => Err(Error::GeosFunctionError(p, val as _)),
     }
 }
 
@@ -98,7 +98,7 @@ pub(crate) fn create_multi_geom<'a>(
         geoms[0].clone_context()
     };
     let res = {
-        let mut geoms: Vec<*mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw()).collect();
+        let mut geoms: Vec<*mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw_mut()).collect();
         unsafe {
             let ptr = GEOSGeom_createCollection_r(
                 context.as_raw(),

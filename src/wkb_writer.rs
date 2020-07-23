@@ -1,5 +1,5 @@
 use enums::{ByteOrder, OutputDimension};
-use crate::{ContextHandle, Geometry, GResult, AsRaw, ContextHandling, ContextInteractions};
+use crate::{ContextHandle, Geom, GResult, AsRaw, AsRawMut, ContextHandling, ContextInteractions};
 use context_handle::PtrWrap;
 use geos_sys::*;
 use std::sync::Arc;
@@ -107,10 +107,10 @@ impl<'a> WKBWriter<'a> {
     /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_wkb(&self, geometry: &Geometry<'_>) -> GResult<CVec<u8>> {
+    pub fn write_wkb<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSWKBWriter_write_r(self.get_raw_context(), self.as_raw(),
+            let ptr = GEOSWKBWriter_write_r(self.get_raw_context(), self.as_raw_mut(),
                                             geometry.as_raw(), &mut size);
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
@@ -137,10 +137,10 @@ impl<'a> WKBWriter<'a> {
     ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_hex(&self, geometry: &Geometry<'_>) -> GResult<CVec<u8>> {
+    pub fn write_hex<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSWKBWriter_writeHEX_r(self.get_raw_context(), self.as_raw(),
+            let ptr = GEOSWKBWriter_writeHEX_r(self.get_raw_context(), self.as_raw_mut(),
                                                geometry.as_raw(), &mut size);
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
@@ -178,7 +178,7 @@ impl<'a> WKBWriter<'a> {
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
         unsafe {
-            GEOSWKBWriter_setOutputDimension_r(self.get_raw_context(), self.as_raw(),
+            GEOSWKBWriter_setOutputDimension_r(self.get_raw_context(), self.as_raw_mut(),
                                                dimension.into())
         }
     }
@@ -237,7 +237,7 @@ impl<'a> WKBWriter<'a> {
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) {
         unsafe {
-            GEOSWKBWriter_setByteOrder_r(self.get_raw_context(), self.as_raw(), byte_order.into())
+            GEOSWKBWriter_setByteOrder_r(self.get_raw_context(), self.as_raw_mut(), byte_order.into())
         }
     }
 
@@ -278,9 +278,9 @@ impl<'a> WKBWriter<'a> {
     /// assert_eq!(writer.get_include_SRID(), Ok(true));
     /// ```
     #[allow(non_snake_case)]
-    pub fn set_include_SRID(&self, include_SRID: bool) {
+    pub fn set_include_SRID(&mut self, include_SRID: bool) {
         unsafe {
-            GEOSWKBWriter_setIncludeSRID_r(self.get_raw_context(), self.as_raw(), include_SRID as _)
+            GEOSWKBWriter_setIncludeSRID_r(self.get_raw_context(), self.as_raw_mut(), include_SRID as _)
         }
     }
 }
@@ -290,7 +290,7 @@ unsafe impl<'a> Sync for WKBWriter<'a> {}
 
 impl<'a> Drop for WKBWriter<'a> {
     fn drop(&mut self) {
-        unsafe { GEOSWKBWriter_destroy_r(self.get_raw_context(), self.as_raw()) };
+        unsafe { GEOSWKBWriter_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
     }
 }
 
@@ -324,9 +324,17 @@ impl<'a> ContextInteractions<'a> for WKBWriter<'a> {
 }
 
 impl<'a> AsRaw for WKBWriter<'a> {
-    type RawType = *mut GEOSWKBWriter;
+    type RawType = GEOSWKBWriter;
 
-    fn as_raw(&self) -> Self::RawType {
+    fn as_raw(&self) -> *const Self::RawType {
+        *self.ptr
+    }
+}
+
+impl<'a> AsRawMut for WKBWriter<'a> {
+    type RawType = GEOSWKBWriter;
+
+    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
         *self.ptr
     }
 }

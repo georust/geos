@@ -3,6 +3,7 @@ use context_handle::PtrWrap;
 use geos_sys::*;
 use crate::{
     AsRaw,
+    AsRawMut,
     ContextHandling,
     ContextInteractions,
     CoordDimensions,
@@ -121,9 +122,9 @@ impl<'a> CoordSeq<'a> {
                     }
                 }
                 Err(e) => return Err(e),
-            }.and_then(|coord| {
+            }.and_then(|mut coord| {
                 let raw_context = coord.get_raw_context();
-                let raw_coord = coord.as_raw();
+                let raw_coord = coord.as_raw_mut();
 
                 let funcs = [GEOSCoordSeq_setX_r,
                              GEOSCoordSeq_setY_r,
@@ -181,7 +182,7 @@ impl<'a> CoordSeq<'a> {
         assert!(line < self.nb_lines);
 
         let ret_val = unsafe {
-            GEOSCoordSeq_setX_r(self.get_raw_context(), self.as_raw(), line as _, val)
+            GEOSCoordSeq_setX_r(self.get_raw_context(), self.as_raw_mut(), line as _, val)
         };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set x for coord".into()))
@@ -209,7 +210,7 @@ impl<'a> CoordSeq<'a> {
         assert!(self.nb_dimensions >= 2);
 
         let ret_val = unsafe {
-            GEOSCoordSeq_setY_r(self.get_raw_context(), self.as_raw(), line as _, val)
+            GEOSCoordSeq_setY_r(self.get_raw_context(), self.as_raw_mut(), line as _, val)
         };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set y for coord".into()))
@@ -237,7 +238,7 @@ impl<'a> CoordSeq<'a> {
         assert!(self.nb_dimensions >= 3);
 
         let ret_val = unsafe {
-            GEOSCoordSeq_setZ_r(self.get_raw_context(), self.as_raw(), line as _, val)
+            GEOSCoordSeq_setZ_r(self.get_raw_context(), self.as_raw_mut(), line as _, val)
         };
         if ret_val == 0 {
             Err(Error::GeosError("impossible to set z for coord".into()))
@@ -259,15 +260,15 @@ impl<'a> CoordSeq<'a> {
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_ordinate(0, Ordinate::Z, 10.);
     /// assert_eq!(coords.get_z(0), Ok(10.));
-    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
+    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), Ok(10.));
     /// ```
     pub fn set_ordinate(&mut self, line: usize, ordinate: Ordinate, val: f64) -> GResult<()> {
-        let ordinate = ordinate.into();
+        let ordinate: u32 = ordinate.into();
         assert!(line < self.nb_lines);
-        assert!(self.nb_dimensions > ordinate);
+        assert!(self.nb_dimensions > ordinate as _);
 
         let ret_val = unsafe {
-            GEOSCoordSeq_setOrdinate_r(self.get_raw_context(), self.as_raw(), line as _,
+            GEOSCoordSeq_setOrdinate_r(self.get_raw_context(), self.as_raw_mut(), line as _,
                                        ordinate, val)
         };
         if ret_val == 0 {
@@ -374,15 +375,20 @@ impl<'a> CoordSeq<'a> {
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_ordinate(0, Ordinate::Z, 10.);
     /// assert_eq!(coords.get_z(0), Ok(10.));
-    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), 10.);
+    /// assert_eq!(coords.get_ordinate(0, Ordinate::Z), Ok(10.));
     /// ```
-    pub fn get_ordinate(&self, line: usize, ordinate: Ordinate) -> f64 {
-        let ordinate = ordinate.into();
+    pub fn get_ordinate(&self, line: usize, ordinate: Ordinate) -> GResult<f64> {
+        let ordinate: u32 = ordinate.into();
+        let mut val = 0f64;
         assert!(line < self.nb_lines);
-        assert!(self.nb_dimensions > ordinate);
+        assert!(self.nb_dimensions > ordinate as _);
 
-        unsafe {
-            GEOSCoordSeq_getOrdinate_r(self.get_raw_context(), self.as_raw(), line as _, ordinate)
+        if unsafe {
+            GEOSCoordSeq_getOrdinate_r(self.get_raw_context(), self.as_raw(), line as _, ordinate, &mut val)
+        } != 1 {
+            Err(Error::GeosError("getting size from CoordSeq".into()))
+        } else {
+            Ok(val)
         }
     }
 
@@ -528,7 +534,7 @@ impl<'a> Drop for CoordSeq<'a> {
         if self.ptr.is_null() {
             return;
         }
-        unsafe { GEOSCoordSeq_destroy_r(self.get_raw_context(), self.as_raw()) };
+        unsafe { GEOSCoordSeq_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
     }
 }
 
@@ -579,9 +585,17 @@ impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
 }
 
 impl<'a> AsRaw for CoordSeq<'a> {
-    type RawType = *mut GEOSCoordSequence;
+    type RawType = GEOSCoordSequence;
 
-    fn as_raw(&self) -> Self::RawType {
+    fn as_raw(&self) -> *const Self::RawType {
+        *self.ptr
+    }
+}
+
+impl<'a> AsRawMut for CoordSeq<'a> {
+    type RawType = GEOSCoordSequence;
+
+    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
         *self.ptr
     }
 }

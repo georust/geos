@@ -49,7 +49,9 @@ pub use functions::{
     segment_intersection,
 };
 pub use geometry::{
+    ConstGeometry,
     Geometry,
+    Geom,
 };
 pub use prepared_geometry::{
     PreparedGeometry,
@@ -96,6 +98,7 @@ mod wkt_writer;
 
 pub(crate) use traits::{
     AsRaw,
+    AsRawMut,
 };
 pub use traits::{
     ContextInteractions,
