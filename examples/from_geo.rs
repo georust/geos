@@ -7,7 +7,7 @@ use geo_types::{Coordinate, LineString, Polygon};
 #[cfg(feature = "geo")]
 use geos::from_geo::TryInto;
 #[cfg(feature = "geo")]
-use geos::{Error, Geometry};
+use geos::{Geom, Error, Geometry};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {

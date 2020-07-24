@@ -12,7 +12,7 @@ use error::Error;
 /// # Example
 ///
 /// ```
-/// use geos::Geometry;
+/// use geos::{Geom, Geometry};
 ///
 /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
 ///                      .expect("Invalid geometry");
@@ -70,12 +70,15 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
-    /// let mut prepared_geom = geom1.to_prepared_geom()
-    ///                              .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let mut prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                      .expect("Invalid geometry");
     ///
     /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
     /// ```
@@ -91,12 +94,15 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
-    /// let mut prepared_geom = geom1.to_prepared_geom()
-    ///                              .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let mut prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                      .expect("Invalid geometry");
     ///
     /// assert_eq!(prepared_geom.contains_properly(&geom2), Ok(true));
     /// ```
@@ -112,14 +118,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
+    ///                     .expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
     ///
-    /// let prepared_little_geom = little_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let prepared_big_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_little_geom.covered_by(&big_geom), Ok(true));
     /// assert_eq!(prepared_big_geom.covered_by(&little_geom), Ok(false));
@@ -136,14 +147,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
+    ///                     .expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
     ///
-    /// let prepared_little_geom = little_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let prepared_big_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_little_geom.covers(&big_geom), Ok(false));
     /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
@@ -160,10 +176,12 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)").expect("invalid geometry");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)")
+    ///                      .expect("invalid geometry");
     /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
@@ -184,12 +202,17 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.disjoint(&geom2), Ok(true));
     /// assert_eq!(prepared_geom.disjoint(&geom3), Ok(false));
@@ -213,12 +236,17 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.intersects(&geom2), Ok(false));
     /// assert_eq!(prepared_geom.intersects(&geom3), Ok(true));
@@ -235,16 +263,22 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(false));
     ///
     /// let geom1 = geom1.buffer(3., 8).expect("buffer failed");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     /// let geom2 = geom2.buffer(0.5, 8).expect("buffer failed");
     ///
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(true));
@@ -262,10 +296,13 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     /// let geom2 = Geometry::new_from_wkt("POINT(1 1)").expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(false));
@@ -286,14 +323,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT(50 50)").expect("invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT(50 50)")
+    ///                     .expect("invalid geometry");
     /// let small_geom = geom.buffer(20., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(40., 8).expect("buffer failed");
     ///
-    /// let small_prepared_geom = small_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let big_prepared_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let small_prepared_geom = small_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let big_prepared_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(small_prepared_geom.within(&small_geom), Ok(true));
     /// assert_eq!(small_prepared_geom.within(&big_geom), Ok(true));
@@ -320,13 +362,19 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// Set the context handle to the `PreparedGeometry`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, ContextHandle, Geometry, PreparedGeometry};
+    /// use geos::{
+    ///     ContextInteractions, ContextHandle, Geom, Geometry, PreparedGeometry,
+    /// };
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let context_handle = ContextHandle::init().expect("invalid init");
-    /// let mut prepared_geom = point_geom.to_prepared_geom()
-    ///                                   .expect("failed to create prepared geom");
-    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// let mut prepared_geom = point_geom
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// context_handle.set_notice_message_handler(
+    ///     Some(Box::new(|s| println!("new message: {}", s)))
+    /// );
     /// prepared_geom.set_context_handle(context_handle);
     /// ```
     fn set_context_handle(&mut self, context: ContextHandle<'a>) {
@@ -336,9 +384,13 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// Get the context handle of the `PreparedGeometry`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, CoordDimensions, Geometry, PreparedGeometry};
+    /// use geos::{
+    ///     ContextInteractions, CoordDimensions, Geom, Geometry,
+    ///     PreparedGeometry,
+    /// };
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom()
     ///                               .expect("failed to create prepared geom");
     /// let context = prepared_geom.get_context_handle();

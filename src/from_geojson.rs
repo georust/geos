@@ -1,4 +1,4 @@
-use crate::{CoordDimensions, CoordSeq, Geometry as GGeom};
+use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
 use error::{GResult, Error};
 use geojson::{Value, Geometry};
 use std;
@@ -46,72 +46,72 @@ fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordS
     }
 }
 
-impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
+impl<'a> TryInto<GGeometry<'a>> for &'a Geometry {
     type Err = Error;
 
-    fn try_into(self) -> Result<GGeom<'a>, Self::Err> {
+    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
         match self.value {
             Value::Point(ref c) => {
-                GGeom::create_point(create_coord_seq(std::iter::once(c), 1)?)
+                GGeometry::create_point(create_coord_seq(std::iter::once(c), 1)?)
             },
             Value::MultiPoint(ref pts) =>  {
                 let ggpts = pts.iter()
                     .map(|pt| {
-                        GGeom::create_point(create_coord_seq(std::iter::once(pt), 1)?)
+                        GGeometry::create_point(create_coord_seq(std::iter::once(pt), 1)?)
                     })
-                    .collect::<GResult<Vec<GGeom>>>()?;
-                GGeom::create_multipoint(ggpts)
+                    .collect::<GResult<Vec<GGeometry>>>()?;
+                GGeometry::create_multipoint(ggpts)
             },
             Value::LineString(ref line) => {
                 let coord_seq = create_coord_seq_from_vec(line.as_slice())?;
-                GGeom::create_line_string(coord_seq)
+                GGeometry::create_line_string(coord_seq)
             },
             Value::MultiLineString(ref lines) => {
                 let gglines = lines.iter()
                     .map(|line| {
                         let coord_seq = create_coord_seq_from_vec(line.as_slice())?;
-                        GGeom::create_line_string(coord_seq)
+                        GGeometry::create_line_string(coord_seq)
                     })
-                    .collect::<GResult<Vec<GGeom>>>()?;
-                GGeom::create_multiline_string(gglines)
+                    .collect::<GResult<Vec<GGeometry>>>()?;
+                GGeometry::create_multiline_string(gglines)
             },
             Value::Polygon(ref rings) => {
-                let exterior_ring = GGeom::create_linear_ring(
+                let exterior_ring = GGeometry::create_linear_ring(
                     create_closed_coord_seq_from_vec(rings[0].as_slice())?
                 )?;
                 let interiors = rings.iter()
                     .skip(1)
                     .map(|r| {
-                        GGeom::create_linear_ring(
+                        GGeometry::create_linear_ring(
                             create_closed_coord_seq_from_vec(r.as_slice())?)
                     })
-                    .collect::<GResult<Vec<GGeom>>>()?;
-                GGeom::create_polygon(exterior_ring, interiors)
+                    .collect::<GResult<Vec<GGeometry>>>()?;
+                GGeometry::create_polygon(exterior_ring, interiors)
             },
             Value::MultiPolygon(ref polygons) => {
                 let ggpolys = polygons.iter()
                     .map(|rings|{
-                        let exterior_ring = GGeom::create_linear_ring(
+                        let exterior_ring = GGeometry::create_linear_ring(
                             create_closed_coord_seq_from_vec(rings[0].as_slice())?
                         )?;
                         let interiors = rings.iter()
                             .skip(1)
                             .map(|r| {
-                                GGeom::create_linear_ring(
+                                GGeometry::create_linear_ring(
                                     create_closed_coord_seq_from_vec(r.as_slice())?)
                             })
-                            .collect::<GResult<Vec<GGeom>>>()?;
-                        GGeom::create_polygon(exterior_ring, interiors)
+                            .collect::<GResult<Vec<GGeometry>>>()?;
+                        GGeometry::create_polygon(exterior_ring, interiors)
                     })
-                    .collect::<GResult<Vec<GGeom>>>()?;
-                GGeom::create_multipolygon(ggpolys)
+                    .collect::<GResult<Vec<GGeometry>>>()?;
+                GGeometry::create_multipolygon(ggpolys)
             },
             Value::GeometryCollection(ref geoms) => {
                 let _geoms = geoms
                     .iter()
                     .map(|ref geom| geom.try_into())
-                    .collect::<GResult<Vec<GGeom>>>()?;
-                GGeom::create_geometry_collection(_geoms)
+                    .collect::<GResult<Vec<GGeometry>>>()?;
+                GGeometry::create_geometry_collection(_geoms)
             }
         }
     }
@@ -120,14 +120,14 @@ impl<'a> TryInto<GGeom<'a>> for &'a Geometry {
 
 #[cfg(test)]
 mod test {
-    use super::GGeom;
+    use crate::{Geom, Geometry as GGeometry};
     use crate::from_geojson::TryInto;
     use geojson::{Geometry, Value};
 
     #[test]
     fn geom_from_geojson_point() {
         let geojson_pt = Geometry::new(Value::Point(vec![1., 1.]));
-        let gpoint: GGeom = geojson_pt.try_into().unwrap();
+        let gpoint: GGeometry = geojson_pt.try_into().unwrap();
 
         assert_eq!(
             gpoint.to_wkt_precision(0),
@@ -141,7 +141,7 @@ mod test {
             vec![1., 1.],
             vec![2., 2.],
         ]));
-        let gpts: GGeom = geojson_pts.try_into().unwrap();
+        let gpts: GGeometry = geojson_pts.try_into().unwrap();
         assert_eq!(
             gpts.to_wkt_precision(0),
             Ok("MULTIPOINT (1 1, 2 2)".to_string()),
@@ -154,7 +154,7 @@ mod test {
             vec![1., 1.],
             vec![2., 2.],
         ]));
-        let gline: GGeom = geojson_line.try_into().unwrap();
+        let gline: GGeometry = geojson_line.try_into().unwrap();
         assert_eq!(
             gline.to_wkt_precision(0),
             Ok("LINESTRING (1 1, 2 2)".to_string()),
@@ -173,7 +173,7 @@ mod test {
                 vec![4., 4.],
             ],
         ]));
-        let glines: GGeom = geojson_lines.try_into().unwrap();
+        let glines: GGeometry = geojson_lines.try_into().unwrap();
         assert_eq!(
             glines.to_wkt_precision(0),
             Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
@@ -200,7 +200,7 @@ mod test {
                 ],
             ],
         ));
-        let gpolygon: GGeom = geojson_polygon.try_into().unwrap();
+        let gpolygon: GGeometry = geojson_polygon.try_into().unwrap();
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
@@ -227,14 +227,13 @@ mod test {
                 ],
             ],
         ));
-        let gpolygon: GGeom = geojson_polygon.try_into().unwrap();
+        let gpolygon: GGeometry = geojson_polygon.try_into().unwrap();
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
         );
     }
-
 
     #[test]
     fn geom_from_geojson_multipolygon() {
@@ -247,7 +246,7 @@ mod test {
                 vec![0., 0.],
             ]]]
         ));
-        let gmultipolygon: GGeom = geojson_multipolygon.try_into().unwrap();
+        let gmultipolygon: GGeometry = geojson_multipolygon.try_into().unwrap();
         assert_eq!(
             gmultipolygon.to_wkt_precision(0),
             Ok("MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))".to_string()),
@@ -262,7 +261,7 @@ mod test {
                 Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
             ]
         ));
-        let gc: GGeom = geojson_gc.try_into().unwrap();
+        let gc: GGeometry = geojson_gc.try_into().unwrap();
         assert_eq!(
             gc.to_wkt_precision(0),
             Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),

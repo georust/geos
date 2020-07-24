@@ -1,5 +1,5 @@
 extern crate geos;
-use geos::{version, Error, Geometry};
+use geos::{Geom, version, Error, Geometry};
 
 fn fun() -> Result<(), Error> {
     println!("geos_c version: {}", version().expect("failed to get version"));

@@ -487,7 +487,7 @@ impl<'a> CoordSeq<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.]])
     ///                       .expect("failed to create CoordSeq");
@@ -505,7 +505,7 @@ impl<'a> CoordSeq<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.]])
     ///                       .expect("failed to create CoordSeq");

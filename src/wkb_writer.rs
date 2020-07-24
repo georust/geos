@@ -12,7 +12,7 @@ use c_vec::CVec;
 /// # Example
 ///
 /// ```
-/// use geos::{ContextHandling, Geometry, WKBWriter};
+/// use geos::{ContextHandling, Geom, Geometry, WKBWriter};
 ///
 /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
 /// let mut writer = WKBWriter::new_with_context(point_geom.clone_context())
@@ -39,7 +39,7 @@ impl<'a> WKBWriter<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, WKBWriter};
+    /// use geos::{Geom, Geometry, WKBWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
@@ -60,7 +60,7 @@ impl<'a> WKBWriter<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandling, Geometry, WKBWriter};
+    /// use geos::{ContextHandling, Geom, Geometry, WKBWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let mut writer = WKBWriter::new_with_context(point_geom.clone_context())

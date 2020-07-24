@@ -1,7 +1,7 @@
 #[cfg(feature = "geo")]
 extern crate geos;
 #[cfg(feature = "geo")]
-use geos::{version, Error, Geometry, PreparedGeometry};
+use geos::{Geom, version, Error, Geometry, PreparedGeometry};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -24,7 +24,7 @@ fn fun() -> Result<(), Error> {
         Geometry::new_from_wkt("POINT (0.4 4.1)").unwrap(),
     ];
     for geom in &vec_geoms {
-        print!("{:?} ", pg1.intersects(&geom)?);
+        print!("{:?} ", pg1.intersects(geom)?);
     }
     println!("");
     Ok(())

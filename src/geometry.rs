@@ -20,9 +20,10 @@ use std::sync::Arc;
 /// # Example
 ///
 /// ```
-/// use geos::Geometry;
+/// use geos::{Geom, Geometry};
 ///
-/// let point_geom = Geometry::new_from_wkt("POINT (2.5 3.5)").expect("Invalid geometry");
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 3.5)")
+///                           .expect("Invalid geometry");
 /// assert_eq!(point_geom.get_x(), Ok(2.5));
 /// assert_eq!(point_geom.get_y(), Ok(3.5));
 /// ```
@@ -37,12 +38,15 @@ pub struct Geometry<'a> {
 /// # Example
 ///
 /// ```
-/// use geos::Geometry;
+/// use geos::{Geom, Geometry};
 ///
 ///let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
 ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
 ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
-/// let c_point_geom = point_geom.get_interior_ring_n(0).expect("failed to get const geometry");
+///                    .expect("Invalid geometry");
+/// let point_geom = geom
+///     .get_interior_ring_n(0)
+///     .expect("failed to get const geometry");
 /// ```
 pub struct ConstGeometry<'a, 'b> {
     pub(crate) ptr: PtrWrap<*const GEOSGeometry>,
@@ -55,7 +59,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
     ///                     .expect("Invalid geometry");
@@ -68,7 +72,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
     ///                     .expect("Invalid geometry");
@@ -80,11 +84,14 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
     ///                     .expect("Invalid geometry");
-    /// assert_eq!(geom.is_valid_reason(), Ok("Self-intersection[0 0]".to_owned()));
+    /// assert_eq!(
+    ///     geom.is_valid_reason(),
+    ///     Ok("Self-intersection[0 0]".to_owned()),
+    /// );
     /// ```
     fn is_valid_reason(&self) -> GResult<String>;
     /// Get the underlying geos CoordSeq object from the geometry
@@ -97,9 +104,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (2 3)").expect("Invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT (2 3)")
+    ///                     .expect("Invalid geometry");
     /// let coord_seq = geom.get_coord_seq().expect("get_coord_seq failed");
     ///
     /// assert_eq!(coord_seq.get_x(0), Ok(2.));
@@ -111,9 +119,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
     /// assert_eq!(geom1.area(), Ok(60.));
     /// ```
     fn area(&self) -> GResult<f64>;
@@ -123,20 +132,31 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Examples
     ///
     /// ```
-    /// use geos::{Geometry, OutputDimension, WKTWriter};
+    /// use geos::{Geom, Geometry, OutputDimension, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// assert_eq!(point_geom.to_wkt().unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
+    /// assert_eq!(
+    ///     point_geom.to_wkt().unwrap(),
+    ///     "POINT (2.5000000000000000 2.5000000000000000)",
+    /// );
     ///
     /// // A three dimension point will be output just as a 2 dimension:
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 3)").expect("Invalid geometry");
-    /// assert_eq!(point_geom.to_wkt().unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 3)")
+    ///                           .expect("Invalid geometry");
+    /// assert_eq!(
+    ///     point_geom.to_wkt().unwrap(),
+    ///     "POINT (2.5000000000000000 2.5000000000000000)",
+    /// );
     ///
     /// // To "fix" it, use `WKTWriter` instead:
-    /// let mut wkt_writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let mut wkt_writer = WKTWriter::new()
+    ///                                .expect("Failed to create WKTWriter");
     /// wkt_writer.set_output_dimension(OutputDimension::ThreeD);
-    /// assert_eq!(wkt_writer.write(&point_geom).unwrap(),
-    ///            "POINT Z (2.5000000000000000 2.5000000000000000 3.0000000000000000)");
+    /// assert_eq!(
+    ///     wkt_writer.write(&point_geom).unwrap(),
+    ///     "POINT Z (2.5000000000000000 2.5000000000000000 3.0000000000000000)",
+    /// );
     /// ```
     fn to_wkt(&self) -> GResult<String>;
     /// Returns a WKT representation of the geometry with the given `precision`. It is a wrapper
@@ -145,7 +165,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, WKTWriter};
+    /// use geos::{Geom, Geometry, WKTWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// assert_eq!(point_geom.to_wkt_precision(2).unwrap(), "POINT (2.50 2.50)");
@@ -161,7 +181,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let circle = Geometry::new_from_wkt("LINESTRING(0 0, 0 1, 1 1, 0 0)").expect("Invalid geometry");
     /// assert_eq!(circle.is_ring(), Ok(true));
@@ -179,7 +199,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
@@ -194,7 +214,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)").expect("invalid geometry");
@@ -211,7 +231,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
@@ -227,7 +247,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT(1 1)").expect("invalid geometry");
@@ -244,7 +264,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)").expect("invalid geometry");
@@ -262,7 +282,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT(50 50)").expect("invalid geometry");
     /// let small_geom = geom.buffer(20., 8).expect("buffer failed");
@@ -278,7 +298,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
@@ -291,7 +311,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// Note that you can also use method through the `PartialEq` trait:
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
@@ -306,7 +326,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (3.8 3.8)").expect("Invalid geometry");
@@ -321,7 +341,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
@@ -336,7 +356,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
@@ -351,7 +371,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
@@ -368,7 +388,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
     /// let buffer_geom = geom.buffer(50., 2).expect("buffer failed");
@@ -383,7 +403,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::create_empty_polygon().expect("Invalid geometry");
     /// assert_eq!(geom.is_empty(), Ok(true));
@@ -401,7 +421,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
     ///                     .expect("Invalid geometry");
@@ -417,7 +437,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING(50 100, 50 200)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(50 50, 50 150)").expect("Invalid geometry");
@@ -433,7 +453,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
     /// let envelope_geom = geom.envelope().expect("envelope failed");
@@ -452,7 +472,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING(50 100, 50 200)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING(50 50, 50 150)").expect("Invalid geometry");
@@ -468,7 +488,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT(1 2)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT(3 4)").expect("Invalid geometry");
@@ -484,7 +504,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("MULTIPOINT(-1 0, -1 2, -1 3, -1 4, -1 7, 0 1, 0 3, 1 1)")
     ///                     .expect("Invalid geometry");
@@ -507,7 +527,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                      .expect("Invalid geometry");
@@ -527,9 +547,8 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     ///
     /// # Example
     ///
-    /// 
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let input = Geometry::new_from_wkt("MULTIPOINT((100 200), (105 202), (110 200), (140 230),
     ///                                                (210 240), (220 190), (170 170), (170 260),
@@ -545,7 +564,8 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     ///                          POLYGON ((340 240, 340 50, 247 50, 183.51851851851853 208.7037037037037, 340 240)))")
     ///                             .expect("Invalid geometry");
     ///
-    /// let mut voronoi = input.voronoi(None, 6., false).expect("voronoi failed");
+    /// let mut voronoi = input.voronoi(None::<&Geometry>, 6., false)
+    ///                        .expect("voronoi failed");
     ///
     /// expected.normalize().expect("normalize failed");
     /// voronoi.normalize().expect("normalize failed");
@@ -563,7 +583,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let mut geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("Invalid geometry");
     /// let mut geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("Invalid geometry");
@@ -600,7 +620,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let mut geom1 = Geometry::new_from_wkt("MULTILINESTRING((100 190,10 8),
     ///                                                         (150 10, 20 30))")
@@ -620,7 +640,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING(1 1,0 0, -1 1)").expect("Invalid geometry");
     /// let boundary_geom = geom.boundary().expect("boundary failed");
@@ -633,7 +653,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT(1 2 3)").expect("Invalid geometry");
     /// assert_eq!(geom.has_z(), Ok(true));
@@ -649,7 +669,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING(0 0, 1 1)").expect("Invalid geometry");
     /// assert_eq!(geom.is_closed(), Ok(false));
@@ -667,12 +687,15 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING(743238 2967416,743238 2967450)")
     ///                     .expect("Invalid geometry");
     ///
-    /// assert_eq!(geom.length().map(|x| format!("{:.2}", x)).unwrap(), "34.00");
+    /// assert_eq!(
+    ///     geom.length().map(|x| format!("{:.2}", x)).unwrap(),
+    ///     "34.00",
+    /// );
     /// ```
     fn length(&self) -> GResult<f64>;
     /// Returns the distance between `self` and `other`. The unit depends of the SRID.
@@ -680,7 +703,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
@@ -695,7 +718,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
@@ -709,7 +732,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
@@ -722,7 +745,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
@@ -738,7 +761,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING (0 0, 100 0)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING (0 0, 50 50, 100 0)").expect("Invalid geometry");
@@ -754,7 +777,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING (0 0, 100 0)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING (0 0, 50 50, 100 0)").expect("Invalid geometry");
@@ -769,7 +792,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4, 5 6)")
     ///                     .expect("Invalid geometry");
@@ -795,7 +818,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("MULTIPOLYGON(((26 125, 26 200, 126 200, 126 125, 26 125),
     ///                                                   (51 150, 101 150, 76 175, 51 150)),
@@ -821,7 +844,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (1.5 2.5 3.5)").expect("Invalid geometry");
     /// assert!(point_geom.get_x() == Ok(1.5));
@@ -832,7 +855,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (1.5 2.5 3.5)").expect("Invalid geometry");
     /// assert!(point_geom.get_y() == Ok(2.5));
@@ -845,7 +868,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert!(point_geom.get_z() == Ok(4.0));
@@ -859,7 +882,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4, 5 6)")
     ///                     .expect("Invalid geometry");
@@ -875,7 +898,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
     ///                     .expect("Invalid geometry");
@@ -891,7 +914,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
     ///                     .expect("Invalid geometry");
@@ -907,7 +930,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING (1 2, 3 4)")
     ///                     .expect("Invalid geometry");
@@ -920,7 +943,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
     ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
@@ -935,7 +958,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                     .expect("Invalid geometry");
@@ -948,7 +971,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                     .expect("Invalid geometry");
@@ -961,7 +984,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::{Dimensions, Geometry};
+    /// use geos::{Dimensions, Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert!(point_geom.get_coordinate_dimension() == Ok(Dimensions::ThreeD));
@@ -980,7 +1003,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)")
     ///                     .expect("Invalid geometry");
@@ -998,9 +1021,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)")
+    ///                               .expect("Invalid geometry");
     /// point_geom.set_srid(4326);
     /// assert_eq!(point_geom.get_srid(), Ok(4326));
     /// ```
@@ -1012,7 +1036,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     /// assert_eq!(point_geom.get_precision().map(|x| format!("{:.2}", x)).unwrap(), "0.00");
@@ -1026,7 +1050,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, Precision};
+    /// use geos::{Geom, Geometry, Precision};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
     ///
@@ -1042,7 +1066,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_x_max(), Ok(5.));
@@ -1056,7 +1080,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_x_min(), Ok(1.));
@@ -1070,7 +1094,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_y_max(), Ok(6.));
@@ -1084,7 +1108,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let line = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(line.get_y_min(), Ok(3.));
@@ -1099,7 +1123,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINESTRING(1 3 4, 5 6 7)").expect("Invalid WKT");
     /// assert_eq!(geom.minimum_clearance().map(|x| format!("{:.8}", x)).unwrap(), "5.00000000");
@@ -1113,7 +1137,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON ((0 0, 1 0, 1 1, 0.5 3.2e-4, 0 0))")
     ///                     .expect("Invalid WKT");
@@ -1138,7 +1162,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((175 150, 20 40, 50 60, 125 100, 175 150))")
     ///                      .expect("Invalid WKT");
@@ -1205,9 +1229,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let hex_buf = point_geom.to_hex().expect("conversion to WKB failed");
     /// ```
     fn to_hex(&self) -> GResult<CVec<u8>>;
@@ -1217,9 +1242,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let wkb_buf = point_geom.to_wkb().expect("conversion to WKB failed");
     /// ```
     fn to_wkb(&self) -> GResult<CVec<u8>>;
@@ -1228,9 +1254,10 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
     fn to_prepared_geom(&self) -> GResult<PreparedGeometry<'a>>;
@@ -1241,12 +1268,17 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("MULTIPOINT(1 1, 2 2, 3 3, 4 4)")
     ///                     .expect("Invalid geometry");
-    /// let point_nb3 = geom.get_geometry_n(2).expect("failed to get third point");
-    /// assert_eq!(point_nb3.to_wkt().unwrap(), "POINT (3.0000000000000000 3.0000000000000000)");
+    /// let point_nb3 = geom
+    ///     .get_geometry_n(2)
+    ///     .expect("failed to get third point");
+    /// assert_eq!(
+    ///     point_nb3.to_wkt().unwrap(),
+    ///     "POINT (3.0000000000000000 3.0000000000000000)",
+    /// );
     /// ```
     fn get_geometry_n<'c>(&'c self, n: usize) -> GResult<ConstGeometry<'a, 'c>>;
     /// Returns the nth interior ring.
@@ -1254,13 +1286,15 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
     ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
     ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
     ///                     .expect("Invalid geometry");
-    /// let interior = geom.get_interior_ring_n(0).expect("failed to get interior ring");
+    /// let interior = geom
+    ///     .get_interior_ring_n(0)
+    ///     .expect("failed to get interior ring");
     /// assert_eq!(interior.to_wkt().unwrap(),
     ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
     ///                         2.0000000000000000 1.0000000000000000, \
@@ -1274,13 +1308,15 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
     ///                                               (1 1, 2 1, 2 5, 1 5, 1 1))")
-    ///                        .expect("Invalid geometry");
+    ///                           .expect("Invalid geometry");
     ///
-    /// let exterior = point_geom.get_exterior_ring().expect("failed to get exterior ring");
+    /// let exterior = point_geom
+    ///     .get_exterior_ring()
+    ///     .expect("failed to get exterior ring");
     /// assert_eq!(exterior.to_wkt().unwrap(),
     ///            "LINEARRING (0.0000000000000000 0.0000000000000000, \
     ///                         10.0000000000000000 0.0000000000000000, \
@@ -2159,25 +2195,6 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
     }
 
-    /// Returns the nth interior ring.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geos::Geometry;
-    ///
-    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
-    ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
-    ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
-    ///                     .expect("Invalid geometry");
-    /// let interior = geom.get_interior_ring_n(0).expect("failed to get interior ring");
-    /// assert_eq!(interior.to_wkt().unwrap(),
-    ///            "LINEARRING (1.0000000000000000 1.0000000000000000, \
-    ///                         2.0000000000000000 1.0000000000000000, \
-    ///                         2.0000000000000000 5.0000000000000000, \
-    ///                         1.0000000000000000 5.0000000000000000, \
-    ///                         1.0000000000000000 1.0000000000000000)");
-    /// ```
     fn get_interior_ring_n<'c>(&'c self, n: u32) -> GResult<ConstGeometry<'a, 'c>> {
         unsafe {
             let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
@@ -2185,25 +2202,6 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
     }
 
-    /// Returns the exterior ring.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geos::Geometry;
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
-    ///                                               (1 1, 2 1, 2 5, 1 5, 1 1))")
-    ///                        .expect("Invalid geometry");
-    ///
-    /// let exterior = point_geom.get_exterior_ring().expect("failed to get exterior ring");
-    /// assert_eq!(exterior.to_wkt().unwrap(),
-    ///            "LINEARRING (0.0000000000000000 0.0000000000000000, \
-    ///                         10.0000000000000000 0.0000000000000000, \
-    ///                         10.0000000000000000 6.0000000000000000, \
-    ///                         0.0000000000000000 6.0000000000000000, \
-    ///                         0.0000000000000000 0.0000000000000000)");
-    /// ```
     fn get_exterior_ring<'c>(&'c self) -> GResult<ConstGeometry<'a, 'c>> {
         unsafe {
             let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
@@ -2263,7 +2261,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let hex_buf = point_geom.to_hex().expect("conversion to HEX failed");
@@ -2290,7 +2288,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// let wkb_buf = point_geom.to_wkb().expect("conversion to WKB failed");
@@ -2322,7 +2320,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POINT(100 90)").expect("Invalid geometry");
     /// let small_geom = geom.buffer(25., 8).expect("buffer failed");
@@ -2357,7 +2355,7 @@ impl<'a> Geometry<'a> {
     /// # Example:
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((-71.040878 42.285678,\
     ///                                              -71.040943 42.2856,\
@@ -2442,14 +2440,16 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let lines = Geometry::new_from_wkt("MULTILINESTRING((-29 -27,-30 -29.7,-36 -31,-45 -33),\
     ///                                                  (-45 -33,-46 -32))")
-    ///                   .expect("Invalid geometry");
+    ///                      .expect("Invalid geometry");
     /// let lines_merged = lines.line_merge().expect("line merge failed");
-    /// assert_eq!(lines_merged.to_wkt_precision(1).unwrap(),
-    ///            "LINESTRING (-29.0 -27.0, -30.0 -29.7, -36.0 -31.0, -45.0 -33.0, -46.0 -32.0)");
+    /// assert_eq!(
+    ///     lines_merged.to_wkt_precision(1).unwrap(),
+    ///     "LINESTRING (-29.0 -27.0, -30.0 -29.7, -36.0 -31.0, -45.0 -33.0, -46.0 -32.0)",
+    /// );
     /// ```
     pub fn line_merge(&self) -> GResult<Geometry<'a>> {
         unsafe {
@@ -2465,12 +2465,16 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let line = Geometry::new_from_wkt("LINESTRING(1 10,1 2)").expect("invalid geometry");
+    /// let line = Geometry::new_from_wkt("LINESTRING(1 10,1 2)")
+    ///                     .expect("invalid geometry");
     /// let reversed_line = line.reverse().expect("reverse failed");
     ///
-    /// assert_eq!(reversed_line.to_wkt_precision(1).unwrap(), "LINESTRING (1.0 2.0, 1.0 10.0)");
+    /// assert_eq!(
+    ///     reversed_line.to_wkt_precision(1).unwrap(),
+    ///     "LINESTRING (1.0 2.0, 1.0 10.0)",
+    /// );
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn reverse(&self) -> GResult<Geometry<'a>> {
@@ -2521,9 +2525,10 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)")
+    ///                               .expect("Invalid geometry");
     /// point_geom.set_srid(4326);
     /// assert_eq!(point_geom.get_srid(), Ok(4326));
     /// ```
@@ -2537,7 +2542,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let mut geom = Geometry::new_from_wkt(
     ///     "GEOMETRYCOLLECTION(POINT(2 3), MULTILINESTRING((0 0, 1 1),(2 2, 3 3)))",
@@ -2563,7 +2568,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::create_empty_polygon().expect("Failed to build empty polygon");
     ///
@@ -2586,7 +2591,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::create_empty_point().expect("Failed to build empty point");
     ///
@@ -2609,7 +2614,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::create_empty_line_string().expect("Failed to build empty line string");
     ///
@@ -2639,7 +2644,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, GeometryTypes};
+    /// use geos::{Geom, Geometry, GeometryTypes};
     ///
     /// let geom = Geometry::create_empty_collection(GeometryTypes::MultiPolygon)
     ///                     .expect("Failed to build empty collection");
@@ -2674,14 +2679,17 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("LINEARRING(75.15 29.53,77 29,77.6 29.5, 75.15 29.53)")
     ///                     .expect("Invalid geometry");
-    /// let polygon_geom = Geometry::create_polygon(geom, vec![]).expect("create_polygon failed");
+    /// let polygon_geom = Geometry::create_polygon(geom, vec![])
+    ///                             .expect("create_polygon failed");
     ///
-    /// assert_eq!(polygon_geom.to_wkt_precision(1).unwrap(),
-    ///            "POLYGON ((75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5))");
+    /// assert_eq!(
+    ///     polygon_geom.to_wkt_precision(1).unwrap(),
+    ///     "POLYGON ((75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5))",
+    /// );
     /// ```
     pub fn create_polygon<'b>(
         mut exterior: Geometry<'a>,
@@ -2720,7 +2728,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                      .expect("Invalid geometry");
@@ -2742,7 +2750,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                      .expect("Invalid geometry");
@@ -2770,7 +2778,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("LINESTRING (1.0 2.0, 3.0 4.0)").expect("invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("LINESTRING (5.0 6.0, 7.0 8.0)").expect("invalid geometry");
@@ -2795,7 +2803,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
     /// let geom1 = Geometry::new_from_wkt("POINT (1.0 2.0)").expect("Invalid geometry");
     /// let geom2 = Geometry::new_from_wkt("POINT (3.0 4.0)").expect("Invalid geometry");
@@ -2819,7 +2827,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.]])
     ///                       .expect("failed to create CoordSeq");
@@ -2842,7 +2850,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.]])
     ///                       .expect("failed to create CoordSeq");
@@ -2865,7 +2873,7 @@ impl<'a> Geometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, CoordSeq, Geometry};
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[75.15, 29.53],
     ///                                       &[77., 29.],
@@ -2873,7 +2881,8 @@ impl<'a> Geometry<'a> {
     ///                                       &[75.15, 29.53]])
     ///                       .expect("failed to create CoordSeq");
     ///
-    /// let geom = Geometry::create_linear_ring(coords).expect("Failed to create a linea ring");
+    /// let geom = Geometry::create_linear_ring(coords)
+    ///                     .expect("Failed to create a linea ring");
     ///
     /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
     ///            "LINEARRING (75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5)");

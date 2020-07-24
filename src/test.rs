@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use crate::{Geometry, PreparedGeometry};
+    use crate::{Geom, Geometry, PreparedGeometry};
     use enums::GeometryTypes;
 
     #[test]
@@ -61,7 +61,7 @@ mod test {
             Geometry::new_from_wkt("POINT (0.4 4.1)").unwrap(),
         ];
         for geom in &vec_geoms {
-            assert_eq!(true, pg1.intersects(&geom).unwrap());
+            assert_eq!(true, pg1.intersects(geom).unwrap());
         }
     }
 
