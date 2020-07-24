@@ -573,14 +573,13 @@ impl<'a> Drop for CoordSeq<'a> {
 impl<'a> Clone for CoordSeq<'a> {
     /// Also pass the context to the newly created `CoordSeq`.
     fn clone(&self) -> CoordSeq<'a> {
-        let context = self.clone_context();
-        let ptr = unsafe { GEOSCoordSeq_clone_r(context.as_raw(), self.as_raw()) };
+        let ptr = unsafe { GEOSCoordSeq_clone_r(self.get_raw_context(), self.as_raw()) };
         if ptr.is_null() {
             panic!("Couldn't clone CoordSeq...");
         }
         CoordSeq {
             ptr: PtrWrap(ptr),
-            context,
+            context: self.clone_context(),
             nb_dimensions: self.nb_dimensions,
             nb_lines: self.nb_lines,
         }

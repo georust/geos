@@ -1,7 +1,7 @@
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
-use std;
+use std::iter;
 
 pub trait TryInto<T> {
     type Err;
@@ -36,10 +36,7 @@ fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordS
     // as in `from_geo` module
     let need_closing = nb_points > 0 && (!is_closed || nb_points == 3);
     if need_closing {
-        create_coord_seq(
-            points.iter().chain(std::iter::once(&points[0])),
-            nb_points + 1,
-        )
+        create_coord_seq(points.iter().chain(iter::once(&points[0])), nb_points + 1)
     } else {
         create_coord_seq(points.iter(), nb_points)
     }
@@ -50,13 +47,11 @@ impl<'a> TryInto<GGeometry<'a>> for &'a Geometry {
 
     fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
         match self.value {
-            Value::Point(ref c) => {
-                GGeometry::create_point(create_coord_seq(std::iter::once(c), 1)?)
-            }
+            Value::Point(ref c) => GGeometry::create_point(create_coord_seq(iter::once(c), 1)?),
             Value::MultiPoint(ref pts) => {
                 let ggpts = pts
                     .iter()
-                    .map(|pt| GGeometry::create_point(create_coord_seq(std::iter::once(pt), 1)?))
+                    .map(|pt| GGeometry::create_point(create_coord_seq(iter::once(pt), 1)?))
                     .collect::<GResult<Vec<GGeometry>>>()?;
                 GGeometry::create_multipoint(ggpts)
             }
