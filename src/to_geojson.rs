@@ -20,7 +20,9 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     Ok(coords)
 }
 
-impl<'a> TryInto<Geometry> for GGeometry<'a> {
+macro_rules! impl_try_into {
+    ($ty_name:ident $(,$lt:lifetime)?) => (
+impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry, Self::Err> {
@@ -111,27 +113,22 @@ impl<'a> TryInto<Geometry> for GGeometry<'a> {
         }
     }
 }
-
-impl<'a, 'c> TryInto<Geometry> for ConstGeometry<'a, 'c> {
-    type Err = Error;
-
-    /// This implementation is very slow because we have to clone the "original" [`Geometry`]. So
-    /// if you can, use the original [`Geometry`] directly, that'll allow you to avoid a clone.
-    fn try_into(self) -> Result<Geometry, Self::Err> {
-        Geom::clone(self.original).try_into()
-    }
+    );
 }
+
+impl_try_into!(GGeometry);
+impl_try_into!(ConstGeometry, 'c);
 
 #[cfg(test)]
 mod test {
-    use super::GGeom;
+    use crate::Geometry as GGeometry;
     use crate::to_geojson::TryInto;
     use geojson::{Geometry, Value};
 
     #[test]
     fn geom_to_geojson_point() {
         let pt = "POINT(1 1)";
-        let pt = GGeom::new_from_wkt(pt).unwrap();
+        let pt = GGeometry::new_from_wkt(pt).unwrap();
 
         let geojson_pt: Geometry = pt.try_into().unwrap();
 
@@ -142,7 +139,7 @@ mod test {
     #[test]
     fn geom_to_geojson_multipoint() {
         let pts = "MULTIPOINT((1 1), (2 2))";
-        let pts = GGeom::new_from_wkt(pts).unwrap();
+        let pts = GGeometry::new_from_wkt(pts).unwrap();
 
         let geojson_pts: Geometry = pts.try_into().unwrap();
 
@@ -156,7 +153,7 @@ mod test {
     #[test]
     fn geom_to_geojson_line() {
         let line = "LINESTRING(1 1, 2 2)";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
@@ -170,7 +167,7 @@ mod test {
     #[test]
     fn geom_to_geojson_linearring() {
         let line = "LINEARRING(1 1, 2 1, 2 2, 1 1)";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
@@ -186,7 +183,7 @@ mod test {
     #[test]
     fn geom_to_geojson_multiline() {
         let line = "MULTILINESTRING((1 1, 2 2), (3 3, 4 4))";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
@@ -207,7 +204,7 @@ mod test {
     #[test]
     fn geom_to_geojson_polygon() {
         let poly = "POLYGON((0 0, 0 3, 3 3, 3 0, 0 0) ,(0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))";
-        let poly = GGeom::new_from_wkt(poly).unwrap();
+        let poly = GGeometry::new_from_wkt(poly).unwrap();
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
@@ -235,7 +232,7 @@ mod test {
     #[test]
     fn geom_to_geojson_multipolygon() {
         let poly = "MULTIPOLYGON(((0 0, 0 1, 1 1, 1 0, 0 0)))";
-        let poly = GGeom::new_from_wkt(poly).unwrap();
+        let poly = GGeometry::new_from_wkt(poly).unwrap();
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
@@ -254,7 +251,7 @@ mod test {
     #[test]
     fn geom_to_geojson_geometry_collection() {
         let gc = "GEOMETRYCOLLECTION(POINT(1 1), LINESTRING(1 1, 2 2))";
-        let gc = GGeom::new_from_wkt(gc).unwrap();
+        let gc = GGeometry::new_from_wkt(gc).unwrap();
 
         let geojson_gc: Geometry = gc.try_into().unwrap();
 
