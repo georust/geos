@@ -18,8 +18,8 @@ fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, 
 where
     It: Iterator<Item = &'a Coordinate<f64>>,
 {
-    let mut coord_seq = CoordSeq::new(len as u32, CoordDimensions::TwoD)
-                                 .expect("failed to create CoordSeq");
+    let mut coord_seq =
+        CoordSeq::new(len as u32, CoordDimensions::TwoD).expect("failed to create CoordSeq");
     for (i, p) in points.enumerate() {
         coord_seq.set_x(i, p.x)?;
         coord_seq.set_y(i, p.y)?;
@@ -128,8 +128,8 @@ impl<'a> TryInto<GGeometry<'a>> for &'a MultiPolygon<f64> {
 
 #[cfg(test)]
 mod test {
-    use crate::{Geom, Geometry as GGeometry};
     use super::LineRing;
+    use crate::{Geom, Geometry as GGeometry};
     use from_geo::TryInto;
     use geo_types::{Coordinate, LineString, MultiPolygon, Polygon};
 

@@ -2,15 +2,15 @@
 #![crate_type = "lib"]
 
 extern crate c_vec;
-extern crate libc;
-extern crate num;
 #[cfg(any(feature = "geo", feature = "dox"))]
 extern crate geo_types;
-#[cfg(any(feature = "geo", feature = "dox"))]
-extern crate wkt;
 #[cfg(all(feature = "json"))]
 extern crate geojson;
 extern crate geos_sys;
+extern crate libc;
+extern crate num;
+#[cfg(any(feature = "geo", feature = "dox"))]
+extern crate wkt;
 
 #[cfg(all(feature = "geo", test))]
 #[macro_use]
@@ -21,51 +21,21 @@ doctest!("../README.md");
 
 pub(crate) mod functions;
 
-pub use context_handle::{
-    ContextHandle,
-};
-pub use coord_seq::{
-    CoordSeq,
-};
-pub use enums::{
-    ByteOrder,
-    CoordDimensions,
-    Dimensions,
-    GeometryTypes,
-    Ordinate,
-    Orientation,
-    OutputDimension,
-};
+pub use context_handle::ContextHandle;
+pub use coord_seq::CoordSeq;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
+pub use enums::Precision;
 pub use enums::{
-    Precision,
-};
-pub use functions::{
-    orientation_index,
-    version,
+    ByteOrder, CoordDimensions, Dimensions, GeometryTypes, Ordinate, Orientation, OutputDimension,
 };
 #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-pub use functions::{
-    segment_intersection,
-};
-pub use geometry::{
-    ConstGeometry,
-    Geometry,
-    Geom,
-};
-pub use prepared_geometry::{
-    PreparedGeometry,
-};
-pub use spatial_index:: {
-    SpatialIndex,
-    STRtree
-};
-pub use wkb_writer::{
-    WKBWriter,
-};
-pub use wkt_writer::{
-    WKTWriter,
-};
+pub use functions::segment_intersection;
+pub use functions::{orientation_index, version};
+pub use geometry::{ConstGeometry, Geom, Geometry};
+pub use prepared_geometry::PreparedGeometry;
+pub use spatial_index::{STRtree, SpatialIndex};
+pub use wkb_writer::WKBWriter;
+pub use wkt_writer::WKTWriter;
 
 mod context_handle;
 mod coord_seq;
@@ -81,29 +51,18 @@ mod spatial_index;
 pub mod to_geo;
 #[cfg(all(feature = "json"))]
 pub mod to_geojson;
-pub use error::{
-    Error,
-    GResult,
-};
+pub use error::{Error, GResult};
 #[cfg(any(feature = "geo", feature = "dox"))]
 mod voronoi;
 #[cfg(any(feature = "geo", feature = "dox"))]
-pub use voronoi::{
-    compute_voronoi,
-};
+pub use voronoi::compute_voronoi;
 mod enums;
 mod traits;
 mod wkb_writer;
 mod wkt_writer;
 
-pub(crate) use traits::{
-    AsRaw,
-    AsRawMut,
-};
-pub use traits::{
-    ContextInteractions,
-    ContextHandling
-};
+pub(crate) use traits::{AsRaw, AsRawMut};
+pub use traits::{ContextHandling, ContextInteractions};
 
 #[cfg(test)]
 mod test;

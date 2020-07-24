@@ -1,11 +1,11 @@
-use enums::{ByteOrder, OutputDimension};
-use crate::{ContextHandle, Geom, GResult, AsRaw, AsRawMut, ContextHandling, ContextInteractions};
+use crate::{AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
+use c_vec::CVec;
 use context_handle::PtrWrap;
+use enums::TryFrom;
+use enums::{ByteOrder, OutputDimension};
+use error::Error;
 use geos_sys::*;
 use std::sync::Arc;
-use error::Error;
-use enums::TryFrom;
-use c_vec::CVec;
 
 /// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`].
 ///
@@ -88,9 +88,15 @@ impl<'a> WKBWriter<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("WKBWriter::{}{}", caller, extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "WKBWriter::{}{}",
+                caller, extra
+            )));
         }
-        Ok(WKBWriter { ptr: PtrWrap(ptr), context })
+        Ok(WKBWriter {
+            ptr: PtrWrap(ptr),
+            context,
+        })
     }
 
     /// Writes out the given `geometry` as WKB format.
@@ -110,12 +116,17 @@ impl<'a> WKBWriter<'a> {
     pub fn write_wkb<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSWKBWriter_write_r(self.get_raw_context(), self.as_raw_mut(),
-                                            geometry.as_raw(), &mut size);
+            let ptr = GEOSWKBWriter_write_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                geometry.as_raw(),
+                &mut size,
+            );
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
-                    "WKBWriter::write_wkb failed: GEOSWKBWriter_writeHEX_r returned null pointer".to_owned())
-                )
+                    "WKBWriter::write_wkb failed: GEOSWKBWriter_writeHEX_r returned null pointer"
+                        .to_owned(),
+                ))
             } else {
                 Ok(CVec::new(ptr, size as _))
             }
@@ -140,12 +151,17 @@ impl<'a> WKBWriter<'a> {
     pub fn write_hex<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
-            let ptr = GEOSWKBWriter_writeHEX_r(self.get_raw_context(), self.as_raw_mut(),
-                                               geometry.as_raw(), &mut size);
+            let ptr = GEOSWKBWriter_writeHEX_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                geometry.as_raw(),
+                &mut size,
+            );
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
-                    "WKBWriter::write_hex failed: GEOSWKBWriter_writeHEX_r returned null pointer".to_owned())
-                )
+                    "WKBWriter::write_hex failed: GEOSWKBWriter_writeHEX_r returned null pointer"
+                        .to_owned(),
+                ))
             } else {
                 Ok(CVec::new(ptr, size as _))
             }
@@ -178,8 +194,11 @@ impl<'a> WKBWriter<'a> {
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
         unsafe {
-            GEOSWKBWriter_setOutputDimension_r(self.get_raw_context(), self.as_raw_mut(),
-                                               dimension.into())
+            GEOSWKBWriter_setOutputDimension_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                dimension.into(),
+            )
         }
     }
 
@@ -237,7 +256,11 @@ impl<'a> WKBWriter<'a> {
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) {
         unsafe {
-            GEOSWKBWriter_setByteOrder_r(self.get_raw_context(), self.as_raw_mut(), byte_order.into())
+            GEOSWKBWriter_setByteOrder_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                byte_order.into(),
+            )
         }
     }
 
@@ -258,7 +281,9 @@ impl<'a> WKBWriter<'a> {
         unsafe {
             let out = GEOSWKBWriter_getIncludeSRID_r(self.get_raw_context(), self.as_raw());
             if out < 0 {
-                Err(Error::GenericError("GEOSWKBWriter_getIncludeSRID_r failed".to_owned()))
+                Err(Error::GenericError(
+                    "GEOSWKBWriter_getIncludeSRID_r failed".to_owned(),
+                ))
             } else {
                 Ok(out != 0)
             }
@@ -280,7 +305,11 @@ impl<'a> WKBWriter<'a> {
     #[allow(non_snake_case)]
     pub fn set_include_SRID(&mut self, include_SRID: bool) {
         unsafe {
-            GEOSWKBWriter_setIncludeSRID_r(self.get_raw_context(), self.as_raw_mut(), include_SRID as _)
+            GEOSWKBWriter_setIncludeSRID_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                include_SRID as _,
+            )
         }
     }
 }

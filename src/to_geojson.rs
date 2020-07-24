@@ -2,7 +2,6 @@ use crate::{ConstGeometry, CoordSeq, Geom, Geometry as GGeometry, GeometryTypes}
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
 
-
 pub trait TryInto<T> {
     type Err;
     fn try_into(self) -> Result<T, Self::Err>;
@@ -12,10 +11,7 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     let n_coords = cs.size()?;
     let mut coords = Vec::with_capacity(n_coords);
     for i in 0..n_coords {
-        coords.push(vec![
-            cs.get_x(i)?,
-            cs.get_y(i)?,
-        ]);
+        coords.push(vec![cs.get_x(i)?, cs.get_y(i)?]);
     }
     Ok(coords)
 }
@@ -121,8 +117,8 @@ impl_try_into!(ConstGeometry, 'c);
 
 #[cfg(test)]
 mod test {
-    use crate::Geometry as GGeometry;
     use crate::to_geojson::TryInto;
+    use crate::Geometry as GGeometry;
     use geojson::{Geometry, Value};
 
     #[test]
@@ -143,10 +139,7 @@ mod test {
 
         let geojson_pts: Geometry = pts.try_into().unwrap();
 
-        let expected_pts = Geometry::new(Value::MultiPoint(vec![
-            vec![1., 1.],
-            vec![2., 2.],
-        ]));
+        let expected_pts = Geometry::new(Value::MultiPoint(vec![vec![1., 1.], vec![2., 2.]]));
         assert_eq!(geojson_pts, expected_pts);
     }
 
@@ -157,10 +150,7 @@ mod test {
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
-        let expected_line = Geometry::new(Value::LineString(vec![
-            vec![1., 1.],
-            vec![2., 2.],
-        ]));
+        let expected_line = Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]]));
         assert_eq!(geojson_line, expected_line);
     }
 
@@ -188,18 +178,11 @@ mod test {
         let geojson_line: Geometry = line.try_into().unwrap();
 
         let expected_line = Geometry::new(Value::MultiLineString(vec![
-            vec![
-                vec![1., 1.],
-                vec![2., 2.],
-            ],
-            vec![
-                vec![3., 3.],
-                vec![4., 4.],
-            ],
+            vec![vec![1., 1.], vec![2., 2.]],
+            vec![vec![3., 3.], vec![4., 4.]],
         ]));
         assert_eq!(geojson_line, expected_line);
     }
-
 
     #[test]
     fn geom_to_geojson_polygon() {
@@ -208,24 +191,22 @@ mod test {
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
-        let expected_polygon = Geometry::new(Value::Polygon(
+        let expected_polygon = Geometry::new(Value::Polygon(vec![
             vec![
-                vec![
-                    vec![0., 0.],
-                    vec![0., 3.],
-                    vec![3., 3.],
-                    vec![3., 0.],
-                    vec![0., 0.],
-                ],
-                vec![
-                    vec![0.2, 0.2],
-                    vec![0.2, 2.],
-                    vec![2., 2.],
-                    vec![2., 0.2],
-                    vec![0.2, 0.2],
-                ],
-            ]
-        ));
+                vec![0., 0.],
+                vec![0., 3.],
+                vec![3., 3.],
+                vec![3., 0.],
+                vec![0., 0.],
+            ],
+            vec![
+                vec![0.2, 0.2],
+                vec![0.2, 2.],
+                vec![2., 2.],
+                vec![2., 0.2],
+                vec![0.2, 0.2],
+            ],
+        ]));
         assert_eq!(geojson_polygon, expected_polygon);
     }
 
@@ -236,15 +217,13 @@ mod test {
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
-        let expected_polygon = Geometry::new(Value::MultiPolygon(
-            vec![vec![vec![
-                vec![0., 0.],
-                vec![0., 1.],
-                vec![1., 1.],
-                vec![1., 0.],
-                vec![0., 0.],
-            ]]]
-        ));
+        let expected_polygon = Geometry::new(Value::MultiPolygon(vec![vec![vec![
+            vec![0., 0.],
+            vec![0., 1.],
+            vec![1., 1.],
+            vec![1., 0.],
+            vec![0., 0.],
+        ]]]));
         assert_eq!(geojson_polygon, expected_polygon);
     }
 
@@ -255,13 +234,10 @@ mod test {
 
         let geojson_gc: Geometry = gc.try_into().unwrap();
 
-        let expected_gc = Geometry::new(Value::GeometryCollection(
-            vec![
-                Geometry::new(Value::Point(vec![1., 1.])),
-                Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
-            ]
-        ));
+        let expected_gc = Geometry::new(Value::GeometryCollection(vec![
+            Geometry::new(Value::Point(vec![1., 1.])),
+            Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
+        ]));
         assert_eq!(geojson_gc, expected_gc);
     }
-
 }

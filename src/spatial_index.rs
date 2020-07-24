@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use geos_sys::*;
 
-use ::{ContextHandle, Geom};
-use ::{AsRaw, AsRawMut, GResult};
 use context_handle::PtrWrap;
 use ContextHandling;
+use {AsRaw, AsRawMut, GResult};
+use {ContextHandle, Geom};
 
 pub trait SpatialIndex<'a, I> {
     fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I);
@@ -24,32 +24,25 @@ pub struct STRtree<'a, I> {
 impl<'a, I> STRtree<'a, I> {
     pub fn with_capacity(node_capacity: usize) -> GResult<STRtree<'a, I>> {
         match ContextHandle::init_e(Some("STRtree::with_capacity")) {
-            Ok(context_handle) => {
-                unsafe {
-                    let ptr = GEOSSTRtree_create_r(
-                        context_handle.as_raw(),
-                        node_capacity,
-                    );
-                    Ok(STRtree {
-                        ptr: PtrWrap(ptr),
-                        context: Arc::new(context_handle),
-                        item_type: PhantomData,
-                    })
-                }
-            }
+            Ok(context_handle) => unsafe {
+                let ptr = GEOSSTRtree_create_r(context_handle.as_raw(), node_capacity);
+                Ok(STRtree {
+                    ptr: PtrWrap(ptr),
+                    context: Arc::new(context_handle),
+                    item_type: PhantomData,
+                })
+            },
             Err(e) => Err(e),
         }
     }
 
-    pub fn iterate<V>(&self, visitor: V) where V: FnMut(&I) {
+    pub fn iterate<V>(&self, visitor: V)
+    where
+        V: FnMut(&I),
+    {
         unsafe {
             let (closure, callback) = unpack_closure(&visitor);
-            GEOSSTRtree_iterate_r(
-                self.get_raw_context(),
-                *self.ptr,
-                Some(callback),
-                closure,
-            );
+            GEOSSTRtree_iterate_r(self.get_raw_context(), *self.ptr, Some(callback), closure);
         }
     }
 }
@@ -126,10 +119,16 @@ impl<I> Drop for STRtree<'_, I> {
     }
 }
 
-unsafe fn unpack_closure<F, I>(closure: &F) -> (*mut c_void, extern "C" fn(*mut c_void, *mut c_void))
-    where F: FnMut(&I) {
+unsafe fn unpack_closure<F, I>(
+    closure: &F,
+) -> (*mut c_void, extern "C" fn(*mut c_void, *mut c_void))
+where
+    F: FnMut(&I),
+{
     extern "C" fn trampoline<F, I>(item: *mut c_void, data: *mut c_void)
-        where F: FnMut(&I) {
+    where
+        F: FnMut(&I),
+    {
         unsafe {
             let closure: &mut F = &mut *(data as *mut F);
             (*closure)(&mut *(item as *mut I));
@@ -143,7 +142,7 @@ unsafe fn unpack_closure<F, I>(closure: &F) -> (*mut c_void, extern "C" fn(*mut 
 mod test {
     use std::collections::HashSet;
 
-    use ::{Geometry, SpatialIndex, STRtree};
+    use {Geometry, STRtree, SpatialIndex};
 
     #[test]
     fn test_strtree() {
@@ -157,7 +156,6 @@ mod test {
         tree.insert(&line, "Line");
         tree.insert(&polygon, "Polygon");
 
-
         // Test iterate
 
         let mut items = HashSet::<&str>::new();
@@ -165,8 +163,10 @@ mod test {
             items.insert(*item);
         });
 
-        assert_eq!(items, vec!["Line", "Point", "Polygon"].into_iter().collect());
-
+        assert_eq!(
+            items,
+            vec!["Line", "Point", "Polygon"].into_iter().collect()
+        );
 
         // Test query
 

@@ -1,19 +1,19 @@
-use std::borrow::Borrow;
-use crate::{
-    CoordSeq, ContextHandle, AsRaw, AsRawMut, ContextHandling, ContextInteractions,
-    PreparedGeometry, WKTWriter,
-};
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
+use crate::{
+    AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
+    PreparedGeometry, WKTWriter,
+};
+use c_vec::CVec;
 use context_handle::PtrWrap;
 use enums::*;
 use error::{Error, GResult, PredicateType};
-use geos_sys::*;
 use functions::*;
+use geos_sys::*;
+use std::borrow::Borrow;
 use std::ffi::CString;
-use std::{self, str};
-use c_vec::CVec;
 use std::sync::Arc;
+use std::{self, str};
 
 /// Representation of a GEOS geometry.
 ///
@@ -53,7 +53,9 @@ pub struct ConstGeometry<'a, 'b> {
     pub(crate) original: &'b Geometry<'a>,
 }
 
-pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Arc<ContextHandle<'a>>> {
+pub trait Geom<'a>:
+    AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Arc<ContextHandle<'a>>>
+{
     /// Returns the type of the geometry.
     ///
     /// # Example
@@ -753,7 +755,11 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// assert_eq!(geom1.hausdorff_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
     ///                                                        .unwrap(), "1.00");
     /// ```
-    fn hausdorff_distance_densify<'b, G: Geom<'b>>(&self, other: &G, distance_frac: f64) -> GResult<f64>;
+    fn hausdorff_distance_densify<'b, G: Geom<'b>>(
+        &self,
+        other: &G,
+        distance_frac: f64,
+    ) -> GResult<f64>;
     /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// Available using the `v3_7_0` feature.
@@ -786,7 +792,11 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     ///                                                      .unwrap(), "70.71");
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn frechet_distance_densify<'b, G: Geom<'b>>(&self, other: &G, distance_frac: f64) -> GResult<f64>;
+    fn frechet_distance_densify<'b, G: Geom<'b>>(
+        &self,
+        other: &G,
+        distance_frac: f64,
+    ) -> GResult<f64>;
     /// Returns the length of the given geometry.
     ///
     /// # Example
@@ -1221,7 +1231,12 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     /// 4. The invalid geometries collection.
     fn polygonize_full(
         &self,
-    ) -> GResult<(Geometry<'a>, Option<Geometry<'a>>, Option<Geometry<'a>>, Option<Geometry<'a>>)>;
+    ) -> GResult<(
+        Geometry<'a>,
+        Option<Geometry<'a>>,
+        Option<Geometry<'a>>,
+        Option<Geometry<'a>>,
+    )>;
     fn shared_paths<'b, G: Geom<'b>>(&self, other: &G) -> GResult<Geometry<'a>>;
     /// Converts a [`Geometry`] to the HEX format. For more control over the generated output,
     /// use the [`WKBWriter`] type.
@@ -1302,7 +1317,7 @@ pub trait Geom<'a>: AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Ar
     ///                         1.0000000000000000 5.0000000000000000, \
     ///                         1.0000000000000000 1.0000000000000000)");
     /// ```
-    fn get_interior_ring_n<'c>(&'c self, n: u32) -> GResult<ConstGeometry<'a, 'c>> ;
+    fn get_interior_ring_n<'c>(&'c self, n: u32) -> GResult<ConstGeometry<'a, 'c>>;
     /// Returns the exterior ring.
     ///
     /// # Example
@@ -2236,22 +2251,18 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn new_from_wkt(wkt: &str) -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::new_from_wkt")) {
-            Ok(context_handle) => {
-                match CString::new(wkt) {
-                    Ok(c_str) => {
-                        unsafe {
-                            let reader = GEOSWKTReader_create_r(context_handle.as_raw());
-                            let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader,
-                                                           c_str.as_ptr());
-                            GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
-                            Geometry::new_from_raw(ptr, Arc::new(context_handle), "new_from_wkt")
-                        }
-                    }
-                    Err(e) => {
-                        Err(Error::GenericError(format!("Conversion to CString failed: {}", e)))
-                    }
-                }
-            }
+            Ok(context_handle) => match CString::new(wkt) {
+                Ok(c_str) => unsafe {
+                    let reader = GEOSWKTReader_create_r(context_handle.as_raw());
+                    let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader, c_str.as_ptr());
+                    GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
+                    Geometry::new_from_raw(ptr, Arc::new(context_handle), "new_from_wkt")
+                },
+                Err(e) => Err(Error::GenericError(format!(
+                    "Conversion to CString failed: {}",
+                    e
+                ))),
+            },
             Err(e) => Err(e),
         }
     }
@@ -2273,12 +2284,10 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::new_from_hex")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "new_from_hex")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
+                Geometry::new_from_raw(ptr, Arc::new(context), "new_from_hex")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2300,12 +2309,10 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::new_from_wkb")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "new_from_wkb")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
+                Geometry::new_from_raw(ptr, Arc::new(context), "new_from_wkb")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2389,16 +2396,15 @@ impl<'a> Geometry<'a> {
         unsafe {
             let context = match geometries.get(0) {
                 Some(g) => g.borrow().clone_context(),
-                None => {
-                    match ContextHandle::init_e(Some("Geometry::polygonize")) {
-                        Ok(context) => Arc::new(context),
-                        Err(e) => return Err(e),
-                    }
-                }
+                None => match ContextHandle::init_e(Some("Geometry::polygonize")) {
+                    Ok(context) => Arc::new(context),
+                    Err(e) => return Err(e),
+                },
             };
-            let geoms = geometries.iter()
-                                  .map(|g| g.borrow().as_raw() as *const _)
-                                  .collect::<Vec<_>>();
+            let geoms = geometries
+                .iter()
+                .map(|g| g.borrow().as_raw() as *const _)
+                .collect::<Vec<_>>();
             let ptr = GEOSPolygonize_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
             Geometry::new_from_raw(ptr, context, "polygonize")
         }
@@ -2411,21 +2417,17 @@ impl<'a> Geometry<'a> {
         unsafe {
             let context = match geometries.get(0) {
                 Some(g) => g.borrow().clone_context(),
-                None => {
-                    match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
-                        Ok(context) => Arc::new(context),
-                        Err(e) => return Err(e),
-                    }
-                }
+                None => match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
+                    Ok(context) => Arc::new(context),
+                    Err(e) => return Err(e),
+                },
             };
-            let geoms = geometries.iter()
-                                  .map(|g| g.borrow().as_raw() as *const _)
-                                  .collect::<Vec<_>>();
-            let ptr = GEOSPolygonizer_getCutEdges_r(
-                context.as_raw(),
-                geoms.as_ptr(),
-                geoms.len() as _,
-            );
+            let geoms = geometries
+                .iter()
+                .map(|g| g.borrow().as_raw() as *const _)
+                .collect::<Vec<_>>();
+            let ptr =
+                GEOSPolygonizer_getCutEdges_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
             Geometry::new_from_raw(ptr, context, "polygonizer_get_cut_edges")
         }
     }
@@ -2496,10 +2498,8 @@ impl<'a> Geometry<'a> {
     /// geometries.
     pub fn topology_preserve_simplify(&self, tolerance: f64) -> GResult<Geometry<'a>> {
         unsafe {
-            let ptr = GEOSTopologyPreserveSimplify_r(
-                self.get_raw_context(),
-                self.as_raw(),
-                tolerance);
+            let ptr =
+                GEOSTopologyPreserveSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
             Geometry::new_from_raw(ptr, self.clone_context(), "topology_preserve_simplify")
         }
     }
@@ -2515,9 +2515,15 @@ impl<'a> Geometry<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("Geometry::{}{}", caller, extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "Geometry::{}{}",
+                caller, extra
+            )));
         }
-        Ok(Geometry { ptr: PtrWrap(ptr), context, })
+        Ok(Geometry {
+            ptr: PtrWrap(ptr),
+            context,
+        })
     }
 
     /// Set SRID of `self`.
@@ -2576,12 +2582,10 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn create_empty_polygon() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_polygon")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_polygon")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
+                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_polygon")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2599,12 +2603,10 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn create_empty_point() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_point")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_point")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
+                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_point")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2622,12 +2624,10 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn create_empty_line_string() -> GResult<Geometry<'a>> {
         match ContextHandle::init_e(Some("Geometry::create_empty_line_string")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_line_string")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
+                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_line_string")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2653,19 +2653,17 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn create_empty_collection(type_: GeometryTypes) -> GResult<Geometry<'a>> {
         match type_ {
-            GeometryTypes::GeometryCollection |
-            GeometryTypes::MultiPoint |
-            GeometryTypes::MultiLineString |
-            GeometryTypes::MultiPolygon => {}
+            GeometryTypes::GeometryCollection
+            | GeometryTypes::MultiPoint
+            | GeometryTypes::MultiLineString
+            | GeometryTypes::MultiPolygon => {}
             _ => return Err(Error::GenericError("Invalid geometry type".to_owned())),
         }
         match ContextHandle::init_e(Some("Geometry::create_empty_collection")) {
-            Ok(context) => {
-                unsafe {
-                    let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
-                    Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_collection")
-                }
-            }
+            Ok(context) => unsafe {
+                let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
+                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_collection")
+            },
             Err(e) => Err(e),
         }
     }
@@ -2696,14 +2694,15 @@ impl<'a> Geometry<'a> {
         mut interiors: Vec<Geometry<'b>>,
     ) -> GResult<Geometry<'a>> {
         if exterior.geometry_type() != GeometryTypes::LinearRing {
-            return Err(Error::GenericError("exterior must be a LinearRing".to_owned()));
+            return Err(Error::GenericError(
+                "exterior must be a LinearRing".to_owned(),
+            ));
         }
         let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
         let res = unsafe {
-            let mut geoms: Vec<*mut GEOSGeometry> = interiors.iter_mut()
-                                                             .map(|g| g.as_raw_mut())
-                                                             .collect();
+            let mut geoms: Vec<*mut GEOSGeometry> =
+                interiors.iter_mut().map(|g| g.as_raw_mut()).collect();
             let ptr = GEOSGeom_createPolygon_r(
                 context_handle.as_raw(),
                 exterior.as_raw_mut(),
@@ -2909,9 +2908,15 @@ impl<'a, 'b> ConstGeometry<'a, 'b> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("ConstGeometry::{}{}", caller, extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "ConstGeometry::{}{}",
+                caller, extra
+            )));
         }
-        Ok(ConstGeometry { ptr: PtrWrap(ptr), original, })
+        Ok(ConstGeometry {
+            ptr: PtrWrap(ptr),
+            original,
+        })
     }
 
     /// Get the context handle of the geometry.

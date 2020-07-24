@@ -7,7 +7,7 @@ use geo_types::{Coordinate, LineString, Polygon};
 #[cfg(feature = "geo")]
 use geos::from_geo::TryInto;
 #[cfg(feature = "geo")]
-use geos::{Geom, Error, Geometry};
+use geos::{Error, Geom, Geometry};
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -45,8 +45,7 @@ fn main() {
     fun().unwrap();
 }
 
-
 #[cfg(not(feature = "geo"))]
 fn main() {
-    eprintln!("You need to enable the \"geo\" feature to run this example!", );
+    eprintln!("You need to enable the \"geo\" feature to run this example!",);
 }

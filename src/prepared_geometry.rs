@@ -1,10 +1,10 @@
-use crate::{ContextHandle, Geom, GResult, AsRaw, ContextHandling, ContextInteractions};
-use error::PredicateType;
+use crate::{AsRaw, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
 use context_handle::PtrWrap;
-use geos_sys::*;
-use functions::*;
-use std::sync::Arc;
 use error::Error;
+use error::PredicateType;
+use functions::*;
+use geos_sys::*;
+use std::sync::Arc;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`] for greater performance
 /// on repeated calls.
@@ -58,11 +58,15 @@ impl<'a> PreparedGeometry<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("PreparedGeometry::{}{}",
-                                                                caller,
-                                                                extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "PreparedGeometry::{}{}",
+                caller, extra
+            )));
         }
-        Ok(PreparedGeometry { ptr: PtrWrap(ptr), context })
+        Ok(PreparedGeometry {
+            ptr: PtrWrap(ptr),
+            context,
+        })
     }
 
     /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
@@ -165,9 +169,8 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
     /// ```
     pub fn covers<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val =
+            unsafe { GEOSPreparedCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedCovers)
     }
 
@@ -187,9 +190,8 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
     /// ```
     pub fn crosses<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val =
+            unsafe { GEOSPreparedCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedCrosses)
     }
 
@@ -312,9 +314,8 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(true));
     /// ```
     pub fn touches<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val =
+            unsafe { GEOSPreparedTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedTouches)
     }
 
@@ -342,9 +343,8 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(big_prepared_geom.within(&small_geom), Ok(false));
     /// ```
     pub fn within<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val =
+            unsafe { GEOSPreparedWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedWithin)
     }
 }

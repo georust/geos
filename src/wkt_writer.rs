@@ -1,13 +1,13 @@
 use crate::{
-    ContextHandle, Geom, GResult, AsRaw, AsRawMut, ContextHandling, ContextInteractions,
+    AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom,
     OutputDimension,
 };
 use context_handle::PtrWrap;
-use geos_sys::*;
-use functions::*;
-use std::sync::Arc;
-use error::Error;
 use enums::TryFrom;
+use error::Error;
+use functions::*;
+use geos_sys::*;
+use std::sync::Arc;
 
 /// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`].
 ///
@@ -77,9 +77,15 @@ impl<'a> WKTWriter<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("WKTWriter::{}{}", caller, extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "WKTWriter::{}{}",
+                caller, extra
+            )));
         }
-        Ok(WKTWriter { ptr: PtrWrap(ptr), context })
+        Ok(WKTWriter {
+            ptr: PtrWrap(ptr),
+            context,
+        })
     }
 
     /// Writes out the given `geometry` as WKT format.
@@ -96,8 +102,8 @@ impl<'a> WKTWriter<'a> {
     /// ```
     pub fn write<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<String> {
         unsafe {
-            let ptr = GEOSWKTWriter_write_r(self.get_raw_context(), self.as_raw_mut(),
-                                            geometry.as_raw());
+            let ptr =
+                GEOSWKTWriter_write_r(self.get_raw_context(), self.as_raw_mut(), geometry.as_raw());
             managed_string(ptr, self.get_context_handle(), "WKTWriter::write")
         }
     }
@@ -121,8 +127,11 @@ impl<'a> WKTWriter<'a> {
     /// ```
     pub fn set_rounding_precision(&mut self, precision: u32) {
         unsafe {
-            GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), self.as_raw_mut(),
-                                                 precision as _)
+            GEOSWKTWriter_setRoundingPrecision_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                precision as _,
+            )
         }
     }
 
@@ -145,8 +154,11 @@ impl<'a> WKTWriter<'a> {
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
         unsafe {
-            GEOSWKTWriter_setOutputDimension_r(self.get_raw_context(), self.as_raw_mut(),
-                                               dimension.into())
+            GEOSWKTWriter_setOutputDimension_r(
+                self.get_raw_context(),
+                self.as_raw_mut(),
+                dimension.into(),
+            )
         }
     }
 
@@ -166,7 +178,10 @@ impl<'a> WKTWriter<'a> {
     /// ```
     pub fn get_out_dimension(&self) -> GResult<OutputDimension> {
         unsafe {
-            let out = GEOSWKTWriter_getOutputDimension_r(self.get_raw_context(), self.as_raw_mut_override());
+            let out = GEOSWKTWriter_getOutputDimension_r(
+                self.get_raw_context(),
+                self.as_raw_mut_override(),
+            );
             OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
         }
     }
@@ -187,9 +202,7 @@ impl<'a> WKTWriter<'a> {
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
     /// ```
     pub fn set_trim(&mut self, trim: bool) {
-        unsafe {
-            GEOSWKTWriter_setTrim_r(self.get_raw_context(), self.as_raw_mut(), trim as _)
-        }
+        unsafe { GEOSWKTWriter_setTrim_r(self.get_raw_context(), self.as_raw_mut(), trim as _) }
     }
 
     /// Enables/disables old 3D/4D WKT style generation.

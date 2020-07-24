@@ -1,13 +1,13 @@
-use enums::*;
-use std::os::raw::{c_char};
-use error::{Error, GResult, PredicateType};
-use geos_sys::*;
-use geometry::Geometry;
-use std::ffi::CStr;
-use std::sync::Arc;
-use std::str;
 use crate::{AsRawMut, ContextHandle, ContextHandling, Geom};
 use context_handle::PtrWrap;
+use enums::*;
+use error::{Error, GResult, PredicateType};
+use geometry::Geometry;
+use geos_sys::*;
+use std::ffi::CStr;
+use std::os::raw::c_char;
+use std::str;
+use std::sync::Arc;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos
@@ -15,14 +15,18 @@ use context_handle::PtrWrap;
 // and one that does not free it
 pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char, caller: &str) -> GResult<String> {
     if raw_ptr.is_null() {
-        return Err(Error::NoConstructionFromNullPtr(format!("{}::unmanaged_string", caller)));
+        return Err(Error::NoConstructionFromNullPtr(format!(
+            "{}::unmanaged_string",
+            caller
+        )));
     }
     let c_str = CStr::from_ptr(raw_ptr);
     match str::from_utf8(c_str.to_bytes()) {
         Ok(s) => Ok(s.to_string()),
-        Err(e) => {
-            Err(Error::GenericError(format!("{}::unmanaged_string failed: {}", caller, e)))
-        }
+        Err(e) => Err(Error::GenericError(format!(
+            "{}::unmanaged_string failed: {}",
+            caller, e
+        ))),
     }
 }
 
@@ -32,7 +36,10 @@ pub(crate) unsafe fn managed_string(
     caller: &str,
 ) -> GResult<String> {
     if raw_ptr.is_null() {
-        return Err(Error::NoConstructionFromNullPtr(format!("{}::managed_string", caller)));
+        return Err(Error::NoConstructionFromNullPtr(format!(
+            "{}::managed_string",
+            caller
+        )));
     }
     let s = unmanaged_string(raw_ptr, caller);
     GEOSFree_r(context.as_raw(), raw_ptr as *mut _);
@@ -49,14 +56,7 @@ pub fn clip_by_rect<'a, G: Geom<'a>>(
 ) -> GResult<Geometry<'a>> {
     unsafe {
         let context = g.clone_context();
-        let ptr = GEOSClipByRect_r(
-            context.as_raw(),
-            g.as_raw(),
-            xmin,
-            ymin,
-            xmax,
-            ymax,
-        );
+        let ptr = GEOSClipByRect_r(context.as_raw(), g.as_raw(), xmin, ymin, xmax, ymax);
         Geometry::new_from_raw(ptr, context, "clip_by_rect")
     }
 }
@@ -128,16 +128,20 @@ pub fn orientation_index(
     py: f64,
 ) -> GResult<Orientation> {
     match ContextHandle::init() {
-        Ok(context) => {
-            unsafe {
-                match Orientation::try_from(
-                    GEOSOrientationIndex_r(context.as_raw(), ax, ay, bx, by, px, py)
-                ) {
-                    Ok(o) => Ok(o),
-                    Err(e) => Err(Error::GenericError(e.to_owned())),
-                }
+        Ok(context) => unsafe {
+            match Orientation::try_from(GEOSOrientationIndex_r(
+                context.as_raw(),
+                ax,
+                ay,
+                bx,
+                by,
+                px,
+                py,
+            )) {
+                Ok(o) => Ok(o),
+                Err(e) => Err(Error::GenericError(e.to_owned())),
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }
@@ -157,22 +161,33 @@ pub fn segment_intersection(
     by1: f64,
 ) -> GResult<Option<(f64, f64)>> {
     match ContextHandle::init() {
-        Ok(context) => {
-            unsafe {
-                let mut cx = 0.;
-                let mut cy = 0.;
+        Ok(context) => unsafe {
+            let mut cx = 0.;
+            let mut cy = 0.;
 
-                let ret = GEOSSegmentIntersection_r(
-                    context.as_raw(), ax0, ay0, ax1, ay1, bx0, by0, bx1, by1, &mut cx, &mut cy);
-                if ret == -1 {
-                    Ok(None)
-                } else if ret == 0 {
-                    Ok(Some((cx, cy)))
-                } else {
-                    Err(Error::GenericError("GEOSSegmentIntersection_r failed".to_owned()))
-                }
+            let ret = GEOSSegmentIntersection_r(
+                context.as_raw(),
+                ax0,
+                ay0,
+                ax1,
+                ay1,
+                bx0,
+                by0,
+                bx1,
+                by1,
+                &mut cx,
+                &mut cy,
+            );
+            if ret == -1 {
+                Ok(None)
+            } else if ret == 0 {
+                Ok(Some((cx, cy)))
+            } else {
+                Err(Error::GenericError(
+                    "GEOSSegmentIntersection_r failed".to_owned(),
+                ))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }

@@ -34,11 +34,23 @@ mod test {
     fn test_geom_creation_from_geoms() {
         let polygon_geom = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
         let new_geom = polygon_geom.buffer(100.0, 12).expect("buffer failed");
-        let g1 = new_geom.difference(&polygon_geom).expect("difference failed");
-        let g2 = polygon_geom.sym_difference(&new_geom).expect("sym difference failed");
-        let g3 = new_geom.sym_difference(&polygon_geom).expect("sym difference 2 faileed");
-        assert_almost_eq(g1.area().expect("area 1.1 failed"), g2.area().expect("area 1.2 failed"));
-        assert_almost_eq(g2.area().expect("area 2.1 failed"), g3.area().expect("area 2.2 failed"));
+        let g1 = new_geom
+            .difference(&polygon_geom)
+            .expect("difference failed");
+        let g2 = polygon_geom
+            .sym_difference(&new_geom)
+            .expect("sym difference failed");
+        let g3 = new_geom
+            .sym_difference(&polygon_geom)
+            .expect("sym difference 2 faileed");
+        assert_almost_eq(
+            g1.area().expect("area 1.1 failed"),
+            g2.area().expect("area 1.2 failed"),
+        );
+        assert_almost_eq(
+            g2.area().expect("area 2.1 failed"),
+            g3.area().expect("area 2.2 failed"),
+        );
         let g4 = g3.get_centroid().expect("get_centroid failed");
         assert_eq!(GeometryTypes::Point, g4.geometry_type());
         let g5 = g4.buffer(200.0, 12).expect("buffer 2 failed");
@@ -67,7 +79,8 @@ mod test {
 
     #[test]
     fn test_wkt_rounding_precision() {
-        let g = Geometry::new_from_wkt("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
+        let g =
+            Geometry::new_from_wkt("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
         let wkt = g.to_wkt_precision(0);
         assert_eq!(wkt, Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()));
         let wkt2 = g.to_wkt();
@@ -111,7 +124,10 @@ mod test {
         let multi_polygon = Geometry::create_multipolygon(vec_geoms).unwrap();
         assert_eq!(
             multi_polygon.to_wkt_precision(0),
-            Ok("MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))".to_owned()),
+            Ok(
+                "MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))"
+                    .to_owned()
+            ),
         );
     }
 
@@ -146,7 +162,10 @@ mod test {
 
     #[test]
     fn test_get_geometry_n() {
-        let multilinestring = Geometry::new_from_wkt("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))").unwrap();
+        let multilinestring = Geometry::new_from_wkt(
+            "MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))",
+        )
+        .unwrap();
         let l0 = multilinestring.get_geometry_n(0).unwrap();
         let l1 = multilinestring.get_geometry_n(1).unwrap();
 

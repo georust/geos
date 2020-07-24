@@ -1,5 +1,5 @@
-use geos_sys::GEOSContextHandle_t;
 use crate::ContextHandle;
+use geos_sys::GEOSContextHandle_t;
 
 pub trait AsRaw {
     type RawType;
