@@ -1,7 +1,6 @@
-use crate::{CoordSeq, Geometry as GGeom, GeometryTypes};
+use crate::{ConstGeometry, CoordSeq, Geom, Geometry as GGeometry, GeometryTypes};
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
-
 
 pub trait TryInto<T> {
     type Err;
@@ -12,15 +11,14 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     let n_coords = cs.size()?;
     let mut coords = Vec::with_capacity(n_coords);
     for i in 0..n_coords {
-        coords.push(vec![
-            cs.get_x(i)?,
-            cs.get_y(i)?,
-        ]);
+        coords.push(vec![cs.get_x(i)?, cs.get_y(i)?]);
     }
     Ok(coords)
 }
 
-impl<'a> TryInto<Geometry> for GGeom<'a> {
+macro_rules! impl_try_into {
+    ($ty_name:ident $(,$lt:lifetime)?) => (
+impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry, Self::Err> {
@@ -111,17 +109,22 @@ impl<'a> TryInto<Geometry> for GGeom<'a> {
         }
     }
 }
+    );
+}
+
+impl_try_into!(GGeometry);
+impl_try_into!(ConstGeometry, 'c);
 
 #[cfg(test)]
 mod test {
-    use super::GGeom;
     use crate::to_geojson::TryInto;
+    use crate::Geometry as GGeometry;
     use geojson::{Geometry, Value};
 
     #[test]
     fn geom_to_geojson_point() {
         let pt = "POINT(1 1)";
-        let pt = GGeom::new_from_wkt(pt).unwrap();
+        let pt = GGeometry::new_from_wkt(pt).unwrap();
 
         let geojson_pt: Geometry = pt.try_into().unwrap();
 
@@ -132,35 +135,29 @@ mod test {
     #[test]
     fn geom_to_geojson_multipoint() {
         let pts = "MULTIPOINT((1 1), (2 2))";
-        let pts = GGeom::new_from_wkt(pts).unwrap();
+        let pts = GGeometry::new_from_wkt(pts).unwrap();
 
         let geojson_pts: Geometry = pts.try_into().unwrap();
 
-        let expected_pts = Geometry::new(Value::MultiPoint(vec![
-            vec![1., 1.],
-            vec![2., 2.],
-        ]));
+        let expected_pts = Geometry::new(Value::MultiPoint(vec![vec![1., 1.], vec![2., 2.]]));
         assert_eq!(geojson_pts, expected_pts);
     }
 
     #[test]
     fn geom_to_geojson_line() {
         let line = "LINESTRING(1 1, 2 2)";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
-        let expected_line = Geometry::new(Value::LineString(vec![
-            vec![1., 1.],
-            vec![2., 2.],
-        ]));
+        let expected_line = Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]]));
         assert_eq!(geojson_line, expected_line);
     }
 
     #[test]
     fn geom_to_geojson_linearring() {
         let line = "LINEARRING(1 1, 2 1, 2 2, 1 1)";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
@@ -176,85 +173,71 @@ mod test {
     #[test]
     fn geom_to_geojson_multiline() {
         let line = "MULTILINESTRING((1 1, 2 2), (3 3, 4 4))";
-        let line = GGeom::new_from_wkt(line).unwrap();
+        let line = GGeometry::new_from_wkt(line).unwrap();
 
         let geojson_line: Geometry = line.try_into().unwrap();
 
         let expected_line = Geometry::new(Value::MultiLineString(vec![
-            vec![
-                vec![1., 1.],
-                vec![2., 2.],
-            ],
-            vec![
-                vec![3., 3.],
-                vec![4., 4.],
-            ],
+            vec![vec![1., 1.], vec![2., 2.]],
+            vec![vec![3., 3.], vec![4., 4.]],
         ]));
         assert_eq!(geojson_line, expected_line);
     }
 
-
     #[test]
     fn geom_to_geojson_polygon() {
         let poly = "POLYGON((0 0, 0 3, 3 3, 3 0, 0 0) ,(0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))";
-        let poly = GGeom::new_from_wkt(poly).unwrap();
+        let poly = GGeometry::new_from_wkt(poly).unwrap();
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
-        let expected_polygon = Geometry::new(Value::Polygon(
+        let expected_polygon = Geometry::new(Value::Polygon(vec![
             vec![
-                vec![
-                    vec![0., 0.],
-                    vec![0., 3.],
-                    vec![3., 3.],
-                    vec![3., 0.],
-                    vec![0., 0.],
-                ],
-                vec![
-                    vec![0.2, 0.2],
-                    vec![0.2, 2.],
-                    vec![2., 2.],
-                    vec![2., 0.2],
-                    vec![0.2, 0.2],
-                ],
-            ]
-        ));
+                vec![0., 0.],
+                vec![0., 3.],
+                vec![3., 3.],
+                vec![3., 0.],
+                vec![0., 0.],
+            ],
+            vec![
+                vec![0.2, 0.2],
+                vec![0.2, 2.],
+                vec![2., 2.],
+                vec![2., 0.2],
+                vec![0.2, 0.2],
+            ],
+        ]));
         assert_eq!(geojson_polygon, expected_polygon);
     }
 
     #[test]
     fn geom_to_geojson_multipolygon() {
         let poly = "MULTIPOLYGON(((0 0, 0 1, 1 1, 1 0, 0 0)))";
-        let poly = GGeom::new_from_wkt(poly).unwrap();
+        let poly = GGeometry::new_from_wkt(poly).unwrap();
 
         let geojson_polygon: Geometry = poly.try_into().unwrap();
 
-        let expected_polygon = Geometry::new(Value::MultiPolygon(
-            vec![vec![vec![
-                vec![0., 0.],
-                vec![0., 1.],
-                vec![1., 1.],
-                vec![1., 0.],
-                vec![0., 0.],
-            ]]]
-        ));
+        let expected_polygon = Geometry::new(Value::MultiPolygon(vec![vec![vec![
+            vec![0., 0.],
+            vec![0., 1.],
+            vec![1., 1.],
+            vec![1., 0.],
+            vec![0., 0.],
+        ]]]));
         assert_eq!(geojson_polygon, expected_polygon);
     }
 
     #[test]
     fn geom_to_geojson_geometry_collection() {
         let gc = "GEOMETRYCOLLECTION(POINT(1 1), LINESTRING(1 1, 2 2))";
-        let gc = GGeom::new_from_wkt(gc).unwrap();
+        let gc = GGeometry::new_from_wkt(gc).unwrap();
 
         let geojson_gc: Geometry = gc.try_into().unwrap();
 
-        let expected_gc = Geometry::new(Value::GeometryCollection(
-            vec![
-                Geometry::new(Value::Point(vec![1., 1.])),
-                Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
-            ]
-        ));
+        let expected_gc = Geometry::new(Value::GeometryCollection(vec![
+            Geometry::new(Value::Point(vec![1., 1.])),
+            Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
+        ]));
         assert_eq!(geojson_gc, expected_gc);
     }
-
 }

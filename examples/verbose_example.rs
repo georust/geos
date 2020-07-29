@@ -1,8 +1,11 @@
 extern crate geos;
-use geos::{version, Error, Geometry};
+use geos::{version, Error, Geom, Geometry};
 
 fn fun() -> Result<(), Error> {
-    println!("geos_c version: {}", version().expect("failed to get version"));
+    println!(
+        "geos_c version: {}",
+        version().expect("failed to get version")
+    );
     let g1 = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
     println!("Geometry 1 created");
     println!("Area : {}", g1.area()?);

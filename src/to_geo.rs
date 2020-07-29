@@ -1,11 +1,13 @@
-use crate::Geometry as GGeom;
+use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use error::Error;
 use from_geo::TryInto;
 use geo_types::Geometry;
 use wkt;
 use wkt::conversion::try_into_geometry;
 
-impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
+macro_rules! impl_try_into {
+    ($ty_name:ident $(,$lt:lifetime)?) => (
+impl<'a$(,$lt)?> TryInto<Geometry<f64>> for $ty_name<'a$(,$lt)?> {
     type Err = Error;
 
     fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
@@ -26,10 +28,15 @@ impl<'a> TryInto<Geometry<f64>> for GGeom<'a> {
             .map_err(|e| Error::ConversionError(format!("impossible to built from wkt: {}", e)))
     }
 }
+    );
+}
+
+impl_try_into!(GGeometry);
+impl_try_into!(ConstGeometry, 'c);
 
 #[cfg(test)]
 mod test {
-    use super::GGeom;
+    use crate::Geometry as GGeometry;
     use from_geo::TryInto;
     use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
 
@@ -40,7 +47,7 @@ mod test {
     #[test]
     fn geom_to_geo_polygon() {
         let poly = "MULTIPOLYGON(((0 0, 0 1, 1 1, 1 0, 0 0)))";
-        let poly = GGeom::new_from_wkt(poly).unwrap();
+        let poly = GGeometry::new_from_wkt(poly).unwrap();
 
         let geo_polygon: Geometry<f64> = poly.try_into().unwrap();
 

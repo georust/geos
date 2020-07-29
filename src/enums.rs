@@ -240,9 +240,9 @@ impl From<c_int> for Orientation {
     fn from(orientation: c_int) -> Self {
         match orientation {
             -1 => Orientation::CounterClockwise,
-             0 => Orientation::Clockwise,
-             1 => Orientation::Colinear,
-             _ => panic!("invalid value for Orientation!"),
+            0 => Orientation::Clockwise,
+            1 => Orientation::Colinear,
+            _ => panic!("invalid value for Orientation!"),
         }
     }
 }
@@ -253,9 +253,9 @@ impl TryFrom<c_int> for Orientation {
     fn try_from(orientation: c_int) -> Result<Self, Self::Error> {
         match orientation {
             -1 => Ok(Orientation::CounterClockwise),
-             0 => Ok(Orientation::Clockwise),
-             1 => Ok(Orientation::Colinear),
-             _ => Err("value must be -1, 0 or 1"),
+            0 => Ok(Orientation::Clockwise),
+            1 => Ok(Orientation::Colinear),
+            _ => Err("value must be -1, 0 or 1"),
         }
     }
 }
@@ -301,8 +301,8 @@ impl TryFrom<size_t> for Ordinate {
     }
 }
 
-impl Into<size_t> for Ordinate {
-    fn into(self) -> size_t {
+impl Into<u32> for Ordinate {
+    fn into(self) -> u32 {
         match self {
             Ordinate::X => 0,
             Ordinate::Y => 1,

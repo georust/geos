@@ -22,9 +22,11 @@ impl fmt::Display for Error {
                 "error while calling libgeos method {} (error number = {})",
                 p, e
             ),
-            Error::NoConstructionFromNullPtr(ref s) => {
-                write!(f, "impossible to build a geometry from a nullptr in \"{}\"", s)
-            }
+            Error::NoConstructionFromNullPtr(ref s) => write!(
+                f,
+                "impossible to build a geometry from a nullptr in \"{}\"",
+                s
+            ),
             Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {}", s),
             Error::GenericError(ref s) => write!(f, "generic error: {}", s),
         }

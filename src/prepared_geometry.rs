@@ -1,10 +1,10 @@
-use crate::{ContextHandle, Geometry, GResult, AsRaw, ContextHandling, ContextInteractions};
-use error::PredicateType;
+use crate::{AsRaw, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
 use context_handle::PtrWrap;
-use geos_sys::*;
-use functions::*;
-use std::sync::Arc;
 use error::Error;
+use error::PredicateType;
+use functions::*;
+use geos_sys::*;
+use std::sync::Arc;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`] for greater performance
 /// on repeated calls.
@@ -12,17 +12,19 @@ use error::Error;
 /// # Example
 ///
 /// ```
-/// use geos::Geometry;
+/// use geos::{Geom, Geometry};
 ///
-/// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
+/// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+///                      .expect("Invalid geometry");
 /// let mut prepared_geom = geom1.to_prepared_geom()
 ///                              .expect("failed to create prepared geom");
-/// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+/// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
+///                      .expect("Invalid geometry");
 ///
 /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
 /// ```
 pub struct PreparedGeometry<'a> {
-    ptr: PtrWrap<*mut GEOSPreparedGeometry>,
+    ptr: PtrWrap<*const GEOSPreparedGeometry>,
     context: Arc<ContextHandle<'a>>,
 }
 
@@ -38,7 +40,7 @@ impl<'a> PreparedGeometry<'a> {
     ///                      .expect("Invalid geometry");
     /// let prepared_geom = PreparedGeometry::new(&geom1);
     /// ```
-    pub fn new(g: &Geometry<'a>) -> GResult<PreparedGeometry<'a>> {
+    pub fn new<G: Geom<'a>>(g: &G) -> GResult<PreparedGeometry<'a>> {
         unsafe {
             let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
             PreparedGeometry::new_from_raw(ptr, g.clone_context(), "new")
@@ -46,7 +48,7 @@ impl<'a> PreparedGeometry<'a> {
     }
 
     pub(crate) unsafe fn new_from_raw(
-        ptr: *mut GEOSPreparedGeometry,
+        ptr: *const GEOSPreparedGeometry,
         context: Arc<ContextHandle<'a>>,
         caller: &str,
     ) -> GResult<PreparedGeometry<'a>> {
@@ -56,11 +58,15 @@ impl<'a> PreparedGeometry<'a> {
             } else {
                 String::new()
             };
-            return Err(Error::NoConstructionFromNullPtr(format!("PreparedGeometry::{}{}",
-                                                                caller,
-                                                                extra)));
+            return Err(Error::NoConstructionFromNullPtr(format!(
+                "PreparedGeometry::{}{}",
+                caller, extra
+            )));
         }
-        Ok(PreparedGeometry { ptr: PtrWrap(ptr), context })
+        Ok(PreparedGeometry {
+            ptr: PtrWrap(ptr),
+            context,
+        })
     }
 
     /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
@@ -68,16 +74,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
-    /// let mut prepared_geom = geom1.to_prepared_geom()
-    ///                              .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let mut prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                      .expect("Invalid geometry");
     ///
     /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
     /// ```
-    pub fn contains<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn contains<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContains_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -89,16 +98,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))").expect("Invalid geometry");
-    /// let mut prepared_geom = geom1.to_prepared_geom()
-    ///                              .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+    ///                      .expect("Invalid geometry");
+    /// let mut prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                      .expect("Invalid geometry");
     ///
     /// assert_eq!(prepared_geom.contains_properly(&geom2), Ok(true));
     /// ```
-    pub fn contains_properly<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn contains_properly<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedContainsProperly_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -110,19 +122,24 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
+    ///                     .expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
     ///
-    /// let prepared_little_geom = little_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let prepared_big_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_little_geom.covered_by(&big_geom), Ok(true));
     /// assert_eq!(prepared_big_geom.covered_by(&little_geom), Ok(false));
     /// ```
-    pub fn covered_by<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn covered_by<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedCoveredBy_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -134,22 +151,26 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
+    ///                     .expect("Invalid geometry");
     /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
     ///
-    /// let prepared_little_geom = little_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let prepared_big_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_little_geom.covers(&big_geom), Ok(false));
     /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
     /// ```
-    pub fn covers<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+    pub fn covers<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
+        let ret_val =
+            unsafe { GEOSPreparedCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedCovers)
     }
 
@@ -158,18 +179,19 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)").expect("invalid geometry");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)")
+    ///                      .expect("invalid geometry");
     /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
     ///
     /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
     /// ```
-    pub fn crosses<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+    pub fn crosses<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
+        let ret_val =
+            unsafe { GEOSPreparedCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedCrosses)
     }
 
@@ -182,17 +204,22 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.disjoint(&geom2), Ok(true));
     /// assert_eq!(prepared_geom.disjoint(&geom3), Ok(false));
     /// ```
-    pub fn disjoint<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn disjoint<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedDisjoint_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -211,17 +238,22 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)").expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.intersects(&geom2), Ok(false));
     /// assert_eq!(prepared_geom.intersects(&geom3), Ok(true));
     /// ```
-    pub fn intersects<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn intersects<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedIntersects_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -233,21 +265,27 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)")
+    ///                      .expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(false));
     ///
     /// let geom1 = geom1.buffer(3., 8).expect("buffer failed");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     /// let geom2 = geom2.buffer(0.5, 8).expect("buffer failed");
     ///
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(true));
     /// ```
-    pub fn overlaps<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
+    pub fn overlaps<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSPreparedOverlaps_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -260,10 +298,13 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)").expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)")
+    ///                      .expect("invalid geometry");
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     /// let geom2 = Geometry::new_from_wkt("POINT(1 1)").expect("invalid geometry");
     ///
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(false));
@@ -272,10 +313,9 @@ impl<'a> PreparedGeometry<'a> {
     ///
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(true));
     /// ```
-    pub fn touches<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+    pub fn touches<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
+        let ret_val =
+            unsafe { GEOSPreparedTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedTouches)
     }
 
@@ -284,23 +324,27 @@ impl<'a> PreparedGeometry<'a> {
     /// # Example
     ///
     /// ```
-    /// use geos::Geometry;
+    /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT(50 50)").expect("invalid geometry");
+    /// let geom = Geometry::new_from_wkt("POINT(50 50)")
+    ///                     .expect("invalid geometry");
     /// let small_geom = geom.buffer(20., 8).expect("buffer failed");
     /// let big_geom = geom.buffer(40., 8).expect("buffer failed");
     ///
-    /// let small_prepared_geom = small_geom.to_prepared_geom().expect("to_prepared_geom failed");
-    /// let big_prepared_geom = big_geom.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let small_prepared_geom = small_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// let big_prepared_geom = big_geom
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
     ///
     /// assert_eq!(small_prepared_geom.within(&small_geom), Ok(true));
     /// assert_eq!(small_prepared_geom.within(&big_geom), Ok(true));
     /// assert_eq!(big_prepared_geom.within(&small_geom), Ok(false));
     /// ```
-    pub fn within<'b>(&self, other: &Geometry<'b>) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+    pub fn within<'b, G: Geom<'b>>(&self, other: &G) -> GResult<bool> {
+        let ret_val =
+            unsafe { GEOSPreparedWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
         check_geos_predicate(ret_val, PredicateType::PreparedWithin)
     }
 }
@@ -318,13 +362,19 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// Set the context handle to the `PreparedGeometry`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, ContextHandle, Geometry, PreparedGeometry};
+    /// use geos::{
+    ///     ContextInteractions, ContextHandle, Geom, Geometry, PreparedGeometry,
+    /// };
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let context_handle = ContextHandle::init().expect("invalid init");
-    /// let mut prepared_geom = point_geom.to_prepared_geom()
-    ///                                   .expect("failed to create prepared geom");
-    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// let mut prepared_geom = point_geom
+    ///     .to_prepared_geom()
+    ///     .expect("failed to create prepared geom");
+    /// context_handle.set_notice_message_handler(
+    ///     Some(Box::new(|s| println!("new message: {}", s)))
+    /// );
     /// prepared_geom.set_context_handle(context_handle);
     /// ```
     fn set_context_handle(&mut self, context: ContextHandle<'a>) {
@@ -334,9 +384,13 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// Get the context handle of the `PreparedGeometry`.
     ///
     /// ```
-    /// use geos::{ContextInteractions, CoordDimensions, Geometry, PreparedGeometry};
+    /// use geos::{
+    ///     ContextInteractions, CoordDimensions, Geom, Geometry,
+    ///     PreparedGeometry,
+    /// };
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom()
     ///                               .expect("failed to create prepared geom");
     /// let context = prepared_geom.get_context_handle();
@@ -348,9 +402,9 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
 }
 
 impl<'a> AsRaw for PreparedGeometry<'a> {
-    type RawType = *mut GEOSPreparedGeometry;
+    type RawType = GEOSPreparedGeometry;
 
-    fn as_raw(&self) -> Self::RawType {
+    fn as_raw(&self) -> *const Self::RawType {
         *self.ptr
     }
 }

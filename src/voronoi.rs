@@ -1,4 +1,4 @@
-use crate::Geometry as GGeom;
+use crate::{Geom, Geometry as GGeometry};
 use error::Error;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
@@ -7,11 +7,11 @@ use std::borrow::Borrow;
 /// Available using the `geo` feature.
 pub fn compute_voronoi<T: Borrow<Point<f64>>>(
     points: &[T],
-    envelope: Option<&GGeom>,
+    envelope: Option<&GGeometry>,
     tolerance: f64,
     only_edges: bool,
 ) -> Result<Vec<Polygon<f64>>, Error> {
-    let geom_points: GGeom = points.try_into()?;
+    let geom_points: GGeometry = points.try_into()?;
 
     geom_points
         .voronoi(envelope, tolerance, only_edges)?
@@ -32,23 +32,23 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
 
 #[cfg(test)]
 mod test {
-    use super::GGeom;
+    use crate::{Geom, Geometry as GGeometry};
     use geo_types::{Coordinate, LineString, Point, Polygon};
     // create a voronoi diagram. Same unit test as
     // https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
     fn simple_voronoi() {
         let points = "MULTIPOINT ((150 200), (180 270), (275 163))";
-        let input = GGeom::new_from_wkt(points).unwrap();
+        let input = GGeometry::new_from_wkt(points).unwrap();
 
-        let mut voronoi = input.voronoi(None, 0., false).unwrap();
+        let mut voronoi = input.voronoi(None::<&GGeometry>, 0., false).unwrap();
 
         let expected_output = "GEOMETRYCOLLECTION (
             POLYGON ((25 38, 25 295, 221.20588235294116 210.91176470588235, 170.024 38, 25 38)), 
             POLYGON ((400 369.6542056074766, 400 38, 170.024 38, 221.20588235294116 210.91176470588235, 400 369.6542056074766)), 
             POLYGON ((25 295, 25 395, 400 395, 400 369.6542056074766, 221.20588235294116 210.91176470588235, 25 295)))";
 
-        let mut expected_output = GGeom::new_from_wkt(expected_output).unwrap();
+        let mut expected_output = GGeometry::new_from_wkt(expected_output).unwrap();
 
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();
@@ -63,9 +63,9 @@ mod test {
     fn wkt_voronoi_precision() {
         let points = "MULTIPOINT ((100 200), (105 202), (110 200), (140 230), 
         (210 240), (220 190), (170 170), (170 260), (213 245), (220 190))";
-        let input = GGeom::new_from_wkt(points).unwrap();
+        let input = GGeometry::new_from_wkt(points).unwrap();
 
-        let mut voronoi = input.voronoi(None, 6., false).unwrap();
+        let mut voronoi = input.voronoi(None::<&GGeometry>, 6., false).unwrap();
 
         let expected_output = "GEOMETRYCOLLECTION (
         POLYGON ((-20 50, -20 380, -3.75 380, 105 235, 105 115, 77.14285714285714 50, -20 50)),
@@ -76,7 +76,7 @@ mod test {
         POLYGON ((255 380, 340 380, 340 240, 183.51851851851853 208.7037037037037, 178.33333333333334 211.66666666666666, 176.66666666666666 223.33333333333334, 255 380)), 
         POLYGON ((340 240, 340 50, 247 50, 183.51851851851853 208.7037037037037, 340 240)))";
 
-        let mut expected_output = GGeom::new_from_wkt(expected_output).unwrap();
+        let mut expected_output = GGeometry::new_from_wkt(expected_output).unwrap();
 
         expected_output.normalize().unwrap();
         voronoi.normalize().unwrap();
@@ -87,7 +87,7 @@ mod test {
 
     // #[test]
     // fn check() {
-    //     let geom = GGeom::new_from_wkt("MULTIPOLYGON (((
+    //     let geom = GGeometry::new_from_wkt("MULTIPOLYGON (((
     //         4.5687299000000001 7.6963754000000000, 4.5687299000000001 7.6957645999999995,
     //         4.5687299000000001 7.6954739999999999, 4.5687299000000001 7.6950833999999997,
     //         4.5687299000000001 7.6906570999999992, 4.5717796999999996 7.6765523000000000,
@@ -126,7 +126,7 @@ mod test {
     //         4.5492917999999998 7.6979505999999995, 4.5496692999999997 7.6979002999999997,
     //         4.5584372999999996 7.6959944000000000, 4.5637740999999998 7.6952318999999996,
     //         4.5687299000000001 7.6963754000000000)))").expect("new_from_wkt failed");
-    //     let points = GGeom::new_from_wkt("MULTIPOINT(
+    //     let points = GGeometry::new_from_wkt("MULTIPOINT(
     //         (4.4333330000000002 7.6666669999999996),
     //         (4.4500000000000002 7.6166669999999996),
     //         (4.4666670000000002 7.6333329999999995),

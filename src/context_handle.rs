@@ -3,14 +3,17 @@ use error::{Error, GResult};
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
 use std::ffi::CStr;
+use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
-use std::ops::Deref;
 
 macro_rules! set_callbacks {
     ($c_func:ident, $kind:ident, $callback_name:ident, $last:ident) => {
         fn $kind<'a>(ptr: GEOSContextHandle_t, nf: *mut InnerContext<'a>) {
-            unsafe extern "C" fn message_handler_func<'a>(message: *const c_char, data: *mut c_void) {
+            unsafe extern "C" fn message_handler_func<'a>(
+                message: *const c_char,
+                data: *mut c_void,
+            ) {
                 let inner_context: &InnerContext<'a> = &*(data as *mut _);
 
                 if let Ok(callback) = inner_context.$callback_name.lock() {
@@ -31,8 +34,18 @@ macro_rules! set_callbacks {
     };
 }
 
-set_callbacks!(GEOSContext_setNoticeMessageHandler_r, set_notif, notif_callback, last_notification);
-set_callbacks!(GEOSContext_setErrorMessageHandler_r, set_error, error_callback, last_error);
+set_callbacks!(
+    GEOSContext_setNoticeMessageHandler_r,
+    set_notif,
+    notif_callback,
+    last_notification
+);
+set_callbacks!(
+    GEOSContext_setErrorMessageHandler_r,
+    set_error,
+    error_callback,
+    last_error
+);
 
 pub(crate) struct PtrWrap<T>(pub T);
 
@@ -77,7 +90,10 @@ impl<'a> ContextHandle<'a> {
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
             return if let Some(ref caller) = caller {
-                Err(Error::GenericError(format!("GEOS_init_r failed from \"{}\"", caller)))
+                Err(Error::GenericError(format!(
+                    "GEOS_init_r failed from \"{}\"",
+                    caller
+                )))
             } else {
                 Err(Error::GenericError("GEOS_init_r failed".to_owned()))
             };
@@ -85,8 +101,10 @@ impl<'a> ContextHandle<'a> {
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);
 
-        let notif_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> = Mutex::new(Box::new(|_| {}));
-        let error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> = Mutex::new(Box::new(|_| {}));
+        let notif_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> =
+            Mutex::new(Box::new(|_| {}));
+        let error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> =
+            Mutex::new(Box::new(|_| {}));
 
         let inner = Box::into_raw(Box::new(InnerContext {
             notif_callback,
