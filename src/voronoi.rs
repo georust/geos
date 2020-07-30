@@ -24,8 +24,9 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
         .and_then(|gc: GeometryCollection<f64>| {
             gc.0.into_iter()
                 .map(|g| {
-                    g.try_into()
-                        .map_err(|e| Error::ConversionError(format!("invalid inner geometry type: {}", e)))
+                    g.try_into().map_err(|e| {
+                        Error::ConversionError(format!("invalid inner geometry type: {}", e))
+                    })
                 })
                 .collect()
         })

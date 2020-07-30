@@ -219,7 +219,9 @@ mod test {
         let geom: GGeometry = (&mp).try_into().unwrap();
 
         assert!(geom.contains(&geom).unwrap());
-        assert!(geom.contains::<GGeometry>(&(&p).try_into().unwrap()).unwrap());
+        assert!(geom
+            .contains::<GGeometry>(&(&p).try_into().unwrap())
+            .unwrap());
     }
 
     #[test]
