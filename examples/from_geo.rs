@@ -5,9 +5,9 @@ extern crate geos;
 #[cfg(feature = "geo")]
 use geo_types::{Coordinate, LineString, Polygon};
 #[cfg(feature = "geo")]
-use geos::from_geo::TryInto;
-#[cfg(feature = "geo")]
 use geos::{Error, Geom, Geometry};
+#[cfg(feature = "geo")]
+use std::convert::TryInto;
 
 #[cfg(feature = "geo")]
 fn fun() -> Result<(), Error> {
@@ -33,10 +33,11 @@ fn fun() -> Result<(), Error> {
     let geom: Geometry = (&p).try_into()?;
 
     assert!(geom.contains(&geom)?);
-    assert!(!geom.contains(&(&exterior).try_into()?)?);
+    let tmp: Geometry = (&exterior).try_into()?;
+    assert!(!geom.contains(&tmp)?);
 
-    assert!(geom.covers(&(&exterior).try_into()?)?);
-    assert!(geom.touches(&(&exterior).try_into()?)?);
+    assert!(geom.covers(&tmp)?);
+    assert!(geom.touches(&tmp)?);
     Ok(())
 }
 
