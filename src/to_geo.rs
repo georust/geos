@@ -18,7 +18,7 @@ impl<'a$(,$lt)?> TryInto<Geometry<f64>> for $ty_name<'a$(,$lt)?> {
         let wkt_obj = wkt::Wkt::from_str(&wkt_str)
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
 
-        let o: &wkt::Geometry = wkt_obj
+        let o: &wkt::Geometry<f64> = wkt_obj
             .items
             .iter()
             .next()

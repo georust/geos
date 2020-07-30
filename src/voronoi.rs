@@ -2,6 +2,7 @@ use crate::{Geom, Geometry as GGeometry};
 use error::Error;
 use from_geo::TryInto;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
+
 use std::borrow::Borrow;
 
 /// Available using the `geo` feature.
@@ -23,8 +24,9 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
         .and_then(|gc: GeometryCollection<f64>| {
             gc.0.into_iter()
                 .map(|g| {
-                    g.into_polygon()
-                        .ok_or(Error::ConversionError("invalid inner geometry type".into()))
+                    // We use this syntax to not conflict with "from_geo::TryInto"
+                    ::std::convert::TryInto::try_into(g)
+                        .map_err(|e| Error::ConversionError(format!("invalid inner geometry type: {}", e)))
                 })
                 .collect()
         })
