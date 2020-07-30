@@ -1,20 +1,21 @@
 use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use error::Error;
-use from_geo::TryInto;
 use geo_types::Geometry;
 use wkt;
 use wkt::conversion::try_into_geometry;
 
+use std::convert::TryFrom;
+
 macro_rules! impl_try_into {
     ($ty_name:ident $(,$lt:lifetime)?) => (
-impl<'a$(,$lt)?> TryInto<Geometry<f64>> for $ty_name<'a$(,$lt)?> {
-    type Err = Error;
+impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry<f64> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<Geometry<f64>, Self::Err> {
+    fn try_from(other: $ty_name<'a$(,$lt)?>) -> Result<Geometry<f64>, Self::Error> {
         // This is a first draft, it's very inefficient, we use wkt as a pivot format to
         // translate the geometry.
         // We should at least use wkb, or even better implement a direct translation
-        let wkt_str = self.to_wkt()?;
+        let wkt_str = other.to_wkt()?;
         let wkt_obj = wkt::Wkt::from_str(&wkt_str)
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
 
@@ -37,8 +38,8 @@ impl_try_into!(ConstGeometry, 'c);
 #[cfg(test)]
 mod test {
     use crate::Geometry as GGeometry;
-    use from_geo::TryInto;
     use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
+    use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()

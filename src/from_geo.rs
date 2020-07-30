@@ -1,14 +1,10 @@
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
 use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
+
 use std;
 use std::borrow::Borrow;
-
-// define our own TryInto while the std trait is not stable
-pub trait TryInto<T> {
-    type Err;
-    fn try_into(self) -> Result<T, Self::Err>;
-}
+use std::convert::{TryFrom, TryInto};
 
 fn create_coord_seq_from_vec<'a>(coords: &'a [Coordinate<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
@@ -27,21 +23,21 @@ where
     Ok(coord_seq)
 }
 
-impl<'a> TryInto<GGeometry<'a>> for &'a Point<f64> {
-    type Err = Error;
+impl<'a> TryFrom<&'a Point<f64>> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        let coord_seq = create_coord_seq(std::iter::once(&self.0), 1)?;
+    fn try_from(other: &'a Point<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        let coord_seq = create_coord_seq(std::iter::once(&other.0), 1)?;
 
         GGeometry::create_point(coord_seq)
     }
 }
 
-impl<'a, T: Borrow<Point<f64>>> TryInto<GGeometry<'a>> for &'a [T] {
-    type Err = Error;
+impl<'a, T: Borrow<Point<f64>>> TryFrom<&'a [T]> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        let geom_points = self
+    fn try_from(other: &'a [T]) -> Result<GGeometry<'a>, Self::Error> {
+        let geom_points = other
             .into_iter()
             .map(|p| p.borrow().try_into())
             .collect::<Result<Vec<_>, _>>()?;
@@ -50,11 +46,11 @@ impl<'a, T: Borrow<Point<f64>>> TryInto<GGeometry<'a>> for &'a [T] {
     }
 }
 
-impl<'a> TryInto<GGeometry<'a>> for &'a LineString<f64> {
-    type Err = Error;
+impl<'a> TryFrom<&'a LineString<f64>> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        let coord_seq = create_coord_seq_from_vec(self.0.as_slice())?;
+    fn try_from(other: &'a LineString<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        let coord_seq = create_coord_seq_from_vec(other.0.as_slice())?;
 
         GGeometry::create_line_string(coord_seq)
     }
@@ -66,11 +62,11 @@ struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
-impl<'a, 'b> TryInto<GGeometry<'b>> for &'a LineRing<'b> {
-    type Err = Error;
+impl<'a> TryFrom<LineRing<'a>> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'b>, Self::Err> {
-        let points = &(self.0).0;
+    fn try_from(other: LineRing<'a>) -> Result<GGeometry<'a>, Self::Error> {
+        let points = &(other.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
             return Err(Error::InvalidGeometry(
@@ -95,14 +91,14 @@ impl<'a, 'b> TryInto<GGeometry<'b>> for &'a LineRing<'b> {
     }
 }
 
-impl<'a> TryInto<GGeometry<'a>> for &'a Polygon<f64> {
-    type Err = Error;
+impl<'a> TryFrom<&'a Polygon<f64>> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        let ring = LineRing(self.exterior());
+    fn try_from(other: &'a Polygon<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        let ring = LineRing(other.exterior());
         let geom_exterior: GGeometry = ring.try_into()?;
 
-        let interiors: Vec<_> = self
+        let interiors: Vec<_> = other
             .interiors()
             .iter()
             .map(|i| LineRing(i).try_into())
@@ -112,11 +108,11 @@ impl<'a> TryInto<GGeometry<'a>> for &'a Polygon<f64> {
     }
 }
 
-impl<'a> TryInto<GGeometry<'a>> for &'a MultiPolygon<f64> {
-    type Err = Error;
+impl<'a> TryFrom<&'a MultiPolygon<f64>> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        let polygons: Vec<_> = self
+    fn try_from(other: &'a MultiPolygon<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        let polygons: Vec<_> = other
             .0
             .iter()
             .map(|p| p.try_into())
@@ -130,8 +126,8 @@ impl<'a> TryInto<GGeometry<'a>> for &'a MultiPolygon<f64> {
 mod test {
     use super::LineRing;
     use crate::{Geom, Geometry as GGeometry};
-    use from_geo::TryInto;
     use geo_types::{Coordinate, LineString, MultiPolygon, Polygon};
+    use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
         tuples.into_iter().map(Coordinate::from).collect()
@@ -161,10 +157,12 @@ mod test {
         let geom: GGeometry = (&p).try_into().unwrap();
 
         assert!(geom.contains(&geom).unwrap());
-        assert!(!geom.contains(&(&exterior).try_into().unwrap()).unwrap());
 
-        assert!(geom.covers(&(&exterior).try_into().unwrap()).unwrap());
-        assert!(geom.touches(&(&exterior).try_into().unwrap()).unwrap());
+        let tmp: GGeometry = (&exterior).try_into().unwrap();
+
+        assert!(!geom.contains(&tmp).unwrap());
+        assert!(geom.covers(&tmp).unwrap());
+        assert!(geom.touches(&tmp).unwrap());
     }
 
     #[test]
@@ -189,7 +187,7 @@ mod test {
         let geom: GGeometry = (&mp).try_into().unwrap();
 
         assert!(geom.contains(&geom).unwrap());
-        assert!(geom.contains(&(&p).try_into().unwrap()).unwrap());
+        assert!(geom.contains::<GGeometry>(&(&p).try_into().unwrap()).unwrap());
     }
 
     #[test]
@@ -199,7 +197,7 @@ mod test {
         let p = Polygon::new(exterior, interiors);
         let mp = MultiPolygon(vec![p.clone()]);
 
-        let geom = (&mp).try_into();
+        let geom: Result<GGeometry, _> = (&mp).try_into();
 
         assert!(geom.is_err());
     }
@@ -224,7 +222,7 @@ mod test {
         let p = Polygon::new(exterior, interiors);
         let mp = MultiPolygon(vec![p]);
 
-        let _g = (&mp).try_into().unwrap(); // no error
+        let _g: GGeometry = (&mp).try_into().unwrap(); // no error
     }
 
     /// a linear ring can be empty

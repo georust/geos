@@ -1,12 +1,9 @@
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
-use std::iter;
 
-pub trait TryInto<T> {
-    type Err;
-    fn try_into(self) -> Result<T, Self::Err>;
-}
+use std::convert::{TryFrom, TryInto};
+use std::iter;
 
 fn create_coord_seq_from_vec<'a>(coords: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
@@ -42,11 +39,11 @@ fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordS
     }
 }
 
-impl<'a> TryInto<GGeometry<'a>> for &'a Geometry {
-    type Err = Error;
+impl<'a> TryFrom<&'a Geometry> for GGeometry<'a> {
+    type Error = Error;
 
-    fn try_into(self) -> Result<GGeometry<'a>, Self::Err> {
-        match self.value {
+    fn try_from(other: &'a Geometry) -> Result<GGeometry<'a>, Self::Error> {
+        match other.value {
             Value::Point(ref c) => GGeometry::create_point(create_coord_seq(iter::once(c), 1)?),
             Value::MultiPoint(ref pts) => {
                 let ggpts = pts
@@ -108,7 +105,7 @@ impl<'a> TryInto<GGeometry<'a>> for &'a Geometry {
             Value::GeometryCollection(ref geoms) => {
                 let _geoms = geoms
                     .iter()
-                    .map(|ref geom| geom.try_into())
+                    .map(|geom| geom.try_into())
                     .collect::<GResult<Vec<GGeometry>>>()?;
                 GGeometry::create_geometry_collection(_geoms)
             }
@@ -118,14 +115,15 @@ impl<'a> TryInto<GGeometry<'a>> for &'a Geometry {
 
 #[cfg(test)]
 mod test {
-    use crate::from_geojson::TryInto;
     use crate::{Geom, Geometry as GGeometry};
     use geojson::{Geometry, Value};
+
+    use std::convert::TryInto;
 
     #[test]
     fn geom_from_geojson_point() {
         let geojson_pt = Geometry::new(Value::Point(vec![1., 1.]));
-        let gpoint: GGeometry = geojson_pt.try_into().unwrap();
+        let gpoint: GGeometry = (&geojson_pt).try_into().unwrap();
 
         assert_eq!(gpoint.to_wkt_precision(0), Ok("POINT (1 1)".to_string()),);
     }
@@ -133,7 +131,7 @@ mod test {
     #[test]
     fn geom_from_geojson_multipoint() {
         let geojson_pts = Geometry::new(Value::MultiPoint(vec![vec![1., 1.], vec![2., 2.]]));
-        let gpts: GGeometry = geojson_pts.try_into().unwrap();
+        let gpts: GGeometry = (&geojson_pts).try_into().unwrap();
         assert_eq!(
             gpts.to_wkt_precision(0),
             Ok("MULTIPOINT (1 1, 2 2)".to_string()),
@@ -143,7 +141,7 @@ mod test {
     #[test]
     fn geom_from_geojson_line() {
         let geojson_line = Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]]));
-        let gline: GGeometry = geojson_line.try_into().unwrap();
+        let gline: GGeometry = (&geojson_line).try_into().unwrap();
         assert_eq!(
             gline.to_wkt_precision(0),
             Ok("LINESTRING (1 1, 2 2)".to_string()),
@@ -156,7 +154,7 @@ mod test {
             vec![vec![1., 1.], vec![2., 2.]],
             vec![vec![3., 3.], vec![4., 4.]],
         ]));
-        let glines: GGeometry = geojson_lines.try_into().unwrap();
+        let glines: GGeometry = (&geojson_lines).try_into().unwrap();
         assert_eq!(
             glines.to_wkt_precision(0),
             Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
@@ -181,7 +179,7 @@ mod test {
                 vec![0.2, 0.2],
             ],
         ]));
-        let gpolygon: GGeometry = geojson_polygon.try_into().unwrap();
+        let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
@@ -201,7 +199,7 @@ mod test {
             ],
             vec![vec![0.2, 0.2], vec![0.2, 2.], vec![2., 2.], vec![2., 0.2]],
         ]));
-        let gpolygon: GGeometry = geojson_polygon.try_into().unwrap();
+        let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
@@ -218,7 +216,7 @@ mod test {
             vec![1., 0.],
             vec![0., 0.],
         ]]]));
-        let gmultipolygon: GGeometry = geojson_multipolygon.try_into().unwrap();
+        let gmultipolygon: GGeometry = (&geojson_multipolygon).try_into().unwrap();
         assert_eq!(
             gmultipolygon.to_wkt_precision(0),
             Ok("MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))".to_string()),
@@ -231,7 +229,7 @@ mod test {
             Geometry::new(Value::Point(vec![1., 1.])),
             Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]])),
         ]));
-        let gc: GGeometry = geojson_gc.try_into().unwrap();
+        let gc: GGeometry = (&geojson_gc).try_into().unwrap();
         assert_eq!(
             gc.to_wkt_precision(0),
             Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),

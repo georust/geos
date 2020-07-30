@@ -2,10 +2,7 @@ use crate::{ConstGeometry, CoordSeq, Geom, Geometry as GGeometry, GeometryTypes}
 use error::{Error, GResult};
 use geojson::{Geometry, Value};
 
-pub trait TryInto<T> {
-    type Err;
-    fn try_into(self) -> Result<T, Self::Err>;
-}
+use std::convert::{TryFrom, TryInto};
 
 fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     let n_coords = cs.size()?;
@@ -16,16 +13,16 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     Ok(coords)
 }
 
-macro_rules! impl_try_into {
+macro_rules! impl_try_from_geojson {
     ($ty_name:ident $(,$lt:lifetime)?) => (
-impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
-    type Err = Error;
+impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry {
+    type Error = Error;
 
-    fn try_into(self) -> Result<Geometry, Self::Err> {
-        let _type = self.geometry_type();
+    fn try_from(other: $ty_name<'a$(,$lt)?>) -> Result<Geometry, Self::Error> {
+        let _type = other.geometry_type();
         match _type {
             GeometryTypes::Point => {
-                let coord_seq = self.get_coord_seq()?;
+                let coord_seq = other.get_coord_seq()?;
                 Ok(Geometry::new(
                     Value::Point(
                         vec![
@@ -34,52 +31,52 @@ impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
                         ]
                     )
                 ))
-            },
+            }
             GeometryTypes::MultiPoint => {
-                let n_pts = self.get_num_geometries()?;
+                let n_pts = other.get_num_geometries()?;
                 let mut coords = Vec::with_capacity(n_pts);
                 for i in 0..n_pts {
-                    let coord_seq = self.get_geometry_n(i)?.get_coord_seq()?;
+                    let coord_seq = other.get_geometry_n(i)?.get_coord_seq()?;
                     coords.push(vec![
                         coord_seq.get_x(0)?,
                         coord_seq.get_y(0)?,
                     ]);
                 }
                 Ok(Geometry::new(Value::MultiPoint(coords)))
-            },
+            }
             GeometryTypes::LineString | GeometryTypes::LinearRing => {
-                let cs = self.get_coord_seq()?;
+                let cs = other.get_coord_seq()?;
                 let coords = coords_seq_to_vec_position(&cs)?;
                 Ok(Geometry::new(Value::LineString(coords)))
-            },
+            }
             GeometryTypes::MultiLineString => {
-                let n_lines = self.get_num_geometries()?;
+                let n_lines = other.get_num_geometries()?;
                 let mut result_lines = Vec::with_capacity(n_lines);
                 for i in 0..n_lines {
-                    let cs = self.get_geometry_n(i)?.get_coord_seq()?;
+                    let cs = other.get_geometry_n(i)?.get_coord_seq()?;
                     result_lines.push(coords_seq_to_vec_position(&(cs))?);
                 }
                 Ok(Geometry::new(Value::MultiLineString(result_lines)))
-            },
+            }
             GeometryTypes::Polygon => {
-                let nb_interiors = self.get_num_interior_rings()?;
+                let nb_interiors = other.get_num_interior_rings()?;
 
                 let mut rings = Vec::with_capacity(nb_interiors + 1usize);
                 // Exterior ring to coordinates
                 rings.push(coords_seq_to_vec_position(&(
-                    self.get_exterior_ring()?.get_coord_seq()?))?);
+                    other.get_exterior_ring()?.get_coord_seq()?))?);
                 // Interior rings to coordinates
                 for ix_interior in 0..nb_interiors {
                     rings.push(coords_seq_to_vec_position(
-                        &(self.get_interior_ring_n(ix_interior as u32)?.get_coord_seq()?))?);
+                        &(other.get_interior_ring_n(ix_interior as u32)?.get_coord_seq()?))?);
                 }
                 Ok(Geometry::new(Value::Polygon(rings)))
-            },
+            }
             GeometryTypes::MultiPolygon => {
-                let n_polygs = self.get_num_geometries()?;
+                let n_polygs = other.get_num_geometries()?;
                 let mut result_polygs = Vec::with_capacity(n_polygs);
                 for i in 0..n_polygs {
-                    let polyg = self.get_geometry_n(i)?;
+                    let polyg = other.get_geometry_n(i)?;
                     let nb_interiors = polyg.get_num_interior_rings()?;
 
                     let mut rings = Vec::with_capacity(nb_interiors + 1usize);
@@ -94,17 +91,17 @@ impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
                     result_polygs.push(rings);
                 }
                 Ok(Geometry::new(Value::MultiPolygon(result_polygs)))
-            },
+            }
             GeometryTypes::GeometryCollection => {
-                let n_geoms = self.get_num_geometries()?;
+                let n_geoms = other.get_num_geometries()?;
                 let mut result_geoms = Vec::with_capacity(n_geoms);
                 for i in 0..n_geoms {
-                    let g = self.get_geometry_n(i)?;
+                    let g = other.get_geometry_n(i)?;
                     let geojsongeom: Geometry = g.try_into()?;
                     result_geoms.push(geojsongeom);
                 }
                 Ok(Geometry::new(Value::GeometryCollection(result_geoms)))
-            },
+            }
             _ => unreachable!(),
         }
     }
@@ -112,14 +109,15 @@ impl<'a$(,$lt)?> TryInto<Geometry> for $ty_name<'a$(,$lt)?> {
     );
 }
 
-impl_try_into!(GGeometry);
-impl_try_into!(ConstGeometry, 'c);
+impl_try_from_geojson!(GGeometry);
+impl_try_from_geojson!(ConstGeometry, 'c);
 
 #[cfg(test)]
 mod test {
-    use crate::to_geojson::TryInto;
     use crate::Geometry as GGeometry;
     use geojson::{Geometry, Value};
+
+    use std::convert::TryInto;
 
     #[test]
     fn geom_to_geojson_point() {
