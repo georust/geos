@@ -5,7 +5,7 @@ use geojson::{Geometry, Value};
 use std::convert::{TryFrom, TryInto};
 use std::iter;
 
-fn create_coord_seq_from_vec<'a>(coords: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
+fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
@@ -25,7 +25,7 @@ where
 
 // We need to ensure that rings of polygons are closed
 // to create valid GEOS LinearRings (geojson crate doesn't enforce this for now)
-fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
+fn create_closed_coord_seq_from_vec<'a, 'b>(points: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
     let nb_points = points.len();
     // if the geom is not closed we close it
     let is_closed = nb_points > 0 && points.first() == points.last();
@@ -39,10 +39,10 @@ fn create_closed_coord_seq_from_vec<'a>(points: &'a [Vec<f64>]) -> Result<CoordS
     }
 }
 
-impl<'a> TryFrom<&'a Geometry> for GGeometry<'a> {
+impl<'a, 'b> TryFrom<&'a Geometry> for GGeometry<'b> {
     type Error = Error;
 
-    fn try_from(other: &'a Geometry) -> Result<GGeometry<'a>, Self::Error> {
+    fn try_from(other: &'a Geometry) -> Result<GGeometry<'b>, Self::Error> {
         match other.value {
             Value::Point(ref c) => GGeometry::create_point(create_coord_seq(iter::once(c), 1)?),
             Value::MultiPoint(ref pts) => {
@@ -113,6 +113,14 @@ impl<'a> TryFrom<&'a Geometry> for GGeometry<'a> {
     }
 }
 
+impl<'a> TryFrom<Geometry> for GGeometry<'a> {
+    type Error = Error;
+
+    fn try_from(other: Geometry) -> Result<GGeometry<'a>, Self::Error> {
+        GGeometry::try_from(&other)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{Geom, Geometry as GGeometry};
@@ -125,7 +133,13 @@ mod test {
         let geojson_pt = Geometry::new(Value::Point(vec![1., 1.]));
         let gpoint: GGeometry = (&geojson_pt).try_into().unwrap();
 
-        assert_eq!(gpoint.to_wkt_precision(0), Ok("POINT (1 1)".to_string()),);
+        assert_eq!(gpoint.to_wkt_precision(0), Ok("POINT (1 1)".to_string()));
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_pt.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
+            Ok("POINT (1 1)".to_string()),
+        );
     }
 
     #[test]
@@ -136,6 +150,12 @@ mod test {
             gpts.to_wkt_precision(0),
             Ok("MULTIPOINT (1 1, 2 2)".to_string()),
         );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_pts.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
+            Ok("MULTIPOINT (1 1, 2 2)".to_string()),
+        );
     }
 
     #[test]
@@ -144,6 +164,12 @@ mod test {
         let gline: GGeometry = (&geojson_line).try_into().unwrap();
         assert_eq!(
             gline.to_wkt_precision(0),
+            Ok("LINESTRING (1 1, 2 2)".to_string()),
+        );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_line.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
             Ok("LINESTRING (1 1, 2 2)".to_string()),
         );
     }
@@ -157,6 +183,12 @@ mod test {
         let glines: GGeometry = (&geojson_lines).try_into().unwrap();
         assert_eq!(
             glines.to_wkt_precision(0),
+            Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
+        );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_lines.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
             Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
         );
     }
@@ -185,6 +217,13 @@ mod test {
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
         );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_polygon.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(1),
+            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
+                .to_string()),
+        );
     }
 
     #[test]
@@ -205,6 +244,13 @@ mod test {
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
         );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_polygon.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(1),
+            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
+                .to_string()),
+        );
     }
 
     #[test]
@@ -221,6 +267,12 @@ mod test {
             gmultipolygon.to_wkt_precision(0),
             Ok("MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))".to_string()),
         );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_multipolygon.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
+            Ok("MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))".to_string()),
+        );
     }
 
     #[test]
@@ -232,6 +284,12 @@ mod test {
         let gc: GGeometry = (&geojson_gc).try_into().unwrap();
         assert_eq!(
             gc.to_wkt_precision(0),
+            Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),
+        );
+        // This check ensures that `TryFrom` is implemented for both reference and value.
+        let tmp: GGeometry = geojson_gc.try_into().unwrap();
+        assert_eq!(
+            tmp.to_wkt_precision(0),
             Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),
         );
     }
