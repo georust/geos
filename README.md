@@ -43,9 +43,9 @@ let result = pg1.intersects(&g2).expect("intersects failed");
 assert_eq!(result, true);
 ```
 
-### Conversion from [rust-geo](https://github.com/georust/rust-geo)
+### Conversion from [geo](https://github.com/georust/geo)
 
-[rust-geo](https://github.com/georust/rust-geo)'s objects can be converted into [GEOS](https://trac.osgeo.org/geos/)
+[geo](https://github.com/georust/geo)'s objects can be converted into [GEOS](https://trac.osgeo.org/geos/)
 to use all geos algorithms.
 
 Complete example can be found in `examples/from_geo.rs`
@@ -80,7 +80,7 @@ let geom: geos::Geometry = (&p).try_into().expect("failed conversion");
 
 [Voronoi](https://en.wikipedia.org/wiki/Voronoi_diagram) diagrams computation are available in the bindings.
 
-For those to be easier to use with [rust-geo](https://github.com/georust/rust-geo) some helpers are available in `voronoi.rs`.
+For those to be easier to use with [geo](https://github.com/georust/geo) some helpers are available in `voronoi.rs`.
 
 ```rust
 extern crate geo_types;
