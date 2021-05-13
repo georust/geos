@@ -131,7 +131,7 @@ pub enum GeometryTypes {
     MultiPolygon,
     GeometryCollection,
     #[doc(hidden)]
-    __Unknonwn(u32),
+    __Unknown(u32),
 }
 
 impl TryFrom<c_int> for GeometryTypes {
@@ -147,7 +147,7 @@ impl TryFrom<c_int> for GeometryTypes {
             5 => Ok(GeometryTypes::MultiLineString),
             6 => Ok(GeometryTypes::MultiPolygon),
             7 => Ok(GeometryTypes::GeometryCollection),
-            x => Ok(GeometryTypes::__Unknonwn(x as _)),
+            x => Ok(GeometryTypes::__Unknown(x as _)),
         }
     }
 }
@@ -164,7 +164,7 @@ impl Into<c_int> for GeometryTypes {
             GeometryTypes::MultiLineString => 5,
             GeometryTypes::MultiPolygon => 6,
             GeometryTypes::GeometryCollection => 7,
-            GeometryTypes::__Unknonwn(x) => x as _,
+            GeometryTypes::__Unknown(x) => x as _,
         }
     }
 }
