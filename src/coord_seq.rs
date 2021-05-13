@@ -1,4 +1,3 @@
-use crate::enums::TryFrom;
 use crate::{
     AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, CoordDimensions,
     Geometry, Ordinate,
@@ -6,6 +5,7 @@ use crate::{
 use context_handle::PtrWrap;
 use error::{Error, GResult};
 use geos_sys::*;
+use std::convert::TryFrom;
 use std::sync::Arc;
 
 /// `CoordSeq` represents a list of coordinates inside a [`Geometry`].
@@ -97,7 +97,7 @@ impl<'a> CoordSeq<'a> {
 
         if size > 0 {
             let dims = data[0].as_ref().len();
-            if let Err(e) = CoordDimensions::try_from(dims as _) {
+            if let Err(e) = CoordDimensions::try_from(dims as u32) {
                 return Err(Error::GenericError(e.to_owned()));
             }
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
@@ -493,7 +493,7 @@ impl<'a> CoordSeq<'a> {
         if ret_val == 0 {
             Err(Error::GeosError("getting dimensions from CoordSeq".into()))
         } else {
-            Ok(CoordDimensions::from(n))
+            Ok(CoordDimensions::try_from(n).expect("Failed to convert to CoordDimensions"))
         }
     }
 

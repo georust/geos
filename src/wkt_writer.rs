@@ -3,10 +3,10 @@ use crate::{
     OutputDimension,
 };
 use context_handle::PtrWrap;
-use enums::TryFrom;
 use error::Error;
 use functions::*;
 use geos_sys::*;
+use std::convert::TryFrom;
 use std::sync::Arc;
 
 /// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`].
