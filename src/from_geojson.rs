@@ -136,10 +136,7 @@ mod test {
         assert_eq!(gpoint.to_wkt_precision(0), Ok("POINT (1 1)".to_string()));
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_pt.try_into().unwrap();
-        assert_eq!(
-            tmp.to_wkt_precision(0),
-            Ok("POINT (1 1)".to_string()),
-        );
+        assert_eq!(tmp.to_wkt_precision(0), Ok("POINT (1 1)".to_string()),);
     }
 
     #[test]

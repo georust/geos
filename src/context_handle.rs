@@ -281,7 +281,8 @@ impl<'a> ContextHandle<'a> {
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     pub fn get_wkb_byte_order(&self) -> ByteOrder {
-        ByteOrder::try_from(unsafe { GEOS_getWKBByteOrder_r(self.as_raw()) }).expect("failed to convert to ByteOrder")
+        ByteOrder::try_from(unsafe { GEOS_getWKBByteOrder_r(self.as_raw()) })
+            .expect("failed to convert to ByteOrder")
     }
 
     /// Sets WKB byte order.
@@ -297,7 +298,8 @@ impl<'a> ContextHandle<'a> {
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> ByteOrder {
-        ByteOrder::try_from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) }).expect("failed to convert to ByteOrder")
+        ByteOrder::try_from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
+            .expect("failed to convert to ByteOrder")
     }
 }
 
