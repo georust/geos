@@ -1,10 +1,10 @@
 use crate::{AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
 use c_vec::CVec;
 use context_handle::PtrWrap;
-use enums::TryFrom;
 use enums::{ByteOrder, OutputDimension};
 use error::Error;
 use geos_sys::*;
+use std::convert::TryFrom;
 use std::sync::Arc;
 
 /// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`].

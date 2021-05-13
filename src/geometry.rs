@@ -11,6 +11,7 @@ use error::{Error, GResult, PredicateType};
 use functions::*;
 use geos_sys::*;
 use std::borrow::Borrow;
+use std::convert::TryFrom;
 use std::ffi::CString;
 use std::sync::Arc;
 use std::{self, str};
@@ -1229,6 +1230,7 @@ pub trait Geom<'a>:
     /// 2. The cuts geometries collection.
     /// 3. The dangles geometries collection.
     /// 4. The invalid geometries collection.
+    #[allow(clippy::type_complexity)]
     fn polygonize_full(
         &self,
     ) -> GResult<(
@@ -1361,7 +1363,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
     fn geometry_type(&self) -> GeometryTypes {
         let type_geom = unsafe { GEOSGeomTypeId_r(self.get_raw_context(), self.as_raw()) as i32 };
 
-        GeometryTypes::from(type_geom)
+        GeometryTypes::try_from(type_geom).expect("Failed to convert to GeometryTypes")
     }
 
     fn is_valid(&self) -> bool {
@@ -1884,7 +1886,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
             if ret != 2 && ret != 3 {
                 Err(Error::GenericError("GEOSGeom_getCoordinateDimension_r failed".to_owned()))
             } else {
-                Ok(Dimensions::from(ret))
+                Ok(Dimensions::try_from(ret).expect("Failed to convert to Dimensions"))
             }
         }
     }
@@ -2064,7 +2066,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
         unsafe {
             let ret = GEOSProject_r(self.get_raw_context(), self.as_raw(), p.as_raw());
-            if ret == -1. {
+            if (ret - -1.).abs() < 0.001 {
                 Err(Error::GenericError("GEOSProject_r failed".to_owned()))
             } else {
                 Ok(ret)
@@ -2078,7 +2080,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
         unsafe {
             let ret = GEOSProjectNormalized_r(self.get_raw_context(), self.as_raw(), p.as_raw());
-            if ret == -1. {
+            if (ret - -1.).abs() < 0.001 {
                 Err(Error::GenericError("GEOSProjectNormalized_r failed".to_owned()))
             } else {
                 Ok(ret)

@@ -1,28 +1,12 @@
 use libc::{c_int, size_t};
 
-// use std::convert::TryFrom;
-// TODO: remove this implementation when 1.34 is released.
-pub trait TryFrom<T>: Sized {
-    type Error;
-    fn try_from(value: T) -> Result<Self, Self::Error>;
-}
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum CoordDimensions {
     OneD,
     TwoD,
     ThreeD,
-}
-
-impl From<u32> for CoordDimensions {
-    fn from(dimensions: u32) -> Self {
-        match dimensions {
-            1 => CoordDimensions::OneD,
-            2 => CoordDimensions::TwoD,
-            3 => CoordDimensions::ThreeD,
-            _ => panic!("dimensions must be >= 1 and <= 3"),
-        }
-    }
 }
 
 impl TryFrom<u32> for CoordDimensions {
@@ -38,6 +22,7 @@ impl TryFrom<u32> for CoordDimensions {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<u32> for CoordDimensions {
     fn into(self) -> u32 {
         match self {
@@ -55,17 +40,6 @@ pub enum Dimensions {
     Other(u32),
 }
 
-impl From<c_int> for Dimensions {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
-            2 => Dimensions::TwoD,
-            3 => Dimensions::ThreeD,
-            x if x > 3 => Dimensions::Other(x as _),
-            _ => panic!("dimensions must be > 1"),
-        }
-    }
-}
-
 impl TryFrom<c_int> for Dimensions {
     type Error = &'static str;
 
@@ -79,6 +53,7 @@ impl TryFrom<c_int> for Dimensions {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for Dimensions {
     fn into(self) -> c_int {
         match self {
@@ -95,16 +70,6 @@ pub enum OutputDimension {
     ThreeD,
 }
 
-impl From<c_int> for OutputDimension {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
-            2 => OutputDimension::TwoD,
-            3 => OutputDimension::ThreeD,
-            _ => panic!("dimension must be 2 or 3"),
-        }
-    }
-}
-
 impl TryFrom<c_int> for OutputDimension {
     type Error = &'static str;
 
@@ -117,6 +82,7 @@ impl TryFrom<c_int> for OutputDimension {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for OutputDimension {
     fn into(self) -> c_int {
         match self {
@@ -132,15 +98,6 @@ pub enum ByteOrder {
     LittleEndian,
 }
 
-impl From<c_int> for ByteOrder {
-    fn from(order: c_int) -> Self {
-        match order {
-            0 => ByteOrder::BigEndian,
-            _ => ByteOrder::LittleEndian,
-        }
-    }
-}
-
 impl TryFrom<c_int> for ByteOrder {
     type Error = &'static str;
 
@@ -152,6 +109,7 @@ impl TryFrom<c_int> for ByteOrder {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for ByteOrder {
     fn into(self) -> c_int {
         match self {
@@ -173,23 +131,7 @@ pub enum GeometryTypes {
     MultiPolygon,
     GeometryCollection,
     #[doc(hidden)]
-    __Unknonwn(u32),
-}
-
-impl From<c_int> for GeometryTypes {
-    fn from(dimensions: c_int) -> Self {
-        match dimensions {
-            0 => GeometryTypes::Point,
-            1 => GeometryTypes::LineString,
-            2 => GeometryTypes::LinearRing,
-            3 => GeometryTypes::Polygon,
-            4 => GeometryTypes::MultiPoint,
-            5 => GeometryTypes::MultiLineString,
-            6 => GeometryTypes::MultiPolygon,
-            7 => GeometryTypes::GeometryCollection,
-            x => GeometryTypes::__Unknonwn(x as _),
-        }
-    }
+    __Unknown(u32),
 }
 
 impl TryFrom<c_int> for GeometryTypes {
@@ -205,11 +147,12 @@ impl TryFrom<c_int> for GeometryTypes {
             5 => Ok(GeometryTypes::MultiLineString),
             6 => Ok(GeometryTypes::MultiPolygon),
             7 => Ok(GeometryTypes::GeometryCollection),
-            x => Ok(GeometryTypes::__Unknonwn(x as _)),
+            x => Ok(GeometryTypes::__Unknown(x as _)),
         }
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for GeometryTypes {
     fn into(self) -> c_int {
         match self {
@@ -221,7 +164,7 @@ impl Into<c_int> for GeometryTypes {
             GeometryTypes::MultiLineString => 5,
             GeometryTypes::MultiPolygon => 6,
             GeometryTypes::GeometryCollection => 7,
-            GeometryTypes::__Unknonwn(x) => x as _,
+            GeometryTypes::__Unknown(x) => x as _,
         }
     }
 }
@@ -234,17 +177,6 @@ pub enum Orientation {
     Clockwise,
     /// if P is collinear with A-B.
     Colinear,
-}
-
-impl From<c_int> for Orientation {
-    fn from(orientation: c_int) -> Self {
-        match orientation {
-            -1 => Orientation::CounterClockwise,
-            0 => Orientation::Clockwise,
-            1 => Orientation::Colinear,
-            _ => panic!("invalid value for Orientation!"),
-        }
-    }
 }
 
 impl TryFrom<c_int> for Orientation {
@@ -260,6 +192,7 @@ impl TryFrom<c_int> for Orientation {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for Orientation {
     fn into(self) -> c_int {
         match self {
@@ -277,17 +210,6 @@ pub enum Ordinate {
     Z,
 }
 
-impl From<size_t> for Ordinate {
-    fn from(ordinate: size_t) -> Self {
-        match ordinate {
-            0 => Ordinate::X,
-            1 => Ordinate::Y,
-            2 => Ordinate::Z,
-            _ => panic!("ordinate must be >= 0 and <= 2"),
-        }
-    }
-}
-
 impl TryFrom<size_t> for Ordinate {
     type Error = &'static str;
 
@@ -301,6 +223,7 @@ impl TryFrom<size_t> for Ordinate {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<u32> for Ordinate {
     fn into(self) -> u32 {
         match self {
@@ -319,17 +242,6 @@ pub enum Precision {
 }
 
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
-impl From<c_int> for Precision {
-    fn from(order: c_int) -> Self {
-        match order {
-            1 => Precision::NoTopo,
-            2 => Precision::KeepCollapsed,
-            x => panic!("Unknown precision type {}", x),
-        }
-    }
-}
-
-#[cfg(any(feature = "v3_6_0", feature = "dox"))]
 impl TryFrom<c_int> for Precision {
     type Error = &'static str;
 
@@ -343,6 +255,7 @@ impl TryFrom<c_int> for Precision {
 }
 
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for Precision {
     fn into(self) -> c_int {
         match self {
@@ -359,17 +272,6 @@ pub enum JoinStyle {
     Bevel,
 }
 
-impl From<c_int> for JoinStyle {
-    fn from(join_style: c_int) -> Self {
-        match join_style {
-            1 => JoinStyle::Round,
-            2 => JoinStyle::Mitre,
-            3 => JoinStyle::Bevel,
-            _ => panic!("Unknown join style"),
-        }
-    }
-}
-
 impl TryFrom<c_int> for JoinStyle {
     type Error = &'static str;
 
@@ -383,6 +285,7 @@ impl TryFrom<c_int> for JoinStyle {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<c_int> for JoinStyle {
     fn into(self) -> c_int {
         match self {

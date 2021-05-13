@@ -4,6 +4,7 @@ use enums::*;
 use error::{Error, GResult, PredicateType};
 use geometry::Geometry;
 use geos_sys::*;
+use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::str;
@@ -84,10 +85,10 @@ pub(crate) fn check_same_geometry_type(geoms: &[Geometry], geom_type: GeometryTy
     geoms.iter().all(|g| g.geometry_type() == geom_type)
 }
 
-pub(crate) fn create_multi_geom<'a>(
-    mut geoms: Vec<Geometry<'a>>,
+pub(crate) fn create_multi_geom(
+    mut geoms: Vec<Geometry<'_>>,
     output_type: GeometryTypes,
-) -> GResult<Geometry<'a>> {
+) -> GResult<Geometry<'_>> {
     let nb_geoms = geoms.len();
     let context = if geoms.is_empty() {
         match ContextHandle::init() {

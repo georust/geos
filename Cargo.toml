@@ -1,7 +1,13 @@
 [package]
 name = "geos"
-version = "7.0.0"
-authors = ["Matthieu Viry <matthieu.viry@cnrs.fr>", "Adrien Matissart <a.matissart@qwantresearch.com>", "Antoine Desbordes <antoine.desbordes@gmail.com>", "Guillaume Pinot <texitoi@texitoi.eu>", "Guillaume Gomez <guillaume1.gomez@gmail.com>"]
+version = "8.0.0"
+authors = [
+  "Matthieu Viry <matthieu.viry@cnrs.fr>",
+  "Adrien Matissart <a.matissart@qwantresearch.com>",
+  "Antoine Desbordes <antoine.desbordes@gmail.com>",
+  "Guillaume Pinot <texitoi@texitoi.eu>",
+  "Guillaume Gomez <guillaume1.gomez@gmail.com>",
+]
 license = "MIT"
 repository = "https://github.com/georust/geos"
 keywords = ["geos", "libgeos", "geometry", "geography", "gis"]

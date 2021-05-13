@@ -1,7 +1,8 @@
-use enums::{ByteOrder, OutputDimension, TryFrom};
+use enums::{ByteOrder, OutputDimension};
 use error::{Error, GResult};
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
+use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::ops::Deref;
 use std::slice;
@@ -107,10 +108,10 @@ impl<'a> ContextHandle<'a> {
             Mutex::new(Box::new(|_| {}));
 
         let inner = Box::into_raw(Box::new(InnerContext {
-            notif_callback,
-            error_callback,
             last_notification,
             last_error,
+            notif_callback,
+            error_callback,
         }));
 
         set_notif(ptr, inner);
@@ -280,7 +281,8 @@ impl<'a> ContextHandle<'a> {
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     pub fn get_wkb_byte_order(&self) -> ByteOrder {
-        ByteOrder::from(unsafe { GEOS_getWKBByteOrder_r(self.as_raw()) })
+        ByteOrder::try_from(unsafe { GEOS_getWKBByteOrder_r(self.as_raw()) })
+            .expect("failed to convert to ByteOrder")
     }
 
     /// Sets WKB byte order.
@@ -296,7 +298,8 @@ impl<'a> ContextHandle<'a> {
     /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> ByteOrder {
-        ByteOrder::from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
+        ByteOrder::try_from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
+            .expect("failed to convert to ByteOrder")
     }
 }
 
