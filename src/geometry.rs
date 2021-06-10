@@ -1277,7 +1277,8 @@ pub trait Geom<'a>:
     ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
-    fn to_prepared_geom(&self) -> GResult<PreparedGeometry<'a>>;
+    #[allow(clippy::needless_lifetimes)]
+    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>>;
     /// Also passes the context to the newly created `Geometry`.
     fn clone(&self) -> Geometry<'a>;
     /// Returns the 1-based nth geometry.
@@ -2189,7 +2190,8 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
     }
 
-    fn to_prepared_geom(&self) -> GResult<PreparedGeometry<'a>> {
+    #[allow(clippy::needless_lifetimes)]
+    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>> {
         PreparedGeometry::new(self)
     }
 
