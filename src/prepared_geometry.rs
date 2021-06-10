@@ -4,6 +4,8 @@ use error::Error;
 use error::PredicateType;
 use functions::*;
 use geos_sys::*;
+
+use std::mem::transmute;
 use std::sync::Arc;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`] for greater performance
@@ -40,10 +42,10 @@ impl<'a> PreparedGeometry<'a> {
     ///                      .expect("Invalid geometry");
     /// let prepared_geom = PreparedGeometry::new(&geom1);
     /// ```
-    pub fn new<G: Geom<'a>>(g: &G) -> GResult<PreparedGeometry<'a>> {
+    pub fn new<'b: 'a, G: Geom<'b>>(g: &'a G) -> GResult<PreparedGeometry<'a>> {
         unsafe {
             let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
-            PreparedGeometry::new_from_raw(ptr, g.clone_context(), "new")
+            PreparedGeometry::new_from_raw(ptr, transmute(g.clone_context()), "new")
         }
     }
 
@@ -420,3 +422,49 @@ impl<'a> ContextHandling for PreparedGeometry<'a> {
         Arc::clone(&self.context)
     }
 }
+
+/// Tests to ensure that the lifetime is correctly set.
+///
+/// ```compile_fail
+/// use geos::{Geom, Geometry, PreparedGeometry};
+///
+/// pub struct Boo {
+///     #[allow(dead_code)]
+///     geom: Geometry<'static>,
+///     pub prep: PreparedGeometry<'static>,
+/// }
+/// let boo = {
+///     let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+///         .expect("Invalid geometry");
+///     let prep = geom
+///         .to_prepared_geom()
+///         .expect("failed to create prepared geom");
+///      Boo { geom, prep }
+/// };
+/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+/// assert!(boo.prep.contains(&pt).unwrap());
+/// ```
+///
+/// ```compile_fail
+/// use geos::{Geom, Geometry, PreparedGeometry};
+///
+/// pub struct Boo {
+///     pub prep: PreparedGeometry<'static>,
+/// }
+///
+/// let boo = {
+///     let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+///         .expect("Invalid geometry");
+///     let prep = geom1
+///         .to_prepared_geom()
+///         .expect("failed to create prepared geom");
+///
+///     Boo { prep }
+/// };
+///
+/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+///
+/// assert!(boo.prep.contains(&pt).unwrap());
+/// ```
+#[cfg(doctest)]
+pub mod lifetime_checks {}
