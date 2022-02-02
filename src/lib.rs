@@ -26,7 +26,7 @@ pub use coord_seq::CoordSeq;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 pub use enums::Precision;
 pub use enums::{
-    ByteOrder, CoordDimensions, Dimensions, GeometryTypes, Ordinate, Orientation, OutputDimension,
+    ByteOrder, CoordDimensions, Dimensions, GeometryTypes, Ordinate, Orientation, OutputDimension, JoinStyle
 };
 #[cfg(any(feature = "v3_7_0", feature = "dox"))]
 pub use functions::segment_intersection;
