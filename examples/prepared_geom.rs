@@ -26,7 +26,7 @@ fn fun() -> Result<(), Error> {
     for geom in &vec_geoms {
         print!("{:?} ", pg1.intersects(geom)?);
     }
-    println!("");
+    println!();
     Ok(())
 }
 

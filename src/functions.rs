@@ -200,18 +200,12 @@ mod test {
 
     #[test]
     fn check_geos_predicate_ok_test() {
-        assert_eq!(
-            check_geos_predicate(0, PredicateType::Intersects).unwrap(),
-            false
-        );
+        assert!(!check_geos_predicate(0, PredicateType::Intersects).unwrap());
     }
 
     #[test]
     fn check_geos_predicate_ko_test() {
-        assert_eq!(
-            check_geos_predicate(1, PredicateType::Intersects).unwrap(),
-            true
-        );
+        assert!(check_geos_predicate(1, PredicateType::Intersects).unwrap());
     }
 
     #[test]
