@@ -17,6 +17,7 @@ jobs:
           override: true
           components: rustfmt
       - run: cargo fmt -- --check
+      - run: cd sys && cargo fmt -- --check
 
   clippy:
     runs-on: ubuntu-latest
@@ -29,6 +30,7 @@ jobs:
           override: true
           components: clippy
       - run: cargo clippy -- -D warnings
+      - run: cd sys && cargo clippy -- -D warnings
 
   check:
     name: Check ${{ matrix.toolchain }} / ${{ matrix.triple.target }}
@@ -65,6 +67,8 @@ jobs:
           make
           sudo make install
           sudo ldconfig
+      - name: Build static geos crate
+        run: cargo build --features static
       - name: Build geos crate
         run: |
           cargo build
