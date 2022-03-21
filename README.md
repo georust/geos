@@ -96,6 +96,10 @@ let points = vec![
 let voronoi = geos::compute_voronoi(&points, None, 0., false).expect("compute_voronoi failed");
 ```
 
+## Static build
+
+By default, this crate links dynamically. If you want to link statically, use the `static` feature.
+
 ## Contributing
 
 Only a subset of geos has been implemented, feel free to add wrappers for missing features.
