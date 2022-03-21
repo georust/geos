@@ -1,10 +1,10 @@
+use crate::context_handle::PtrWrap;
+use crate::error::Error;
+use crate::functions::*;
 use crate::{
     AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom,
     OutputDimension,
 };
-use context_handle::PtrWrap;
-use error::Error;
-use functions::*;
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::sync::Arc;

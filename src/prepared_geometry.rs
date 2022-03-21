@@ -1,8 +1,7 @@
+use crate::context_handle::PtrWrap;
+use crate::error::{Error, PredicateType};
+use crate::functions::*;
 use crate::{AsRaw, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
-use context_handle::PtrWrap;
-use error::Error;
-use error::PredicateType;
-use functions::*;
 use geos_sys::*;
 
 use std::mem::transmute;

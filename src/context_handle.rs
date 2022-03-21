@@ -1,5 +1,5 @@
-use enums::{ByteOrder, OutputDimension};
-use error::{Error, GResult};
+use crate::enums::{ByteOrder, OutputDimension};
+use crate::error::{Error, GResult};
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
 use std::convert::TryFrom;

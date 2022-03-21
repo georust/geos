@@ -1,3 +1,7 @@
+use crate::context_handle::PtrWrap;
+use crate::enums::*;
+use crate::error::{Error, GResult, PredicateType};
+use crate::functions::*;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{
@@ -5,10 +9,6 @@ use crate::{
     PreparedGeometry, WKTWriter,
 };
 use c_vec::CVec;
-use context_handle::PtrWrap;
-use enums::*;
-use error::{Error, GResult, PredicateType};
-use functions::*;
 use geos_sys::*;
 use std::borrow::Borrow;
 use std::convert::TryFrom;
@@ -41,7 +41,7 @@ pub struct Geometry<'a> {
 /// ```
 /// use geos::{Geom, Geometry};
 ///
-///let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
+/// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0),\
 ///                                            (1 1, 2 1, 2 5, 1 5, 1 1),\
 ///                                            (8 5, 8 4, 9 4, 9 5, 8 5))")
 ///                    .expect("Invalid geometry");
@@ -482,8 +482,10 @@ pub trait Geom<'a>:
     ///
     /// let sym_diff_geom = geom1.sym_difference(&geom2).expect("sym_difference failed");
     ///
-    /// assert_eq!(sym_diff_geom.to_wkt_precision(1).unwrap(),
-    ///            "MULTILINESTRING ((50.0 150.0, 50.0 200.0), (50.0 50.0, 50.0 100.0))");
+    /// assert_eq!(
+    ///     sym_diff_geom.to_wkt_precision(1).unwrap(),
+    ///     "MULTILINESTRING ((50.0 150.0, 50.0 200.0), (50.0 50.0, 50.0 100.0))",
+    /// );
     /// ```
     fn sym_difference<'b, G: Geom<'b>>(&self, other: &G) -> GResult<Geometry<'a>>;
     /// Aggregates the given geometry with another one.
@@ -542,8 +544,10 @@ pub trait Geom<'a>:
     ///
     /// let union_geom = geom.unary_union().expect("unary_union failed");
     ///
-    /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(),
-    ///            "POLYGON ((0.0 0.0, 0.0 6.0, 10.0 6.0, 10.0 0.0, 0.0 0.0))");
+    /// assert_eq!(
+    ///     union_geom.to_wkt_precision(1).unwrap(),
+    ///     "POLYGON ((0.0 0.0, 0.0 6.0, 10.0 6.0, 10.0 0.0, 0.0 0.0))",
+    /// );
     /// ```
     fn unary_union(&self) -> GResult<Geometry<'a>>;
     /// Create a voronoi diagram.

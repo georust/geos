@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use geos_sys::*;
 
-use context_handle::PtrWrap;
-use ContextHandling;
-use {AsRaw, AsRawMut, GResult};
-use {ContextHandle, Geom};
+use crate::context_handle::PtrWrap;
+use crate::ContextHandling;
+use crate::{AsRaw, AsRawMut, GResult};
+use crate::{ContextHandle, Geom};
 
 pub trait SpatialIndex<'a, I> {
     fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I);
@@ -142,7 +142,7 @@ where
 mod test {
     use std::collections::HashSet;
 
-    use {Geometry, STRtree, SpatialIndex};
+    use crate::{Geometry, STRtree, SpatialIndex};
 
     #[test]
     fn test_strtree() {

@@ -1,5 +1,5 @@
+use crate::error::Error;
 use crate::{Geom, Geometry as GGeometry};
-use error::Error;
 use geo_types::{Geometry, GeometryCollection, Point, Polygon};
 
 use std::borrow::Borrow;
@@ -147,13 +147,13 @@ mod test {
     #[test]
     fn geo_voronoi() {
         let points = vec![
-            Point::new(0., 0.),
-            Point::new(0., 1.),
-            Point::new(1., 1.),
-            Point::new(1., 0.),
+            Point::new(0f64, 0.),
+            Point::new(0f64, 1.),
+            Point::new(1f64, 1.),
+            Point::new(1f64, 0.),
         ];
 
-        let voronoi = ::compute_voronoi(&points, None, 0., false).unwrap();
+        let voronoi = crate::compute_voronoi(&points, None, 0., false).unwrap();
 
         let poly = vec![
             Polygon::new(

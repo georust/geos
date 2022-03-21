@@ -1,5 +1,5 @@
+use crate::error::Error;
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
-use error::Error;
 use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
 
 use std;
