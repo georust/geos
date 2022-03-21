@@ -17,6 +17,7 @@ jobs:
           override: true
           components: rustfmt
       - run: cargo fmt -- --check
+      - run: cd sys && cargo fmt -- --check
 
   clippy:
     runs-on: ubuntu-latest
@@ -29,6 +30,41 @@ jobs:
           override: true
           components: clippy
       - run: cargo clippy -- -D warnings
+      - run: cd sys && cargo clippy -- -D warnings
+
+  check_static:
+    name: Check static feature
+    runs-on: ubuntu-latest
+    env:
+      LD_LIBRARY_PATH: /usr/local/lib
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install valgrind
+          sudo apt remove libgeos-dev -y
+      - name: Install geos
+        # First we install the 3.8 version of libgeos and then checkout the 3.8.1 version
+        run: |
+          git clone https://github.com/libgeos/geos
+          cd geos
+          git checkout 24650422b3982f17cc493fe92a70228f2ad624b4
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+      - name: Build static geos crate
+        run: cargo build --features static
 
   check:
     name: Check ${{ matrix.toolchain }} / ${{ matrix.triple.target }}

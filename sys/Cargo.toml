@@ -1,0 +1,33 @@
+[package]
+name = "geos-sys"
+version = "2.0.1"
+authors = ["Guillaume Gomez <guillaume1.gomez@gmail.com>"]
+
+description = "GEOS C API bindings"
+repository = "https://github.com/georust/geos"
+documentation = "https://docs.rs/crate/geos-sys/"
+readme = "README.md"
+keywords = ["geos", "libgeos", "geometry", "geography", "gis"]
+categories = ["external-ffi-bindings", "algorithms"]
+license = "MIT"
+
+build = "build.rs"
+
+[dependencies]
+libc = "~0.2"
+link-cplusplus = { version = "1.0", optional = true }
+geos-src = { path = "./geos-src", version = "0.1.0", optional = true }
+
+[build-dependencies]
+pkg-config = "0.3"
+
+[lib]
+name = "geos_sys"
+crate-type = ["dylib", "rlib"]
+
+[features]
+default = []
+v3_6_0 = []
+v3_7_0 = ["v3_6_0"]
+v3_8_0 = ["v3_7_0"]
+static = ["geos-src", "link-cplusplus"]

@@ -22,6 +22,7 @@ v3_6_0 = ["geos-sys/v3_6_0"]
 v3_7_0 = ["geos-sys/v3_7_0", "v3_6_0"]
 v3_8_0 = ["geos-sys/v3_8_0", "v3_7_0"]
 dox = ["geo-types", "wkt", "json"]
+static = ["geos-sys/static"]
 
 [dependencies]
 libc = "0.2"
@@ -30,7 +31,7 @@ c_vec = "2"
 geojson = { version = "0.22", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.9", optional = true }
-geos-sys = "2.0"
+geos-sys = { path = "sys", version = "2.0" }
 doc-comment = "0.3"
 
 [package.metadata.docs.rs]
