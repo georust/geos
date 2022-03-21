@@ -1,5 +1,5 @@
-use libc::{c_char, c_double, c_int, c_uchar, c_uint, c_void, size_t};
 use crate::types::*;
+use libc::{c_char, c_double, c_int, c_uchar, c_uint, c_void, size_t};
 
 extern "C" {
     pub fn initGEOS(nf: GEOSMessageHandler, ef: GEOSMessageHandler);
@@ -28,21 +28,10 @@ extern "C" {
         writer: *mut GEOSWKTWriter,
         precision: c_int,
     );
-    pub fn GEOSWKTWriter_getOutputDimension(
-        writer: *mut GEOSWKTWriter,
-    ) -> c_int;
-    pub fn GEOSWKTWriter_setOutputDimension(
-        writer: *mut GEOSWKTWriter,
-        dim: c_int,
-    );
-    pub fn GEOSWKTWriter_setTrim(
-        writer: *mut GEOSWKTWriter,
-        trim: c_char,
-    );
-    pub fn GEOSWKTWriter_setOld3D(
-        writer: *mut GEOSWKTWriter,
-        useOld3D: c_int,
-    );
+    pub fn GEOSWKTWriter_getOutputDimension(writer: *mut GEOSWKTWriter) -> c_int;
+    pub fn GEOSWKTWriter_setOutputDimension(writer: *mut GEOSWKTWriter, dim: c_int);
+    pub fn GEOSWKTWriter_setTrim(writer: *mut GEOSWKTWriter, trim: c_char);
+    pub fn GEOSWKTWriter_setOld3D(writer: *mut GEOSWKTWriter, useOld3D: c_int);
 
     pub fn GEOSFree(buffer: *mut c_void);
     pub fn GEOSFree_r(context: GEOSContextHandle_t, buffer: *mut c_void);
@@ -63,21 +52,12 @@ extern "C" {
         dim: c_uint,
         val: c_double,
     ) -> c_int;
-    pub fn GEOSCoordSeq_getX(
-        s: *const GEOSCoordSequence,
-        idx: c_uint,
-        val: *mut c_double,
-    ) -> c_int;
-    pub fn GEOSCoordSeq_getY(
-        s: *const GEOSCoordSequence,
-        idx: c_uint,
-        val: *mut c_double,
-    ) -> c_int;
-    pub fn GEOSCoordSeq_getZ(
-        s: *const GEOSCoordSequence,
-        idx: c_uint,
-        val: *mut c_double,
-    ) -> c_int;
+    pub fn GEOSCoordSeq_getX(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
+        -> c_int;
+    pub fn GEOSCoordSeq_getY(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
+        -> c_int;
+    pub fn GEOSCoordSeq_getZ(s: *const GEOSCoordSequence, idx: c_uint, val: *mut c_double)
+        -> c_int;
     pub fn GEOSCoordSeq_getOrdinate(
         s: *const GEOSCoordSequence,
         idx: c_uint,
@@ -116,14 +96,8 @@ extern "C" {
     pub fn GEOSisValid(g: *const GEOSGeometry) -> c_char;
     pub fn GEOSisValidReason(g: *const GEOSGeometry) -> *mut c_char;
 
-    pub fn GEOSGeomFromHEX_buf(
-        hex: *const c_uchar,
-        size: size_t,
-    ) -> *mut GEOSGeometry;
-    pub fn GEOSGeomToHEX_buf(
-        g: *const GEOSGeometry,
-        size: *mut size_t,
-    ) -> *mut c_uchar;
+    pub fn GEOSGeomFromHEX_buf(hex: *const c_uchar, size: size_t) -> *mut GEOSGeometry;
+    pub fn GEOSGeomToHEX_buf(g: *const GEOSGeometry, size: *mut size_t) -> *mut c_uchar;
     pub fn GEOSGeomFromWKB_buf(wkb: *const c_uchar, size: size_t) -> *mut GEOSGeometry;
     pub fn GEOSGeomToWKB_buf(g: *const GEOSGeometry, size: *mut size_t) -> *mut c_uchar;
     pub fn GEOSGeomTypeId(g: *const GEOSGeometry) -> c_int;
@@ -202,7 +176,8 @@ extern "C" {
     pub fn GEOSBufferParams_setEndCapStyle(p: *mut GEOSBufferParams, style: c_int) -> c_int;
     pub fn GEOSBufferParams_setJoinStyle(p: *mut GEOSBufferParams, joinStyle: c_int) -> c_int;
     pub fn GEOSBufferParams_setMitreLimit(p: *mut GEOSBufferParams, mitreLimit: c_double) -> c_int;
-    pub fn GEOSBufferParams_setQuadrantSegments(p: *mut GEOSBufferParams, quadSegs: c_int) -> c_int;
+    pub fn GEOSBufferParams_setQuadrantSegments(p: *mut GEOSBufferParams, quadSegs: c_int)
+        -> c_int;
     pub fn GEOSBufferParams_setSingleSided(p: *mut GEOSBufferParams, singleSided: c_int) -> c_int;
     pub fn GEOSBufferWithParams(
         g: *const GEOSGeometry,
@@ -223,10 +198,8 @@ extern "C" {
     pub fn GEOSConvexHull(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSBoundary(g: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSGetCentroid(g: *const GEOSGeometry) -> *mut GEOSGeometry;
-    pub fn GEOSSymDifference(
-        g1: *const GEOSGeometry,
-        g2: *const GEOSGeometry,
-    ) -> *mut GEOSGeometry;
+    pub fn GEOSSymDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry)
+        -> *mut GEOSGeometry;
     pub fn GEOSDifference(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSUnion(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> *mut GEOSGeometry;
     pub fn GEOSUnaryUnion(g: *const GEOSGeometry) -> *mut GEOSGeometry;
@@ -298,14 +271,9 @@ extern "C" {
         pg1: *const GEOSPreparedGeometry,
         g2: *const GEOSGeometry,
     ) -> c_char;
-    pub fn GEOSPreparedCovers(
-        pg1: *const GEOSPreparedGeometry,
-        g2: *const GEOSGeometry,
-    ) -> c_char;
-    pub fn GEOSPreparedCrosses(
-        pg1: *const GEOSPreparedGeometry,
-        g2: *const GEOSGeometry,
-    ) -> c_char;
+    pub fn GEOSPreparedCovers(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSPreparedCrosses(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry)
+        -> c_char;
     pub fn GEOSPreparedDisjoint(
         pg1: *const GEOSPreparedGeometry,
         g2: *const GEOSGeometry,
@@ -318,7 +286,8 @@ extern "C" {
         pg1: *const GEOSPreparedGeometry,
         g2: *const GEOSGeometry,
     ) -> c_char;
-    pub fn GEOSPreparedTouches(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_char;
+    pub fn GEOSPreparedTouches(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry)
+        -> c_char;
     pub fn GEOSPreparedWithin(pg1: *const GEOSPreparedGeometry, g2: *const GEOSGeometry) -> c_char;
     pub fn GEOSPreparedGeom_destroy(g: *const GEOSPreparedGeometry);
     pub fn GEOSGetInteriorRingN(g: *const GEOSGeometry, n: c_int) -> *const GEOSGeometry;
@@ -367,11 +336,7 @@ extern "C" {
     pub fn GEOSGeom_getUserData(g: *const GEOSGeometry) -> *mut c_void;
     pub fn GEOSGeom_setUserData(g: *mut GEOSGeometry, userData: *mut c_void);
     pub fn GEOSSTRtree_create(nodeCapacity: size_t) -> *mut GEOSSTRtree;
-    pub fn GEOSSTRtree_insert(
-        tree: *mut GEOSSTRtree,
-        g: *const GEOSGeometry,
-        item: *mut c_void,
-    );
+    pub fn GEOSSTRtree_insert(tree: *mut GEOSSTRtree, g: *const GEOSGeometry, item: *mut c_void);
     pub fn GEOSSTRtree_query(
         tree: *mut GEOSSTRtree,
         g: *const GEOSGeometry,
@@ -467,20 +432,11 @@ extern "C" {
         size: *mut size_t,
     ) -> *mut c_uchar;
     pub fn GEOSWKBWriter_getOutputDimension(writer: *const GEOSWKBWriter) -> c_int;
-    pub fn GEOSWKBWriter_setOutputDimension(
-        writer: *mut GEOSWKBWriter,
-        newDimension: c_int,
-    );
+    pub fn GEOSWKBWriter_setOutputDimension(writer: *mut GEOSWKBWriter, newDimension: c_int);
     pub fn GEOSWKBWriter_getByteOrder(writer: *const GEOSWKBWriter) -> c_int;
-    pub fn GEOSWKBWriter_setByteOrder(
-        writer: *mut GEOSWKBWriter,
-        byteOrder: c_int,
-    );
+    pub fn GEOSWKBWriter_setByteOrder(writer: *mut GEOSWKBWriter, byteOrder: c_int);
     pub fn GEOSWKBWriter_getIncludeSRID(writer: *const GEOSWKBWriter) -> c_char;
-    pub fn GEOSWKBWriter_setIncludeSRID(
-        writer: *mut GEOSWKBWriter,
-        writeSRID: c_char,
-    );
+    pub fn GEOSWKBWriter_setIncludeSRID(writer: *mut GEOSWKBWriter, writeSRID: c_char);
     pub fn GEOSisValidDetail(
         g: *const GEOSGeometry,
         flags: c_int,
@@ -612,10 +568,8 @@ extern "C" {
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSEnvelope_r(
-        handle: GEOSContextHandle_t,
-        g: *const GEOSGeometry,
-    ) -> *mut GEOSGeometry;
+    pub fn GEOSEnvelope_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry)
+        -> *mut GEOSGeometry;
     pub fn GEOSGetCentroid_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
@@ -653,10 +607,7 @@ extern "C" {
         tolerance: c_double,
         onlyEdges: c_int,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSNormalize_r(
-        handle: GEOSContextHandle_t,
-        g: *mut GEOSGeometry,
-    ) -> c_int;
+    pub fn GEOSNormalize_r(handle: GEOSContextHandle_t, g: *mut GEOSGeometry) -> c_int;
     pub fn GEOSIntersection_r(
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
@@ -666,10 +617,8 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSBoundary_r(
-        handle: GEOSContextHandle_t,
-        g: *const GEOSGeometry,
-    ) -> *mut GEOSGeometry;
+    pub fn GEOSBoundary_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry)
+        -> *mut GEOSGeometry;
     pub fn GEOSLength_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
@@ -904,10 +853,7 @@ extern "C" {
         pg1: *const GEOSPreparedGeometry,
         g2: *const GEOSGeometry,
     ) -> c_char;
-    pub fn GEOSPreparedGeom_destroy_r(
-        handle: GEOSContextHandle_t,
-        g: *const GEOSPreparedGeometry,
-    );
+    pub fn GEOSPreparedGeom_destroy_r(handle: GEOSContextHandle_t, g: *const GEOSPreparedGeometry);
     pub fn GEOSCoordSeq_setOrdinate_r(
         handle: GEOSContextHandle_t,
         s: *mut GEOSCoordSequence,
@@ -988,7 +934,8 @@ extern "C" {
         is_ccw: *mut c_char,
     ) -> c_int;
     #[cfg(feature = "v3_6_0")]
-    pub fn GEOSGeom_getPrecision_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> c_double;
+    pub fn GEOSGeom_getPrecision_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry)
+        -> c_double;
     #[cfg(feature = "v3_6_0")]
     pub fn GEOSGeom_setPrecision_r(
         handle: GEOSContextHandle_t,
@@ -1179,13 +1126,8 @@ extern "C" {
         geoms: *const *const GEOSGeometry,
         ngeoms: c_uint,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSBufferParams_create_r(
-        handle: GEOSContextHandle_t,
-    ) -> *mut GEOSBufferParams;
-    pub fn GEOSBufferParams_destroy_r(
-        handle: GEOSContextHandle_t,
-        params: *mut GEOSBufferParams,
-    );
+    pub fn GEOSBufferParams_create_r(handle: GEOSContextHandle_t) -> *mut GEOSBufferParams;
+    pub fn GEOSBufferParams_destroy_r(handle: GEOSContextHandle_t, params: *mut GEOSBufferParams);
     pub fn GEOSBufferParams_setEndCapStyle_r(
         handle: GEOSContextHandle_t,
         p: *mut GEOSBufferParams,
@@ -1278,13 +1220,8 @@ extern "C" {
         useOld3D: c_int,
     );
 
-    pub fn GEOSWKBReader_create_r(
-        handle: GEOSContextHandle_t,
-    ) -> *mut GEOSWKBReader;
-    pub fn GEOSWKBReader_destroy_r(
-        handle: GEOSContextHandle_t,
-        reader: *mut GEOSWKBReader,
-    );
+    pub fn GEOSWKBReader_create_r(handle: GEOSContextHandle_t) -> *mut GEOSWKBReader;
+    pub fn GEOSWKBReader_destroy_r(handle: GEOSContextHandle_t, reader: *mut GEOSWKBReader);
     pub fn GEOSWKBReader_read_r(
         handle: GEOSContextHandle_t,
         reader: *mut GEOSWKBReader,
@@ -1297,13 +1234,8 @@ extern "C" {
         hex: *const c_uchar,
         size: size_t,
     ) -> *mut GEOSGeometry;
-    pub fn GEOSWKBWriter_create_r(
-        handle: GEOSContextHandle_t,
-    ) -> *mut GEOSWKBWriter;
-    pub fn GEOSWKBWriter_destroy_r(
-        handle: GEOSContextHandle_t,
-        writer: *mut GEOSWKBWriter,
-    );
+    pub fn GEOSWKBWriter_create_r(handle: GEOSContextHandle_t) -> *mut GEOSWKBWriter;
+    pub fn GEOSWKBWriter_destroy_r(handle: GEOSContextHandle_t, writer: *mut GEOSWKBWriter);
     pub fn GEOSWKBWriter_write_r(
         handle: GEOSContextHandle_t,
         writer: *mut GEOSWKBWriter,
