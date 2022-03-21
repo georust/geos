@@ -1,5 +1,6 @@
 #![crate_name = "geos"]
 #![crate_type = "lib"]
+#![cfg_attr(doc, doc = include_str!("../README.md"))]
 
 extern crate c_vec;
 #[cfg(any(feature = "geo", feature = "dox"))]

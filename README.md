@@ -1,8 +1,6 @@
 geos
 ====
 
-[![Build Status](https://travis-ci.org/georust/geos.svg?branch=master)](https://travis-ci.org/georust/geos)
-
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
 The supported geos version is >= 3.5
@@ -21,8 +19,10 @@ You can check the examples in the `examples/` directory.
 ```rust
 extern crate geos;
 
-let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))").expect("invalid WKT");
-let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))").expect("invalid WKT");
+let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")
+                         .expect("invalid WKT");
+let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")
+                         .expect("invalid WKT");
 let gg3 = gg1.difference(&gg2).expect("difference failed");
 assert_eq!(
     gg3.to_wkt_precision(0).expect("to_wkt failed"),
@@ -35,10 +35,13 @@ assert_eq!(
 ```rust
 extern crate geos;
 
-let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").expect("invalid WKT");
-let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").expect("invalid WKT");
+let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")
+                        .expect("invalid WKT");
+let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")
+                        .expect("invalid WKT");
 
-let pg1 = geos::PreparedGeometry::new(&g1).expect("PreparedGeometry::new failed");
+let pg1 = geos::PreparedGeometry::new(&g1)
+                                 .expect("PreparedGeometry::new failed");
 let result = pg1.intersects(&g2).expect("intersects failed");
 assert_eq!(result, true);
 ```
@@ -72,7 +75,8 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let geom: geos::Geometry = (&p).try_into().expect("failed conversion");
+let geom: geos::Geometry = (&p).try_into()
+                               .expect("failed conversion");
 // do some stuff with geom
 ```
 
@@ -93,7 +97,8 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let voronoi = geos::compute_voronoi(&points, None, 0., false).expect("compute_voronoi failed");
+let voronoi = geos::compute_voronoi(&points, None, 0., false)
+                   .expect("compute_voronoi failed");
 ```
 
 ## Static build
