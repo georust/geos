@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2018"
 links = "geossrc"
 build = "build.rs"
+description = "static library build for geos-sys"
 repository = "https://github.com/georust/geos"
 authors = ["Gaute Hope <eg@gaute.vetsj.com>"]
 license = "MIT"
