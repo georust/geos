@@ -8,7 +8,7 @@ description = "static library build for geos-sys"
 repository = "https://github.com/georust/geos"
 authors = ["Gaute Hope <eg@gaute.vetsj.com>"]
 license = "MIT"
-exclude = ["source"]
+exclude = ["source/tests"]
 
 [build-dependencies]
 cmake = "0.1.45"
