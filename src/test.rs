@@ -1,5 +1,5 @@
+use crate::enums::GeometryTypes;
 use crate::{Geom, Geometry, PreparedGeometry};
-use enums::GeometryTypes;
 
 #[test]
 fn test_relationship() {

@@ -1,6 +1,6 @@
 [package]
 name = "geos"
-version = "8.0.4"
+version = "8.0.5"
 authors = [
   "Matthieu Viry <matthieu.viry@cnrs.fr>",
   "Adrien Matissart <a.matissart@qwantresearch.com>",
@@ -14,6 +14,7 @@ keywords = ["geos", "libgeos", "geometry", "geography", "gis"]
 categories = ["external-ffi-bindings", "algorithms"]
 description = "Rust bindings for GEOS C API"
 readme = "README.md"
+edition = "2021"
 
 [features]
 json = ["geojson"]
@@ -32,7 +33,6 @@ geojson = { version = "0.22", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.9", optional = true }
 geos-sys = { path = "sys", version = "2.0" }
-doc-comment = "0.3"
 
 [package.metadata.docs.rs]
 features = ["dox"]

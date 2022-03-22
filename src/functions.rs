@@ -1,8 +1,8 @@
+use crate::context_handle::PtrWrap;
+use crate::enums::*;
+use crate::error::{Error, GResult, PredicateType};
+use crate::geometry::Geometry;
 use crate::{AsRawMut, ContextHandle, ContextHandling, Geom};
-use context_handle::PtrWrap;
-use enums::*;
-use error::{Error, GResult, PredicateType};
-use geometry::Geometry;
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::ffi::CStr;
@@ -196,7 +196,7 @@ pub fn segment_intersection(
 #[cfg(test)]
 mod test {
     use super::check_geos_predicate;
-    use error::PredicateType;
+    use crate::error::PredicateType;
 
     #[test]
     fn check_geos_predicate_ok_test() {

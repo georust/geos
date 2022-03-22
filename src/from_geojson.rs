@@ -1,5 +1,5 @@
+use crate::error::{Error, GResult};
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
-use error::{Error, GResult};
 use geojson::{Geometry, Value};
 
 use std::convert::{TryFrom, TryInto};

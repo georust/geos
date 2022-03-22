@@ -1,8 +1,6 @@
 geos
 ====
 
-[![Build Status](https://travis-ci.org/georust/geos.svg?branch=master)](https://travis-ci.org/georust/geos)
-
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
 The supported geos version is >= 3.5
@@ -19,10 +17,12 @@ You can check the examples in the `examples/` directory.
 ### Constructing geometries from WKT:
 
 ```rust
-extern crate geos;
+use geos::Geom;
 
-let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))").expect("invalid WKT");
-let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))").expect("invalid WKT");
+let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")
+                         .expect("invalid WKT");
+let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")
+                         .expect("invalid WKT");
 let gg3 = gg1.difference(&gg2).expect("difference failed");
 assert_eq!(
     gg3.to_wkt_precision(0).expect("to_wkt failed"),
@@ -33,12 +33,13 @@ assert_eq!(
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
 ```rust
-extern crate geos;
+let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")
+                        .expect("invalid WKT");
+let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")
+                        .expect("invalid WKT");
 
-let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").expect("invalid WKT");
-let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").expect("invalid WKT");
-
-let pg1 = geos::PreparedGeometry::new(&g1).expect("PreparedGeometry::new failed");
+let pg1 = geos::PreparedGeometry::new(&g1)
+                                 .expect("PreparedGeometry::new failed");
 let result = pg1.intersects(&g2).expect("intersects failed");
 assert_eq!(result, true);
 ```
@@ -50,12 +51,9 @@ to use all geos algorithms.
 
 Complete example can be found in `examples/from_geo.rs`
 
-```rust
-extern crate geos;
-extern crate geo_types;
-
+```rust,ignore
 use geos::from_geo::TryInto;
-use geo_types::{LineString, Coordinate, Polygon};
+use geos::geo_types::{LineString, Coordinate, Polygon};
 
 // first we create a Geo object
 let exterior = LineString(vec![
@@ -72,7 +70,8 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let geom: geos::Geometry = (&p).try_into().expect("failed conversion");
+let geom: geos::Geometry = (&p).try_into()
+                               .expect("failed conversion");
 // do some stuff with geom
 ```
 
@@ -82,10 +81,10 @@ let geom: geos::Geometry = (&p).try_into().expect("failed conversion");
 
 For those to be easier to use with [geo](https://github.com/georust/geo) some helpers are available in `voronoi.rs`.
 
-```rust
-extern crate geo_types;
+```rust,ignore
+use geos::compute_voronoi;
+use geos::geo_types::Point;
 
-use geo_types::Point;
 let points = vec![
     Point::new(0., 0.),
     Point::new(0., 1.),
@@ -93,8 +92,13 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let voronoi = geos::compute_voronoi(&points, None, 0., false).expect("compute_voronoi failed");
+let voronoi = compute_voronoi(&points, None, 0., false)
+                  .expect("compute_voronoi failed");
 ```
+
+## Static build
+
+By default, this crate links dynamically. If you want to link statically, use the `static` feature.
 
 ## Contributing
 

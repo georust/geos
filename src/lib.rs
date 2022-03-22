@@ -1,23 +1,14 @@
 #![crate_name = "geos"]
 #![crate_type = "lib"]
+#![cfg_attr(doc, doc = include_str!("../README.md"))]
 
-extern crate c_vec;
 #[cfg(any(feature = "geo", feature = "dox"))]
-extern crate geo_types;
-#[cfg(all(feature = "json"))]
-extern crate geojson;
-extern crate geos_sys;
-extern crate libc;
-extern crate num;
+pub use geo_types;
+#[cfg(any(feature = "json", feature = "dox"))]
+pub use geojson;
+pub use geos_sys as sys;
 #[cfg(any(feature = "geo", feature = "dox"))]
-extern crate wkt;
-
-#[cfg(all(feature = "geo", test))]
-#[macro_use]
-extern crate doc_comment;
-
-#[cfg(all(feature = "geo", test))]
-doctest!("../README.md");
+pub use wkt;
 
 pub(crate) mod functions;
 

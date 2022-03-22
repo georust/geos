@@ -1,9 +1,9 @@
+use crate::context_handle::PtrWrap;
+use crate::error::{Error, GResult};
 use crate::{
     AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, CoordDimensions,
     Geometry, Ordinate,
 };
-use context_handle::PtrWrap;
-use error::{Error, GResult};
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
