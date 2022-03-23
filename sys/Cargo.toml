@@ -1,6 +1,6 @@
 [package]
 name = "geos-sys"
-version = "2.0.3"
+version = "2.0.4"
 authors = ["Guillaume Gomez <guillaume1.gomez@gmail.com>"]
 
 description = "GEOS C API bindings"
@@ -16,7 +16,7 @@ build = "build.rs"
 [dependencies]
 libc = "~0.2"
 link-cplusplus = { version = "1.0", optional = true }
-geos-src = { path = "./geos-src", version = "0.2.0", optional = true }
+geos-src = { path = "./geos-src", version = "0.2.1", optional = true }
 
 [build-dependencies]
 pkg-config = "0.3"
