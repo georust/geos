@@ -7,6 +7,7 @@ fn main() {
         .define("BUILD_TESTING", "OFF")
         .define("BUILD_DOCUMENTATION", "OFF")
         .define("BUILD_SHARED_LIBS", "OFF")
+        .define("CMAKE_INSTALL_LIBDIR", "lib")
         .profile("Release");
 
     let libgeos = libgeos_config.build();
