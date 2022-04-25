@@ -8,3 +8,27 @@ sys/geos-src/target/
 # More information here http://doc.crates.io/guide.html#cargotoml-vs-cargolock
 Cargo.lock
 sys/Cargo.lock
+
+# Editor/IDE files
+.idea
+*.iml
+.vs
+.vscode
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+Session.vim
+.cproject
+.project
+.favorites.json
+.settings/
+
+## Local Configuration
+config.toml
+config
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class

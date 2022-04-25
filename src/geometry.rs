@@ -5,7 +5,7 @@ use crate::functions::*;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{
-    AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
+    AsRaw, AsRawMut, BufferParams, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
     PreparedGeometry, WKTWriter,
 };
 use c_vec::CVec;
@@ -401,6 +401,76 @@ pub trait Geom<'a>:
     ///                       1.0 53.0, 36.4 38.4, 51.0 3.0))");
     /// ```
     fn buffer(&self, width: f64, quadsegs: i32) -> GResult<Geometry<'a>>;
+    /// Returns a geometry which represents all points whose distance from `self` is less than or
+    /// equal to distance.
+    ///
+    /// The explicit `buffer_params` argument passing is more efficient than
+    /// the otherwise identical (except for the `single_sided` option is missing)
+    /// [`buffer_with_style`](crate::Geom::buffer_with_style) method when the same [`BufferParams`]
+    /// is reused.
+    ///
+    /// You can find nice examples and details about the [`BufferParams`] options in this
+    /// [postgis](https://postgis.net/docs/ST_Buffer.html) documentation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{BufferParams, CapStyle, Geom, Geometry, JoinStyle};
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
+    /// let params = BufferParams::builder()
+    ///     .end_cap_style(CapStyle::Round)
+    ///     .join_style(JoinStyle::Round)
+    ///     .mitre_limit(5.0)
+    ///     .quadrant_segments(8)
+    ///     .single_sided(false)
+    ///     .build()
+    ///     .expect("build BufferParams");
+    /// let buffer_geom = geom.buffer_with_params(2., &params).expect("buffer_with_params failed");
+    ///
+    /// assert_eq!(buffer_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((3.0 3.0, 3.0 2.6, 2.8 2.2, 2.7 1.9, 2.4 1.6, 2.1 1.3, 1.8 1.2, 1.4 1.0, \
+    ///              1.0 1.0, 0.6 1.0, 0.2 1.2, -0.1 1.3, -0.4 1.6, -0.7 1.9, -0.8 2.2, -1.0 2.6, \
+    ///              -1.0 3.0, -1.0 3.4, -0.8 3.8, -0.7 4.1, -0.4 4.4, -0.1 4.7, 0.2 4.8, 0.6 5.0, \
+    ///              1.0 5.0, 1.4 5.0, 1.8 4.8, 2.1 4.7, 2.4 4.4, 2.7 4.1, 2.8 3.8, 3.0 3.4, \
+    ///              3.0 3.0))");
+    /// ```
+    fn buffer_with_params(&self, width: f64, buffer_params: &BufferParams)
+        -> GResult<Geometry<'a>>;
+    /// Returns a geometry which represents all points whose distance from `self` is less than or
+    /// equal to distance.
+    ///
+    /// If the same paramters are used many times it's more efficient to use the
+    /// [`buffer_with_params`](crate::Geom::buffer_with_params) operation.
+    ///
+    /// You can find nice examples and details about the options in this
+    /// [postgis](https://postgis.net/docs/ST_Buffer.html) documentation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CapStyle, Geom, Geometry, JoinStyle};
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
+    /// let buffer_geom = geom.buffer_with_style(
+    ///     2., 8, CapStyle::Round, JoinStyle::Round, 5.
+    /// ).expect("buffer_with_style failed");
+    ///
+    /// assert_eq!(buffer_geom.to_wkt_precision(1).unwrap(),
+    ///            "POLYGON ((3.0 3.0, 3.0 2.6, 2.8 2.2, 2.7 1.9, 2.4 1.6, 2.1 1.3, 1.8 1.2, \
+    ///             1.4 1.0, 1.0 1.0, 0.6 1.0, 0.2 1.2, -0.1 1.3, -0.4 1.6, -0.7 1.9, -0.8 2.2, \
+    ///             -1.0 2.6, -1.0 3.0, -1.0 3.4, -0.8 3.8, -0.7 4.1, -0.4 4.4, -0.1 4.7, 0.2 4.8, \
+    ///             0.6 5.0, 1.0 5.0, 1.4 5.0, 1.8 4.8, 2.1 4.7, 2.4 4.4, 2.7 4.1, 2.8 3.8, \
+    ///             3.0 3.4, 3.0 3.0))");
+    /// ```
+    fn buffer_with_style(
+        &self,
+        width: f64,
+        quadsegs: i32,
+        end_cap_style: CapStyle,
+        join_style: JoinStyle,
+        mitre_limit: f64,
+    ) -> GResult<Geometry<'a>>;
     /// Returns `true` if the given geometry is empty.
     ///
     /// # Example
@@ -1245,7 +1315,7 @@ pub trait Geom<'a>:
     )>;
     fn shared_paths<'b, G: Geom<'b>>(&self, other: &G) -> GResult<Geometry<'a>>;
     /// Converts a [`Geometry`] to the HEX format. For more control over the generated output,
-    /// use the [`WKBWriter`] type.
+    /// use the [`WKBWriter`](crate::WKBWriter) type.
     ///
     /// # Example
     ///
@@ -1258,7 +1328,7 @@ pub trait Geom<'a>:
     /// ```
     fn to_hex(&self) -> GResult<CVec<u8>>;
     /// Converts a [`Geometry`] to the WKB format. For more control over the generated output,
-    /// use the [`WKBWriter`] type.
+    /// use the [`WKBWriter`](crate::WKBWriter) type.
     ///
     /// # Example
     ///
@@ -1526,6 +1596,33 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
                 quadsegs as _,
             );
             Geometry::new_from_raw(ptr, self.clone_context(), "buffer")
+        }
+    }
+
+    fn buffer_with_params(&self, width: f64, buffer_params: &BufferParams) -> GResult<Geometry<'a>> {
+        unsafe {
+            let ptr = GEOSBufferWithParams_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                buffer_params.as_raw(),
+                width
+            );
+            Geometry::new_from_raw(ptr, self.clone_context(), "buffer_with_params")
+        }
+    }
+
+    fn buffer_with_style(&self, width: f64, quadsegs: i32, end_cap_style: CapStyle, join_style: JoinStyle, mitre_limit: f64) -> GResult<Geometry<'a>> {
+        unsafe {
+            let ptr = GEOSBufferWithStyle_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                width,
+                quadsegs,
+                end_cap_style.into(),
+                join_style.into(),
+                mitre_limit
+            );
+            Geometry::new_from_raw(ptr, self.clone_context(), "buffer_with_style")
         }
     }
 

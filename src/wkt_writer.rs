@@ -9,7 +9,7 @@ use geos_sys::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-/// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`].
+/// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`](crate::Geometry).
 ///
 /// # Example
 ///
