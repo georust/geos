@@ -7,10 +7,6 @@ use crate::{
 use geos_sys::*;
 use std::sync::Arc;
 
-pub const DEFAULT_MITRE_LIMIT: f64 = 5.0;
-pub const DEFAULT_QUADRANT_SEGMENTS: i32 = 8;
-pub const DEFAULT_SINGLE_SIDED: bool = false;
-
 /// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [buffer_with_params](crate::Geom::buffer_with_params)
 pub struct BufferParams<'a> {
     ptr: PtrWrap<*mut GEOSBufferParams>,
@@ -18,24 +14,13 @@ pub struct BufferParams<'a> {
 }
 
 /// Build options for a [`BufferParams`] object
+#[derive(Default)]
 pub struct BufferParamsBuilder {
-    end_cap_style: CapStyle,
-    join_style: JoinStyle,
-    mitre_limit: f64,
-    quadrant_segments: i32,
-    single_sided: bool,
-}
-
-impl Default for BufferParamsBuilder {
-    fn default() -> Self {
-        BufferParamsBuilder {
-            end_cap_style: Default::default(),
-            join_style: Default::default(),
-            mitre_limit: DEFAULT_MITRE_LIMIT,
-            quadrant_segments: DEFAULT_QUADRANT_SEGMENTS,
-            single_sided: DEFAULT_SINGLE_SIDED,
-        }
-    }
+    end_cap_style: Option<CapStyle>,
+    join_style: Option<JoinStyle>,
+    mitre_limit: Option<f64>,
+    quadrant_segments: Option<i32>,
+    single_sided: Option<bool>,
 }
 
 impl<'a> BufferParams<'a> {
@@ -230,32 +215,42 @@ impl<'a> ContextHandling for BufferParams<'a> {
 
 impl BufferParamsBuilder {
     pub fn end_cap_style(mut self, style: CapStyle) -> BufferParamsBuilder {
-        self.end_cap_style = style;
+        self.end_cap_style = Some(style);
         self
     }
     pub fn join_style(mut self, style: JoinStyle) -> BufferParamsBuilder {
-        self.join_style = style;
+        self.join_style = Some(style);
         self
     }
     pub fn mitre_limit(mut self, limit: f64) -> BufferParamsBuilder {
-        self.mitre_limit = limit;
+        self.mitre_limit = Some(limit);
         self
     }
     pub fn quadrant_segments(mut self, quadsegs: i32) -> BufferParamsBuilder {
-        self.quadrant_segments = quadsegs;
+        self.quadrant_segments = Some(quadsegs);
         self
     }
     pub fn single_sided(mut self, is_single_sided: bool) -> BufferParamsBuilder {
-        self.single_sided = is_single_sided;
+        self.single_sided = Some(is_single_sided);
         self
     }
     pub fn build(self) -> GResult<BufferParams<'static>> {
         let mut params = BufferParams::new()?;
-        params.set_end_cap_style(self.end_cap_style)?;
-        params.set_join_style(self.join_style)?;
-        params.set_mitre_limit(self.mitre_limit)?;
-        params.set_quadrant_segments(self.quadrant_segments)?;
-        params.set_single_sided(self.single_sided)?;
+        if let Some(style) = self.end_cap_style {
+            params.set_end_cap_style(style)?;
+        }
+        if let Some(style) = self.join_style {
+            params.set_join_style(style)?;
+        }
+        if let Some(limit) = self.mitre_limit {
+            params.set_mitre_limit(limit)?;
+        }
+        if let Some(quad_segs) = self.quadrant_segments {
+            params.set_quadrant_segments(quad_segs)?;
+        }
+        if let Some(is_single_sided) = self.single_sided {
+            params.set_single_sided(is_single_sided)?;
+        }
         Ok(params)
     }
 }
