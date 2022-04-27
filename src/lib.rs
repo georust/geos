@@ -12,13 +12,14 @@ pub use wkt;
 
 pub(crate) mod functions;
 
+pub use buffer_params::{BufferParams, BufferParamsBuilder};
 pub use context_handle::ContextHandle;
 pub use coord_seq::CoordSeq;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 pub use enums::Precision;
 pub use enums::{
-    ByteOrder, CoordDimensions, Dimensions, GeometryTypes, JoinStyle, Ordinate, Orientation,
-    OutputDimension,
+    ByteOrder, CapStyle, CoordDimensions, Dimensions, GeometryTypes, JoinStyle, Ordinate,
+    Orientation, OutputDimension,
 };
 #[cfg(any(feature = "v3_7_0", feature = "dox"))]
 pub use functions::segment_intersection;
@@ -29,6 +30,7 @@ pub use spatial_index::{STRtree, SpatialIndex};
 pub use wkb_writer::WKBWriter;
 pub use wkt_writer::WKTWriter;
 
+mod buffer_params;
 mod context_handle;
 mod coord_seq;
 mod error;

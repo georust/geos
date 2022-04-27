@@ -265,11 +265,21 @@ impl Into<c_int> for Precision {
     }
 }
 
+/// Join styles for a [`Geometry`](crate::Geometry) [buffer](crate::Geom::buffer_with_style) operation
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum JoinStyle {
+    /// Specifies a round join style.
     Round,
+    /// Specifies a mitre join style.
     Mitre,
+    /// Specifies a bevel join style.
     Bevel,
+}
+
+impl Default for JoinStyle {
+    fn default() -> Self {
+        JoinStyle::Round
+    }
 }
 
 impl TryFrom<c_int> for JoinStyle {
@@ -292,6 +302,47 @@ impl Into<c_int> for JoinStyle {
             JoinStyle::Round => 1,
             JoinStyle::Mitre => 2,
             JoinStyle::Bevel => 3,
+        }
+    }
+}
+
+/// End cap styles for a [`Geometry`](crate::Geometry) [buffer](crate::Geom::buffer_with_style) operation
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum CapStyle {
+    /// Specifies a round line buffer end cap style.
+    Round,
+    /// Specifies a flat line buffer end cap style.
+    Flat,
+    /// Specifies a square line buffer end cap style.
+    Square,
+}
+
+impl Default for CapStyle {
+    fn default() -> Self {
+        CapStyle::Round
+    }
+}
+
+impl TryFrom<c_int> for CapStyle {
+    type Error = &'static str;
+
+    fn try_from(cap_style: c_int) -> Result<Self, Self::Error> {
+        match cap_style {
+            1 => Ok(CapStyle::Round),
+            2 => Ok(CapStyle::Flat),
+            3 => Ok(CapStyle::Square),
+            _ => Err("Unknown cap style"),
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<c_int> for CapStyle {
+    fn into(self) -> c_int {
+        match self {
+            CapStyle::Round => 1,
+            CapStyle::Flat => 2,
+            CapStyle::Square => 3,
         }
     }
 }

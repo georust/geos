@@ -7,7 +7,7 @@ use geos_sys::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-/// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`].
+/// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`](crate::Geometry).
 ///
 /// # Example
 ///
@@ -202,8 +202,8 @@ impl<'a> WKBWriter<'a> {
         }
     }
 
-    /// Returns the number of dimensions to be used when calling [`WKBWriter::write`]. By default,
-    /// it is 2.
+    /// Returns the number of dimensions to be used when calling [`WKBWriter::write_wkb`].
+    /// By default, it is 2.
     ///
     /// # Example
     ///

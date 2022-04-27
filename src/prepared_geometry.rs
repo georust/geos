@@ -7,7 +7,7 @@ use geos_sys::*;
 use std::mem::transmute;
 use std::sync::Arc;
 
-/// `PreparedGeometry` is an interface which prepares [`Geometry`] for greater performance
+/// `PreparedGeometry` is an interface which prepares [`Geometry`](crate::Geometry) for greater performance
 /// on repeated calls.
 ///
 /// # Example
@@ -30,7 +30,7 @@ pub struct PreparedGeometry<'a> {
 }
 
 impl<'a> PreparedGeometry<'a> {
-    /// Creates a new `PreparedGeometry` from a [`Geometry`].
+    /// Creates a new `PreparedGeometry` from a [`Geometry`](crate::Geometry).
     ///
     /// # Example
     ///
