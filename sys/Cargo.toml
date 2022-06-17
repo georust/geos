@@ -16,7 +16,7 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-# libc = "~0.2"  # do we want this?
+libc = "~0.2"
 link-cplusplus = { version = "1.0", optional = true }
 geos-src = { path = "./geos-src", version = "0.2.1", optional = true }
 

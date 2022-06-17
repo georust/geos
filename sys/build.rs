@@ -2,7 +2,7 @@ use semver::Version;
 use std::env;
 use std::path::{Path, PathBuf};
 
-const MINIMUM_GEOS_VERSION: &str = "3.7.0";
+const MINIMUM_GEOS_VERSION: &str = "3.6.0";
 const BUNDLED_GEOS_VERSION: &str = "3.11.0"; // TODO: 3.10.0
 
 /// Hardcode a prebuilt binding version while generating docs.
@@ -26,18 +26,14 @@ fn set_bindings_for_docs(out_path: &PathBuf) {
     std::fs::copy(&binding_path, &out_path).expect("Can't copy bindings to output directory");
 }
 
+fn write_bindings(include_path: &Path, out_path: &Path) {
+    let geos_header = include_path.join("geos_c.h").to_str().unwrap().to_string();
 
-fn write_bindings(include_paths: Vec<String>, out_path: &Path) {
-    let mut builder = bindgen::Builder::default()
+    bindgen::Builder::default()
         .size_t_is_usize(true)
-        .header("wrapper.h");
-
-    for path in include_paths {
-        builder = builder.clang_arg("-I");
-        builder = builder.clang_arg(path);
-    }
-
-    builder
+        .header(geos_header)
+        .clang_arg("-I")
+        .clang_arg(include_path.to_str().unwrap())
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(out_path)
@@ -45,13 +41,14 @@ fn write_bindings(include_paths: Vec<String>, out_path: &Path) {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=GEOS_INCLUDE_DIR");
     println!("cargo:rerun-if-env-changed=GEOS_LIB_DIR");
     println!("cargo:rerun-if-env-changed=GEOS_VERSION");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
     let mut version = Version::new(0, 0, 0);
-    let mut include_paths = Vec::new();
+    let include_path: PathBuf;
 
     if env::var("DOCS_RS").is_ok() {
         set_bindings_for_docs(&out_path);
@@ -59,7 +56,7 @@ fn main() {
     }
 
     // static feature includes building the included GEOS prior to this build step
-    if cfg!(feature = "static"){
+    if cfg!(feature = "static") {
         let geos_path = std::env::var("DEP_GEOSSRC_SEARCH").unwrap();
 
         println!("cargo:rustc-link-lib=static=geos_c");
@@ -67,7 +64,7 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", geos_path);
         println!("cargo:includedir={}/include", geos_path);
 
-        include_paths.push(geos_path + "/include");
+        include_path = Path::join(Path::parent(&PathBuf::from(geos_path).as_path()).unwrap(), "include");
 
         version = Version::parse(BUNDLED_GEOS_VERSION).unwrap();
     } else {
@@ -84,8 +81,7 @@ fn main() {
             // GEOS_INCLUDE_DIR
             match include_dir_env {
                 Some(path) => {
-                    let include_dir = PathBuf::from(path).as_path().to_str().unwrap().to_string();
-                    include_paths.push(include_dir);
+                    include_path = PathBuf::from(path);
                 }
                 None => {
                     panic!("GEOS_INCLUDE_DIR must be set");
@@ -118,14 +114,11 @@ fn main() {
                 }
             }
         } else {
-            let geos_pkg_config = Config::new()
-                // .cargo_metadata(need_metadata)
-                .probe("geos");
+            let geos_pkg_config = Config::new().probe("geos");
 
             if let Ok(geos) = &geos_pkg_config {
-                for dir in &geos.include_paths {
-                    include_paths.push(dir.to_str().unwrap().to_string());
-                }
+                // GEOS should only have one include path for geos_c.h header
+                include_path = PathBuf::from(geos.include_paths.first().unwrap());
 
                 // standardize GEOS alpha / beta versions to match semver format:
                 let raw_version = geos
@@ -165,7 +158,7 @@ fn main() {
     }
 
     if cfg!(feature = "bindgen") {
-        write_bindings(include_paths, &out_path);
+        write_bindings(&include_path, &out_path);
     } else {
         {
             println!(

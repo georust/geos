@@ -20,7 +20,7 @@ environment variables:
 
 You can build the included version of GEOS using the `static` feature, which
 will also statically link libgeos to this crate.  In order to build GEOS, you
-need to have `cmake` and a C++ compiler.
+need to have `cmake` and a C++ compiler.  Building GEOS may take several minutes.
 
 
 ## Bindings
@@ -30,22 +30,27 @@ By default, prebuilt bindings are used if they match your version of GEOS.
 If a prebuilt binding is not available, you can generate your own bindings using
 the `bindgen` feature.
 
+### Adding a new GEOS version
 
-## Add more functions
-
-This binding is written manually.
-
-A little script is available to check what functions aren't available yet. You
-can run it as follows:
+Install the desired GEOS version on your system and then run
 
 ```bash
-> python3 check_missing/check_missing.py
+cargo build --features bindgen
 ```
 
-It simply reads `geos` C header file and compare it with the `geos-sys`'s
-`src/functions.rs` file. Normally, you should never have more functions in the
-Rust code than the C code (deprecated functions aren't reexported in Rust).
+This will produce a new binding in `target/debug/build/geos-sys-<hash>/out/bindings.rs`.
 
-If you want to support a newer GEOS version, please update the
-`check_missing/geos_c.h` file and then run the `check_missing.py` script to see
-what was added/removed.
+Copy this to `prebuilt-bindings/geos_<major>.<minor>.rs`.
+
+
+Alternatively, you can check the GEOS submodule in out `geos-src/source` out
+to a particular version, and then use the `static` feature:
+
+```bash
+cargo build --features bindgen,static
+```
+
+Note that this may encounter build errors depending on the version of GEOS due
+to CMake configuration issues.  You may need to switch
+`.define("BUILD_TESTING", "OFF")` in `geos-src/src/build.rs` to `"ON"` in order
+to successfully build using CMake.
