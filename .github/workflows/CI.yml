@@ -71,11 +71,6 @@ jobs:
   check:
     name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }} - ${{ matrix.triple.target }}
     runs-on: ubuntu-latest
-    env:
-      LD_LIBRARY_PATH: /usr/local/lib
-      # GEOS_INCLUDE_DIR: "/usr/include"
-      # GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
-      # GEOS_VERSION: ${{ matrix.geos }}
     strategy:
       fail-fast: false
       matrix:
@@ -84,6 +79,7 @@ jobs:
           - nightly
         geos:
           - "3.7.3"
+          - "3.8.1"  # TEMP: since 3.8.1 worked previously
           - "3.8.3"
           - "3.9.3"
           - "3.10.3"
@@ -104,7 +100,29 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install build-essential ninja-build pkg-config valgrind
+          sudo apt install build-essential ccache ninja-build pkg-config valgrind
+          sudo /usr/sbin/update-ccache-symlinks
+
+      - name: Prepare ccache
+        run: ccache --clear --set-config cache_dir=~/.ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v2
+        env:
+          cache-name: ccache-v1
+        with:
+          path: ~/.ccache
+          key: ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}-${{ github.sha }}-${{ github.head_ref }}
+          restore-keys: |
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}-${{ github.sha }}
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}
+
+      - name: Clear ccache statistics
+        run: |
+          ccache --zero-stats --set-config cache_dir=~/.ccache
+          ccache --max-size=2G --set-config cache_dir=~/.ccache
+          ccache --show-stats --set-config cache_dir=~/.ccache
 
       - name: Install GEOS
         run: |
@@ -113,7 +131,7 @@ jobs:
           git checkout "tags/${{ matrix.geos }}"
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release ..
           sudo ninja install
 
       - name: Build geos crate

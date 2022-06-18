@@ -195,12 +195,7 @@ fn main() {
                             version = pkg_version;
                         }
 
-                        // if version >= Version::new(3, 8, 0) {
-                            println!("cargo:rustc-link-lib=dylib=geos_c");
-                        // } else {
-                        //     println!("cargo:rustc-link-lib=dylib=geos");
-                        // }
-
+                        println!("cargo:rustc-link-lib=dylib=geos_c");
 
                         println!(
                             "cargo:rustc-link-search=native={}",
