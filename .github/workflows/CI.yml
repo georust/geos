@@ -21,7 +21,11 @@ jobs:
       - run: cd sys && cargo fmt -- --check
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    env:
+      GEOS_INCLUDE_DIR: "/usr/include"
+      GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
+      GEOS_VERSION: 3.8.0
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -30,6 +34,7 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
+
       - name: Install dependencies
         run: |
           sudo apt update
@@ -39,25 +44,22 @@ jobs:
 
   check_static:
     name: Check static feature
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       LD_LIBRARY_PATH: /usr/local/lib
+
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: "true"
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-          components: clippy
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install valgrind
-          sudo apt remove libgeos-dev -y
+
       - name: Build static geos crate
         run: cargo build --features static
 
@@ -66,6 +68,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: /usr/local/lib
+      GEOS_INCLUDE_DIR: "/usr/include"
+      GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
+      GEOS_VERSION: ${{ matrix.geos }}
     strategy:
       fail-fast: false
       matrix:
@@ -95,11 +100,11 @@ jobs:
         run: |
           sudo apt update
           sudo apt install build-essential ninja-build pkg-config valgrind
-          sudo apt remove libgeos-dev -y
 
       - name: Install GEOS
         run: |
           cd sys/geos-src/source
+          git fetch origin
           git checkout tags/${{ matrix.geos }}
           mkdir build
           cd build

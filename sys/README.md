@@ -10,13 +10,17 @@ You can also find it on [crates.io](https://crates.io/crates/geos).
 
 ## Build
 
-By default, the build will use system-installed GEOS if available.
+By default, the build will use system-installed GEOS if available.  `pkg-config`
+is used to automatically detect GEOS >= 3.9.
 
-If using system-installed GEOS, the build can be configured with a few
-environment variables:
-* If `GEOS_INCLUDE_DIR`, `GEOS_LIB_DIR`, and `GEOS_VERSION` are set, they will
-  be used
-* otherwise, `pkg-config` (Linux / macOS) is queried to determine these values
+If using system-installed GEOS not discoverable by `pkg-config` (GEOS <= 3.8 or
+in a custom location), the build can be configured with a few environment
+variables (all must be set):
+* `GEOS_INCLUDE_DIR`
+* `GEOS_LIB_DIR`
+* `GEOS_VERSION`
+
+You may be able to use `geos-config` to discover the locations to use.
 
 You can build the included version of GEOS using the `static` feature, which
 will also statically link libgeos to this crate.  In order to build GEOS, you
