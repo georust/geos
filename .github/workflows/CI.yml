@@ -82,7 +82,7 @@ jobs:
           - "3.8.3"
           - "3.9.3"
           - "3.10.3"
-          - "3.11.0beta2"
+          - "3.11.0beta1"
 
     steps:
       - uses: actions/checkout@v2
@@ -105,7 +105,9 @@ jobs:
         run: |
           cd sys/geos-src/source
           git fetch origin
-          git checkout tags/${{ matrix.geos }}
+          git status
+          git ls-remote --tags origin
+          git checkout refs/tags/${{ matrix.geos }}
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
