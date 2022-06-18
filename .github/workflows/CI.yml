@@ -1,9 +1,10 @@
+name: CI
+
 on:
   push:
     branches: [master]
   pull_request:
-
-name: CI
+  workflow_dispatch:
 
 jobs:
   rustfmt:
@@ -29,6 +30,10 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libgeos-dev
       - run: cargo clippy -- -D warnings
       - run: cd sys && cargo clippy -- -D warnings
 
@@ -47,27 +52,17 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+          components: clippy
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install valgrind
           sudo apt remove libgeos-dev -y
-      - name: Install geos
-        # First we install the 3.8 version of libgeos and then checkout the 3.8.1 version
-        run: |
-          git clone https://github.com/libgeos/geos
-          cd geos
-          git checkout 24650422b3982f17cc493fe92a70228f2ad624b4
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
       - name: Build static geos crate
         run: cargo build --features static
 
   check:
-    name: Check ${{ matrix.toolchain }} / ${{ matrix.triple.target }}
+    name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }} - ${{ matrix.triple.target }}
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: /usr/local/lib
@@ -77,49 +72,69 @@ jobs:
         toolchain:
           - stable
           - nightly
+        geos:
+          - "3.7.3"
+          - "3.8.3"
+          - "3.9.3"
+          - "3.10.3"
+          - "3.11.0beta2"
+
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           override: true
+
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install valgrind
+          sudo apt install build-essential ninja pkg-config valgrind
           sudo apt remove libgeos-dev -y
-      - name: Install geos
-        # First we install the 3.8 version of libgeos and then checkout the 3.8.1 version
+
+      - name: Install GEOS
         run: |
-          git clone https://github.com/libgeos/geos
-          cd geos
-          git checkout 24650422b3982f17cc493fe92a70228f2ad624b4
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
+          cd sys/geos-src/source
+          git checkout tags/${{ matrix.geos }}
+          mkdir build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          sudo ninja install
+
       - name: Build geos crate
         run: |
           cargo build
-          cargo build --features v3_8_0
-          cargo build --features v3_7_0
           cargo build --features v3_6_0
+          cargo build --features v3_7_0
+
+      - name: Build geos crate GEOS >= 3.8
+        if: ${{ matrix.geos == "3.8.3" ||  matrix.geos == "3.9.3" || matrix.geos == "3.10.3"}}
+        run: cargo build --features v3_8_0
+
       - name: Run geos tests
         run: |
-          cargo test --features v3_8_0
-          cargo test --features v3_7_0
           cargo test --features v3_6_0
+          cargo test --features v3_7_0
           cargo test --features geo
           cargo test --features json
-          cargo test --features 'v3_8_0,geo,json'
           cargo test
+
+      - name: Run geos tests GEOS >= 3.8
+        if: ${{ matrix.geos == "3.8.3" ||  matrix.geos == "3.9.3" || matrix.geos == "3.10.3"}}
+        run: |
+          cargo test --features v3_8_0
+          cargo test --features 'v3_8_0,geo,json'
+
       - name: Check doc generation
         run: |
           cargo doc --features dox
           cargo doc
+
       - name: Run examples
         run: |
           cargo run --example verbose_example
@@ -127,6 +142,7 @@ jobs:
           cargo run --features geo --example prepared_geom
           cargo run --example from_geo
           cargo run --features geo --example from_geo
+
       - name: Check memory leaks
         # run valgrind to check that there are no memoryleaks
         # Note: cargo seems to randomly name the executable, so we use find to find all the tests

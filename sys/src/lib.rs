@@ -11,17 +11,14 @@
 //! will also statically link libgeos to this crate.  In order to build GEOS, you
 //! need to have `cmake` and a C++ compiler.
 
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/georust/meta/master/logo/logo.png")]
 
-
-// extern crate libc; // TODO: is this needed
+extern crate libc;
 
 #[cfg(feature = "static")]
 extern crate link_cplusplus;
 
-// TODO: look at what GDAL does
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

@@ -95,7 +95,10 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", geos_path);
         println!("cargo:includedir={}/include", geos_path);
 
-        include_path = Path::join(Path::parent(&PathBuf::from(geos_path).as_path()).unwrap(), "include");
+        include_path = Path::join(
+            Path::parent(PathBuf::from(geos_path).as_path()).unwrap(),
+            "include",
+        );
 
         version = Version::parse(BUNDLED_GEOS_VERSION).unwrap();
     } else {
