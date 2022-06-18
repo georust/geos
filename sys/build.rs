@@ -34,6 +34,36 @@ fn write_bindings(include_path: &Path, out_path: &Path) {
         .header(geos_header)
         .clang_arg("-I")
         .clang_arg(include_path.to_str().unwrap())
+        // use libc instead of default std::os::raw
+        .ctypes_prefix("libc")
+        // block deprecated APIs (both plain and "_r" variants)
+        .blocklist_function("initGEOS")
+        .blocklist_function("initGEOS_r")
+        .blocklist_function("finishGEOS")
+        .blocklist_function("finishGEOS_r")
+        .blocklist_function("GEOSGeomFromWKT")
+        .blocklist_function("GEOSGeomFromWKT_r")
+        .blocklist_function("GEOSGeomToWKT")
+        .blocklist_function("GEOSGeomToWKT_r")
+        .blocklist_function("GEOSSingleSidedBuffer")
+        .blocklist_function("GEOSSingleSidedBuffer_r")
+        .blocklist_function("GEOSUnionCascaded")
+        .blocklist_function("GEOSUnionCascaded_r")
+        // TODO: remove; these were deprecated a long time ago but are still used here
+        // .blocklist_function("GEOS_getWKBOutputDims")
+        // .blocklist_function("GEOS_getWKBOutputDims_r")
+        // .blocklist_function("GEOS_setWKBOutputDims")
+        // .blocklist_function("GEOS_setWKBOutputDims_r")
+        // .blocklist_function("GEOS_getWKBByteOrder")
+        // .blocklist_function("GEOS_getWKBByteOrder_r")
+        // .blocklist_function("GEOS_setWKBByteOrder")
+        // .blocklist_function("GEOS_setWKBByteOrder_r")
+        // .blocklist_function("GEOSGeomFromWKB_buf")
+        // .blocklist_function("GEOSGeomFromWKB_buf_r")
+        // .blocklist_function("GEOSGeomToWKB_buf")
+        // .blocklist_function("GEOSGeomToWKB_buf_r")
+        // .blocklist_function("GEOSGeomFromHEX_buf")
+        // .blocklist_function("GEOSGeomFromHEX_buf_r")
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(out_path)
@@ -59,6 +89,7 @@ fn main() {
     if cfg!(feature = "static") {
         let geos_path = std::env::var("DEP_GEOSSRC_SEARCH").unwrap();
 
+        // Note: static lib "geos_c" isn't available for GEOS 3.7.x
         println!("cargo:rustc-link-lib=static=geos_c");
         println!("cargo:rustc-link-lib=static=geos");
         println!("cargo:rustc-link-search=native={}", geos_path);
@@ -120,12 +151,13 @@ fn main() {
                 // GEOS should only have one include path for geos_c.h header
                 include_path = PathBuf::from(geos.include_paths.first().unwrap());
 
-                // standardize GEOS alpha / beta versions to match semver format:
+                // standardize GEOS prerelease versions to match semver format:
                 let raw_version = geos
                     .version
                     .trim()
                     .replace("alpha", "-alpha")
-                    .replace("beta", "-beta");
+                    .replace("beta", "-beta")
+                    .replace("dev", "-dev");
 
                 if let Ok(pkg_version) = Version::parse(&raw_version) {
                     version = pkg_version;
