@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   rustfmt:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -70,7 +70,12 @@ jobs:
 
   check:
     name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }} - ${{ matrix.triple.target }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    env:
+      LD_LIBRARY_PATH: /usr/local/lib
+      GEOS_INCLUDE_DIR: "/usr/include"
+      GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
+      GEOS_VERSION: ${{ matrix.geos }}
     strategy:
       fail-fast: false
       matrix:
