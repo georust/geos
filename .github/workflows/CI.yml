@@ -73,9 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LD_LIBRARY_PATH: /usr/local/lib
-      GEOS_INCLUDE_DIR: "/usr/include"
-      GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
-      GEOS_VERSION: ${{ matrix.geos }}
+      # GEOS_INCLUDE_DIR: "/usr/include"
+      # GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
+      # GEOS_VERSION: ${{ matrix.geos }}
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +83,7 @@ jobs:
           - stable
           - nightly
         geos:
-          - 3.7.3
+          - "3.7.3"
           - "3.8.3"
           - "3.9.3"
           - "3.10.3"

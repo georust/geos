@@ -1,6 +1,7 @@
 use semver::Version;
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
 const BUNDLED_GEOS_VERSION: &str = "3.11.0"; // TODO: 3.10.0
@@ -171,7 +172,47 @@ fn main() {
                 {
                     panic!("Could not find `pkg-config` in your path. Please install it before building geos-sys.");
                 } else {
-                    panic!("Error while running `pkg-config`: {}", pkg_config_err);
+                    // attempt to run geos-config instead
+
+                    let geos_config = Command::new("geos-config")
+                        .args(["--includes", "--ldflags", "--version"])
+                        .output();
+                    if let Ok(geos_config) = geos_config {
+                        let geos_config: Vec<&str> = std::str::from_utf8(&geos_config.stdout)
+                            .unwrap()
+                            .trim()
+                            .split_whitespace()
+                            .collect();
+                        assert!(geos_config.len() == 3);
+
+                        // standardize GEOS prerelease versions to match semver format:
+                        let raw_version = geos_config[2]
+                            .trim()
+                            .replace("alpha", "-alpha")
+                            .replace("beta", "-beta")
+                            .replace("dev", "-dev");
+
+                        if let Ok(pkg_version) = Version::parse(&raw_version) {
+                            version = pkg_version;
+                        }
+
+                        if version >= Version::new(3, 8, 0) {
+                            println!("cargo:rustc-link-lib=dylib=geos_c");
+                        }
+
+                        println!("cargo:rustc-link-lib=dylib=geos");
+                        println!(
+                            "cargo:rustc-link-search=native={}",
+                            geos_config[1].replace("-L", "")
+                        );
+
+                        let include_dir = geos_config[0].trim();
+                        println!("cargo:includedir={}", include_dir);
+
+                        include_path = PathBuf::from(include_dir);
+                    } else {
+                        panic!("Could not detect GEOS using pkg-config or geos-config");
+                    }
                 }
             } else {
                 panic!("No GEOS version detected");
