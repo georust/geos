@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'true'
+          submodules: "true"
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'true'
+          submodules: "true"
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -113,7 +113,7 @@ jobs:
           cargo build --features v3_7_0
 
       - name: Build geos crate GEOS >= 3.8
-        if: matrix.geos == "3.8.3" ||  matrix.geos == "3.9.3" || matrix.geos == "3.10.3"
+        if: ${{ startsWith(matrix.geos, '3.8') ||  startsWith(matrix.geos, '3.9') || startsWith(matrix.geos == '3.10') }}
         run: cargo build --features v3_8_0
 
       - name: Run geos tests
@@ -125,7 +125,7 @@ jobs:
           cargo test
 
       - name: Run geos tests GEOS >= 3.8
-        if: matrix.geos == "3.8.3" ||  matrix.geos == "3.9.3" || matrix.geos == "3.10.3"
+        if: ${{ startsWith(matrix.geos, '3.8') ||  startsWith(matrix.geos, '3.9') || startsWith(matrix.geos == '3.10') }}
         run: |
           cargo test --features v3_8_0
           cargo test --features 'v3_8_0,geo,json'
