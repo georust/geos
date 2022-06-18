@@ -180,7 +180,6 @@ fn main() {
                     if let Ok(geos_config) = geos_config {
                         let geos_config: Vec<&str> = std::str::from_utf8(&geos_config.stdout)
                             .unwrap()
-                            .trim()
                             .split_whitespace()
                             .collect();
                         assert!(geos_config.len() == 3);
@@ -196,11 +195,13 @@ fn main() {
                             version = pkg_version;
                         }
 
-                        if version >= Version::new(3, 8, 0) {
+                        // if version >= Version::new(3, 8, 0) {
                             println!("cargo:rustc-link-lib=dylib=geos_c");
-                        }
+                        // } else {
+                        //     println!("cargo:rustc-link-lib=dylib=geos");
+                        // }
 
-                        println!("cargo:rustc-link-lib=dylib=geos");
+
                         println!(
                             "cargo:rustc-link-search=native={}",
                             geos_config[1].replace("-L", "")
