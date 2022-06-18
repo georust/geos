@@ -94,7 +94,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install build-essential ninja pkg-config valgrind
+          sudo apt install build-essential ninja-build pkg-config valgrind
           sudo apt remove libgeos-dev -y
 
       - name: Install GEOS
