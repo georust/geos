@@ -192,23 +192,23 @@ fn main() {
 
     let mut binding_version = Version::parse(MINIMUM_GEOS_VERSION).unwrap();
 
-    if cfg!(feature = "v3_7") {
+    if cfg!(feature = "v3_7_0") {
         binding_version = Version::new(3, 7, 0);
     }
 
-    if cfg!(feature = "v3_8") {
+    if cfg!(feature = "v3_8_0") {
         binding_version = Version::new(3, 8, 0);
     }
 
-    if cfg!(feature = "v3_9") {
+    if cfg!(feature = "v3_9_0") {
         binding_version = Version::new(3, 9, 0);
     }
 
-    if cfg!(feature = "v3_10") {
+    if cfg!(feature = "v3_10_0") {
         binding_version = Version::new(3, 10, 0);
     }
 
-    if cfg!(feature = "v3_11") {
+    if cfg!(feature = "v3_11_0") {
         // binding_version = Version::new(3, 11, 0);
 
         // FIXME: remove string parsing once released
