@@ -28,4 +28,13 @@ need to have `cmake` and a C++ compiler. Building GEOS may take several minutes.
 
 Pre-built bindings are available for all supported GEOS versions.
 
+Use the version feature for the version of GEOS that you want to target; your
+installed version of GEOS must be greater than or equal to this version.
+
+Example:
+
+```bash
+cargo build --features v3_8_0
+```
+
 New bindings can be created using the sibling `geos-sys-bind` crate.

@@ -132,8 +132,8 @@ fn write_bindings(include_dir: &Path, out_path: &Path) {
     // replace f64 => c_double, f32 => c_float
     let mut content = fs::read_to_string(out_path).expect("Could not read generated bindings");
     content = content
-        .replace(": f64", ": libc::c_double")
-        .replace(": f32", ": libc::c_float");
+        .replace(" f64", " libc::c_double")
+        .replace(" f32", " libc::c_float");
     fs::write(out_path, content).expect("Unable to write bindings to file");
 
     println!("Bindings generated successfully; please review the results");
