@@ -150,9 +150,7 @@ fn main() {
         // GEOS_VERSION
         match version_env {
             Some(raw_version) => {
-                version = Some(parse_geos_version(
-                    &raw_version.to_string_lossy().to_string(),
-                ));
+                version = Some(parse_geos_version(&raw_version.to_string_lossy()));
             }
             None => {
                 panic!("GEOS_VERSION must be set");
