@@ -2,13 +2,13 @@
 
 pub const GEOS_VERSION_MAJOR: u32 = 3;
 pub const GEOS_VERSION_MINOR: u32 = 7;
-pub const GEOS_VERSION_PATCH: u32 = 3;
-pub const GEOS_VERSION: &[u8; 6usize] = b"3.7.3\0";
+pub const GEOS_VERSION_PATCH: u32 = 5;
+pub const GEOS_VERSION: &[u8; 6usize] = b"3.7.5\0";
 pub const GEOS_JTS_PORT: &[u8; 7usize] = b"1.13.0\0";
 pub const GEOS_CAPI_VERSION_MAJOR: u32 = 1;
 pub const GEOS_CAPI_VERSION_MINOR: u32 = 11;
-pub const GEOS_CAPI_VERSION_PATCH: u32 = 3;
-pub const GEOS_CAPI_VERSION: &[u8; 18usize] = b"3.7.3-CAPI-1.11.3\0";
+pub const GEOS_CAPI_VERSION_PATCH: u32 = 5;
+pub const GEOS_CAPI_VERSION: &[u8; 18usize] = b"3.7.5-CAPI-1.11.5\0";
 pub const GEOS_CAPI_FIRST_INTERFACE: u32 = 1;
 pub const GEOS_CAPI_LAST_INTERFACE: u32 = 12;
 pub const GEOS_PREC_NO_TOPO: u32 = 1;
@@ -20,8 +20,6 @@ pub type max_align_t = u128;
 pub struct GEOSContextHandle_HS {
     _unused: [u8; 0],
 }
-#[doc = " (Abstract) type definitions"]
-#[doc = ""]
 pub type GEOSContextHandle_t = *mut GEOSContextHandle_HS;
 pub type GEOSMessageHandler =
     ::std::option::Option<unsafe extern "C" fn(fmt: *const libc::c_char, ...)>;
@@ -175,8 +173,6 @@ extern "C" {
     ) -> *mut libc::c_uchar;
 }
 extern "C" {
-    #[doc = " Coordinate Sequence functions"]
-    #[doc = ""]
     pub fn GEOSCoordSeq_create_r(
         handle: GEOSContextHandle_t,
         size: libc::c_uint,
@@ -197,7 +193,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         s: *mut GEOSCoordSequence,
         idx: libc::c_uint,
-        val: f64,
+        val: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -205,7 +201,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         s: *mut GEOSCoordSequence,
         idx: libc::c_uint,
-        val: f64,
+        val: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -213,7 +209,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         s: *mut GEOSCoordSequence,
         idx: libc::c_uint,
-        val: f64,
+        val: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -222,7 +218,7 @@ extern "C" {
         s: *mut GEOSCoordSequence,
         idx: libc::c_uint,
         dim: libc::c_uint,
-        val: f64,
+        val: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -280,9 +276,6 @@ extern "C" {
     ) -> libc::c_int;
 }
 extern "C" {
-    #[doc = "  Linear referencing functions -- there are more, but these are"]
-    #[doc = "  probably sufficient for most purposes"]
-    #[doc = ""]
     pub fn GEOSProject_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
@@ -293,7 +286,7 @@ extern "C" {
     pub fn GEOSInterpolate_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        d: f64,
+        d: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -307,14 +300,14 @@ extern "C" {
     pub fn GEOSInterpolateNormalized_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        d: f64,
+        d: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSBuffer_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
@@ -350,7 +343,7 @@ extern "C" {
     pub fn GEOSBufferParams_setMitreLimit_r(
         handle: GEOSContextHandle_t,
         p: *mut GEOSBufferParams,
-        mitreLimit: f64,
+        mitreLimit: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -372,35 +365,31 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
         p: *const GEOSBufferParams,
-        width: f64,
+        width: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSBufferWithStyle_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
         endCapStyle: libc::c_int,
         joinStyle: libc::c_int,
-        mitreLimit: f64,
+        mitreLimit: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSOffsetCurve_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
         joinStyle: libc::c_int,
-        mitreLimit: f64,
+        mitreLimit: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = " Geometry Constructors."]
-    #[doc = " GEOSCoordSequence* arguments will become ownership of the returned object."]
-    #[doc = " All functions return NULL on exception."]
-    #[doc = ""]
     pub fn GEOSGeom_createPoint_r(
         handle: GEOSContextHandle_t,
         s: *mut GEOSCoordSequence,
@@ -456,13 +445,9 @@ extern "C" {
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = " Memory management"]
-    #[doc = ""]
     pub fn GEOSGeom_destroy_r(handle: GEOSContextHandle_t, g: *mut GEOSGeometry);
 }
 extern "C" {
-    #[doc = " Topology operations - return NULL on exception."]
-    #[doc = ""]
     pub fn GEOSEnvelope_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry)
         -> *mut GEOSGeometry;
 }
@@ -554,10 +539,10 @@ extern "C" {
     pub fn GEOSClipByRect_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        xmin: f64,
-        ymin: f64,
-        xmax: f64,
-        ymax: f64,
+        xmin: libc::c_double,
+        ymin: libc::c_double,
+        xmax: libc::c_double,
+        ymax: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -596,14 +581,14 @@ extern "C" {
     pub fn GEOSSimplify_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSTopologyPreserveSimplify_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -624,14 +609,14 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSDelaunayTriangulation_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
         onlyEdges: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
@@ -640,28 +625,26 @@ extern "C" {
         extHandle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
         env: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
         onlyEdges: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSSegmentIntersection_r(
         extHandle: GEOSContextHandle_t,
-        ax0: f64,
-        ay0: f64,
-        ax1: f64,
-        ay1: f64,
-        bx0: f64,
-        by0: f64,
-        bx1: f64,
-        by1: f64,
+        ax0: libc::c_double,
+        ay0: libc::c_double,
+        ax1: libc::c_double,
+        ay1: libc::c_double,
+        bx0: libc::c_double,
+        by0: libc::c_double,
+        bx1: libc::c_double,
+        by1: libc::c_double,
         cx: *mut f64,
         cy: *mut f64,
     ) -> libc::c_int;
 }
 extern "C" {
-    #[doc = "  Binary predicates - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSDisjoint_r(
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
@@ -722,7 +705,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> libc::c_char;
 }
 extern "C" {
@@ -740,8 +723,6 @@ extern "C" {
     ) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  Prepared Geometry Binary predicates - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSPrepare_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
@@ -821,8 +802,6 @@ extern "C" {
     ) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  STRtree functions"]
-    #[doc = ""]
     pub fn GEOSSTRtree_create_r(
         handle: GEOSContextHandle_t,
         nodeCapacity: usize,
@@ -882,8 +861,6 @@ extern "C" {
     pub fn GEOSSTRtree_destroy_r(handle: GEOSContextHandle_t, tree: *mut GEOSSTRtree);
 }
 extern "C" {
-    #[doc = "  Unary predicate - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSisEmpty_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
@@ -905,8 +882,6 @@ pub const GEOSRelateBoundaryNodeRules_GEOSRELATE_BNR_MULTIVALENT_ENDPOINT:
     GEOSRelateBoundaryNodeRules = 3;
 pub const GEOSRelateBoundaryNodeRules_GEOSRELATE_BNR_MONOVALENT_ENDPOINT:
     GEOSRelateBoundaryNodeRules = 4;
-#[doc = "  Dimensionally Extended 9 Intersection Model related"]
-#[doc = ""]
 pub type GEOSRelateBoundaryNodeRules = libc::c_uint;
 extern "C" {
     pub fn GEOSRelatePattern_r(
@@ -939,8 +914,6 @@ extern "C" {
     ) -> *mut libc::c_char;
 }
 pub const GEOSValidFlags_GEOSVALID_ALLOW_SELFTOUCHING_RING_FORMING_HOLE: GEOSValidFlags = 1;
-#[doc = "  Validity checking"]
-#[doc = ""]
 pub type GEOSValidFlags = libc::c_uint;
 extern "C" {
     pub fn GEOSisValid_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> libc::c_char;
@@ -961,8 +934,6 @@ extern "C" {
     ) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  Geometry info"]
-    #[doc = ""]
     pub fn GEOSGeomType_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry)
         -> *mut libc::c_char;
 }
@@ -1005,31 +976,14 @@ extern "C" {
     pub fn GEOSNormalize_r(handle: GEOSContextHandle_t, g: *mut GEOSGeometry) -> libc::c_int;
 }
 extern "C" {
-    #[doc = " Set the geometry's precision, optionally rounding all its"]
-    #[doc = " coordinates to the precision grid (if it changes)."]
-    #[doc = ""]
-    #[doc = " Note that operations will always be performed in the precision"]
-    #[doc = " of the geometry with higher precision (smaller \"gridSize\")."]
-    #[doc = " That same precision will be attached to the operation outputs."]
-    #[doc = ""]
-    #[doc = " @param gridSize size of the precision grid, or 0 for FLOATING"]
-    #[doc = "                 precision."]
-    #[doc = " @param flags The bitwise OR of one of more of the"]
-    #[doc = "              @ref GEOS_PREC_NO_TOPO \"precision options\""]
-    #[doc = " @retuns NULL on exception or a new GEOSGeometry object"]
-    #[doc = ""]
     pub fn GEOSGeom_setPrecision_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
-        gridSize: f64,
+        gridSize: libc::c_double,
         flags: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = " Get a geometry's precision"]
-    #[doc = ""]
-    #[doc = " @return the size of the geometry's precision grid, 0 for FLOATING"]
-    #[doc = "         precision or -1 on exception"]
     pub fn GEOSGeom_getPrecision_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> f64;
 }
 extern "C" {
@@ -1150,8 +1104,6 @@ extern "C" {
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = "  Misc functions"]
-    #[doc = ""]
     pub fn GEOSArea_r(
         handle: GEOSContextHandle_t,
         g: *const GEOSGeometry,
@@ -1194,7 +1146,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        densifyFrac: f64,
+        densifyFrac: libc::c_double,
         dist: *mut f64,
     ) -> libc::c_int;
 }
@@ -1211,7 +1163,7 @@ extern "C" {
         handle: GEOSContextHandle_t,
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        densifyFrac: f64,
+        densifyFrac: libc::c_double,
         dist: *mut f64,
     ) -> libc::c_int;
 }
@@ -1230,16 +1182,14 @@ extern "C" {
     ) -> *mut GEOSCoordSequence;
 }
 extern "C" {
-    #[doc = " Algorithms"]
-    #[doc = ""]
     pub fn GEOSOrientationIndex_r(
         handle: GEOSContextHandle_t,
-        Ax: f64,
-        Ay: f64,
-        Bx: f64,
-        By: f64,
-        Px: f64,
-        Py: f64,
+        Ax: libc::c_double,
+        Ay: libc::c_double,
+        Bx: libc::c_double,
+        By: libc::c_double,
+        Px: libc::c_double,
+        Py: libc::c_double,
     ) -> libc::c_int;
 }
 #[repr(C)]
@@ -1247,8 +1197,6 @@ extern "C" {
 pub struct GEOSWKTReader_t {
     _unused: [u8; 0],
 }
-#[doc = " Reader and Writer APIs"]
-#[doc = ""]
 pub type GEOSWKTReader = GEOSWKTReader_t;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1439,8 +1387,6 @@ extern "C" {
     pub fn GEOSGeomToHEX_buf(g: *const GEOSGeometry, size: *mut usize) -> *mut libc::c_uchar;
 }
 extern "C" {
-    #[doc = " Coordinate Sequence functions"]
-    #[doc = ""]
     pub fn GEOSCoordSeq_create(size: libc::c_uint, dims: libc::c_uint) -> *mut GEOSCoordSequence;
 }
 extern "C" {
@@ -1450,15 +1396,15 @@ extern "C" {
     pub fn GEOSCoordSeq_destroy(s: *mut GEOSCoordSequence);
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: f64)
+    pub fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
         -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: f64)
+    pub fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
         -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: f64)
+    pub fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
         -> libc::c_int;
 }
 extern "C" {
@@ -1466,7 +1412,7 @@ extern "C" {
         s: *mut GEOSCoordSequence,
         idx: libc::c_uint,
         dim: libc::c_uint,
-        val: f64,
+        val: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
@@ -1517,24 +1463,21 @@ extern "C" {
     ) -> libc::c_int;
 }
 extern "C" {
-    #[doc = "  Linear referencing functions -- there are more, but these are"]
-    #[doc = "  probably sufficient for most purposes"]
-    #[doc = ""]
     pub fn GEOSProject(g: *const GEOSGeometry, p: *const GEOSGeometry) -> f64;
 }
 extern "C" {
-    pub fn GEOSInterpolate(g: *const GEOSGeometry, d: f64) -> *mut GEOSGeometry;
+    pub fn GEOSInterpolate(g: *const GEOSGeometry, d: libc::c_double) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSProjectNormalized(g: *const GEOSGeometry, p: *const GEOSGeometry) -> f64;
 }
 extern "C" {
-    pub fn GEOSInterpolateNormalized(g: *const GEOSGeometry, d: f64) -> *mut GEOSGeometry;
+    pub fn GEOSInterpolateNormalized(g: *const GEOSGeometry, d: libc::c_double) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSBuffer(
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
@@ -1557,7 +1500,7 @@ extern "C" {
     ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSBufferParams_setMitreLimit(p: *mut GEOSBufferParams, mitreLimit: f64)
+    pub fn GEOSBufferParams_setMitreLimit(p: *mut GEOSBufferParams, mitreLimit: libc::c_double)
         -> libc::c_int;
 }
 extern "C" {
@@ -1576,33 +1519,29 @@ extern "C" {
     pub fn GEOSBufferWithParams(
         g: *const GEOSGeometry,
         p: *const GEOSBufferParams,
-        width: f64,
+        width: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSBufferWithStyle(
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
         endCapStyle: libc::c_int,
         joinStyle: libc::c_int,
-        mitreLimit: f64,
+        mitreLimit: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSOffsetCurve(
         g: *const GEOSGeometry,
-        width: f64,
+        width: libc::c_double,
         quadsegs: libc::c_int,
         joinStyle: libc::c_int,
-        mitreLimit: f64,
+        mitreLimit: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = " Geometry Constructors."]
-    #[doc = " GEOSCoordSequence* arguments will become ownership of the returned object."]
-    #[doc = " All functions return NULL on exception."]
-    #[doc = ""]
     pub fn GEOSGeom_createPoint(s: *mut GEOSCoordSequence) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -1641,13 +1580,9 @@ extern "C" {
     pub fn GEOSGeom_clone(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = " Memory management"]
-    #[doc = ""]
     pub fn GEOSGeom_destroy(g: *mut GEOSGeometry);
 }
 extern "C" {
-    #[doc = " Topology operations - return NULL on exception."]
-    #[doc = ""]
     pub fn GEOSEnvelope(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -1696,10 +1631,10 @@ extern "C" {
 extern "C" {
     pub fn GEOSClipByRect(
         g: *const GEOSGeometry,
-        xmin: f64,
-        ymin: f64,
-        xmax: f64,
-        ymax: f64,
+        xmin: libc::c_double,
+        ymin: libc::c_double,
+        xmax: libc::c_double,
+        ymax: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -1729,12 +1664,12 @@ extern "C" {
     pub fn GEOSReverse(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSSimplify(g: *const GEOSGeometry, tolerance: f64) -> *mut GEOSGeometry;
+    pub fn GEOSSimplify(g: *const GEOSGeometry, tolerance: libc::c_double) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSTopologyPreserveSimplify(
         g: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
@@ -1747,13 +1682,13 @@ extern "C" {
     pub fn GEOSSnap(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSDelaunayTriangulation(
         g: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
         onlyEdges: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
@@ -1761,27 +1696,25 @@ extern "C" {
     pub fn GEOSVoronoiDiagram(
         g: *const GEOSGeometry,
         env: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
         onlyEdges: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSSegmentIntersection(
-        ax0: f64,
-        ay0: f64,
-        ax1: f64,
-        ay1: f64,
-        bx0: f64,
-        by0: f64,
-        bx1: f64,
-        by1: f64,
+        ax0: libc::c_double,
+        ay0: libc::c_double,
+        ax1: libc::c_double,
+        ay1: libc::c_double,
+        bx0: libc::c_double,
+        by0: libc::c_double,
+        bx1: libc::c_double,
+        by1: libc::c_double,
         cx: *mut f64,
         cy: *mut f64,
     ) -> libc::c_int;
 }
 extern "C" {
-    #[doc = "  Binary predicates - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSDisjoint(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
@@ -1809,7 +1742,7 @@ extern "C" {
     pub fn GEOSEqualsExact(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        tolerance: f64,
+        tolerance: libc::c_double,
     ) -> libc::c_char;
 }
 extern "C" {
@@ -1819,8 +1752,6 @@ extern "C" {
     pub fn GEOSCoveredBy(g1: *const GEOSGeometry, g2: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  Prepared Geometry Binary predicates - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSPrepare(g: *const GEOSGeometry) -> *const GEOSPreparedGeometry;
 }
 extern "C" {
@@ -1937,8 +1868,6 @@ extern "C" {
     pub fn GEOSSTRtree_destroy(tree: *mut GEOSSTRtree);
 }
 extern "C" {
-    #[doc = "  Unary predicate - return 2 on exception, 1 on true, 0 on false"]
-    #[doc = ""]
     pub fn GEOSisEmpty(g: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
@@ -1954,8 +1883,6 @@ extern "C" {
     pub fn GEOSisClosed(g: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  Dimensionally Extended 9 Intersection Model related"]
-    #[doc = ""]
     pub fn GEOSRelatePattern(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
@@ -1979,8 +1906,6 @@ extern "C" {
     ) -> *mut libc::c_char;
 }
 extern "C" {
-    #[doc = "  Validity checking"]
-    #[doc = ""]
     pub fn GEOSisValid(g: *const GEOSGeometry) -> libc::c_char;
 }
 extern "C" {
@@ -1995,8 +1920,6 @@ extern "C" {
     ) -> libc::c_char;
 }
 extern "C" {
-    #[doc = "  Geometry info"]
-    #[doc = ""]
     pub fn GEOSGeomType(g: *const GEOSGeometry) -> *mut libc::c_char;
 }
 extern "C" {
@@ -2026,7 +1949,7 @@ extern "C" {
 extern "C" {
     pub fn GEOSGeom_setPrecision(
         g: *const GEOSGeometry,
-        gridSize: f64,
+        gridSize: libc::c_double,
         flags: libc::c_int,
     ) -> *mut GEOSGeometry;
 }
@@ -2088,8 +2011,6 @@ extern "C" {
     pub fn GEOSGeomGetEndPoint(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    #[doc = "  Misc functions"]
-    #[doc = ""]
     pub fn GEOSArea(g: *const GEOSGeometry, area: *mut f64) -> libc::c_int;
 }
 extern "C" {
@@ -2120,7 +2041,7 @@ extern "C" {
     pub fn GEOSHausdorffDistanceDensify(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        densifyFrac: f64,
+        densifyFrac: libc::c_double,
         dist: *mut f64,
     ) -> libc::c_int;
 }
@@ -2135,7 +2056,7 @@ extern "C" {
     pub fn GEOSFrechetDistanceDensify(
         g1: *const GEOSGeometry,
         g2: *const GEOSGeometry,
-        densifyFrac: f64,
+        densifyFrac: libc::c_double,
         dist: *mut f64,
     ) -> libc::c_int;
 }
@@ -2149,20 +2070,16 @@ extern "C" {
     ) -> *mut GEOSCoordSequence;
 }
 extern "C" {
-    #[doc = " Algorithms"]
-    #[doc = ""]
     pub fn GEOSOrientationIndex(
-        Ax: f64,
-        Ay: f64,
-        Bx: f64,
-        By: f64,
-        Px: f64,
-        Py: f64,
+        Ax: libc::c_double,
+        Ay: libc::c_double,
+        Bx: libc::c_double,
+        By: libc::c_double,
+        Px: libc::c_double,
+        Py: libc::c_double,
     ) -> libc::c_int;
 }
 extern "C" {
-    #[doc = " Reader and Writer APIs"]
-    #[doc = ""]
     pub fn GEOSWKTReader_create() -> *mut GEOSWKTReader;
 }
 extern "C" {
