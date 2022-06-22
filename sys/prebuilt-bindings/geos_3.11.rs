@@ -2,14 +2,9 @@
 
 pub const GEOS_VERSION_MAJOR: u32 = 3;
 pub const GEOS_VERSION_MINOR: u32 = 11;
-pub const GEOS_VERSION: &[u8; 12usize] = b"3.11.0beta2\0";
-pub const GEOS_JTS_PORT: &[u8; 7usize] = b"1.18.0\0";
 pub const GEOS_CAPI_VERSION_MAJOR: u32 = 1;
 pub const GEOS_CAPI_VERSION_MINOR: u32 = 16;
 pub const GEOS_CAPI_VERSION_PATCH: u32 = 0;
-pub const GEOS_CAPI_VERSION: &[u8; 24usize] = b"3.11.0beta2-CAPI-1.16.0\0";
-pub const GEOS_CAPI_FIRST_INTERFACE: u32 = 1;
-pub const GEOS_CAPI_LAST_INTERFACE: u32 = 17;
 pub type wchar_t = libc::c_int;
 pub type max_align_t = u128;
 #[repr(C)]
@@ -88,7 +83,11 @@ pub type GEOSDistanceCallback = ::std::option::Option<
     ) -> libc::c_int,
 >;
 pub type GEOSTransformXYCallback = ::std::option::Option<
-    unsafe extern "C" fn(x: *mut libc::c_double, y: *mut libc::c_double, userdata: *mut libc::c_void) -> libc::c_int,
+    unsafe extern "C" fn(
+        x: *mut libc::c_double,
+        y: *mut libc::c_double,
+        userdata: *mut libc::c_void,
+    ) -> libc::c_int,
 >;
 pub type GEOSInterruptCallback = ::std::option::Option<unsafe extern "C" fn()>;
 extern "C" {
@@ -1244,7 +1243,10 @@ extern "C" {
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSGeom_getPrecision_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> libc::c_double;
+    pub fn GEOSGeom_getPrecision_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> libc::c_double;
 }
 extern "C" {
     pub fn GEOSGetNumInteriorRings_r(
@@ -1759,16 +1761,25 @@ extern "C" {
     pub fn GEOSCoordSeq_destroy(s: *mut GEOSCoordSequence);
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setX(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setY(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setZ(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
     pub fn GEOSCoordSeq_setXY(
@@ -2067,7 +2078,10 @@ extern "C" {
     pub fn GEOSMinimumClearanceLine(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSRemoveRepeatedPoints(g: *const GEOSGeometry, tolerance: libc::c_double) -> *mut GEOSGeometry;
+    pub fn GEOSRemoveRepeatedPoints(
+        g: *const GEOSGeometry,
+        tolerance: libc::c_double,
+    ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSArea(g: *const GEOSGeometry, area: *mut libc::c_double) -> libc::c_int;
@@ -2142,7 +2156,10 @@ extern "C" {
     pub fn GEOSInterpolate(line: *const GEOSGeometry, d: libc::c_double) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSProjectNormalized(line: *const GEOSGeometry, point: *const GEOSGeometry) -> libc::c_double;
+    pub fn GEOSProjectNormalized(
+        line: *const GEOSGeometry,
+        point: *const GEOSGeometry,
+    ) -> libc::c_double;
 }
 extern "C" {
     pub fn GEOSInterpolateNormalized(
@@ -2195,7 +2212,10 @@ extern "C" {
     pub fn GEOSUnaryUnion(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSUnaryUnionPrec(g: *const GEOSGeometry, gridSize: libc::c_double) -> *mut GEOSGeometry;
+    pub fn GEOSUnaryUnionPrec(
+        g: *const GEOSGeometry,
+        gridSize: libc::c_double,
+    ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSCoverageUnion(g: *const GEOSGeometry) -> *mut GEOSGeometry;
@@ -2238,8 +2258,10 @@ extern "C" {
     ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSBufferParams_setMitreLimit(p: *mut GEOSBufferParams, mitreLimit: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSBufferParams_setMitreLimit(
+        p: *mut GEOSBufferParams,
+        mitreLimit: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
     pub fn GEOSBufferParams_setQuadrantSegments(
@@ -2327,7 +2349,10 @@ extern "C" {
     pub fn GEOSMinimumRotatedRectangle(g: *const GEOSGeometry) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSMaximumInscribedCircle(g: *const GEOSGeometry, tolerance: libc::c_double) -> *mut GEOSGeometry;
+    pub fn GEOSMaximumInscribedCircle(
+        g: *const GEOSGeometry,
+        tolerance: libc::c_double,
+    ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSLargestEmptyCircle(

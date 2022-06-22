@@ -3,14 +3,9 @@
 pub const GEOS_VERSION_MAJOR: u32 = 3;
 pub const GEOS_VERSION_MINOR: u32 = 7;
 pub const GEOS_VERSION_PATCH: u32 = 5;
-pub const GEOS_VERSION: &[u8; 6usize] = b"3.7.5\0";
-pub const GEOS_JTS_PORT: &[u8; 7usize] = b"1.13.0\0";
 pub const GEOS_CAPI_VERSION_MAJOR: u32 = 1;
 pub const GEOS_CAPI_VERSION_MINOR: u32 = 11;
 pub const GEOS_CAPI_VERSION_PATCH: u32 = 5;
-pub const GEOS_CAPI_VERSION: &[u8; 18usize] = b"3.7.5-CAPI-1.11.5\0";
-pub const GEOS_CAPI_FIRST_INTERFACE: u32 = 1;
-pub const GEOS_CAPI_LAST_INTERFACE: u32 = 12;
 pub const GEOS_PREC_NO_TOPO: u32 = 1;
 pub const GEOS_PREC_KEEP_COLLAPSED: u32 = 2;
 pub type wchar_t = libc::c_int;
@@ -984,7 +979,10 @@ extern "C" {
     ) -> *mut GEOSGeometry;
 }
 extern "C" {
-    pub fn GEOSGeom_getPrecision_r(handle: GEOSContextHandle_t, g: *const GEOSGeometry) -> libc::c_double;
+    pub fn GEOSGeom_getPrecision_r(
+        handle: GEOSContextHandle_t,
+        g: *const GEOSGeometry,
+    ) -> libc::c_double;
 }
 extern "C" {
     pub fn GEOSGetNumInteriorRings_r(
@@ -1396,16 +1394,25 @@ extern "C" {
     pub fn GEOSCoordSeq_destroy(s: *mut GEOSCoordSequence);
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setX(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setX(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setY(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setY(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSCoordSeq_setZ(s: *mut GEOSCoordSequence, idx: libc::c_uint, val: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSCoordSeq_setZ(
+        s: *mut GEOSCoordSequence,
+        idx: libc::c_uint,
+        val: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
     pub fn GEOSCoordSeq_setOrdinate(
@@ -1472,7 +1479,10 @@ extern "C" {
     pub fn GEOSProjectNormalized(g: *const GEOSGeometry, p: *const GEOSGeometry) -> libc::c_double;
 }
 extern "C" {
-    pub fn GEOSInterpolateNormalized(g: *const GEOSGeometry, d: libc::c_double) -> *mut GEOSGeometry;
+    pub fn GEOSInterpolateNormalized(
+        g: *const GEOSGeometry,
+        d: libc::c_double,
+    ) -> *mut GEOSGeometry;
 }
 extern "C" {
     pub fn GEOSBuffer(
@@ -1500,8 +1510,10 @@ extern "C" {
     ) -> libc::c_int;
 }
 extern "C" {
-    pub fn GEOSBufferParams_setMitreLimit(p: *mut GEOSBufferParams, mitreLimit: libc::c_double)
-        -> libc::c_int;
+    pub fn GEOSBufferParams_setMitreLimit(
+        p: *mut GEOSBufferParams,
+        mitreLimit: libc::c_double,
+    ) -> libc::c_int;
 }
 extern "C" {
     pub fn GEOSBufferParams_setQuadrantSegments(

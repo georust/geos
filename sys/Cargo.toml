@@ -1,6 +1,6 @@
 [package]
 name = "geos-sys"
-version = "2.1.0"  # TODO: set correct version
+version = "2.0.4"
 authors = ["Guillaume Gomez <guillaume1.gomez@gmail.com>"]
 
 description = "GEOS C API bindings"
@@ -30,7 +30,6 @@ name = "geos_sys"
 [features]
 default = []
 static = ["geos-src", "link-cplusplus"]
-
 v3_6_0 = []
 v3_7_0 = []
 v3_8_0 = []

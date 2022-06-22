@@ -2,7 +2,6 @@ use bindgen::Builder;
 use pkg_config::Config;
 use semver::Version;
 use std::env;
-use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
@@ -94,47 +93,37 @@ fn write_bindings(include_dir: &Path, out_path: &Path) {
         .clang_arg(include_dir.to_str().unwrap())
         // use libc instead of default std::os::raw
         .ctypes_prefix("libc")
+        // avoid converting double / float to f64 / f32
+        .no_convert_floats()
         // drop GEOS comments due to license constraints
         .generate_comments(false)
+        // block strings that aren't handed properly and can be trivially generated later
+        .blocklist_item("GEOS_VERSION")
+        .blocklist_item("GEOS_CAPI_VERSION")
+        // block unnecessary consts
+        .blocklist_item("GEOS_JTS_PORT")
+        .blocklist_item("GEOS_CAPI_FIRST_INTERFACE")
+        .blocklist_item("GEOS_CAPI_LAST_INTERFACE")
         // block deprecated APIs (both plain and "_r" variants)
-        .blocklist_function("initGEOS")
-        .blocklist_function("initGEOS_r")
-        .blocklist_function("finishGEOS")
-        .blocklist_function("finishGEOS_r")
-        .blocklist_function("GEOSGeomFromWKT")
-        .blocklist_function("GEOSGeomFromWKT_r")
-        .blocklist_function("GEOSGeomToWKT")
-        .blocklist_function("GEOSGeomToWKT_r")
-        .blocklist_function("GEOSSingleSidedBuffer")
-        .blocklist_function("GEOSSingleSidedBuffer_r")
-        .blocklist_function("GEOSUnionCascaded")
-        .blocklist_function("GEOSUnionCascaded_r")
+        .blocklist_function("initGEOS.*")
+        .blocklist_function("finishGEOS.*")
+        .blocklist_function("GEOSGeomFromWKT.*")
+        .blocklist_function("GEOSGeomToWKT.*")
+        .blocklist_function("GEOSSingleSidedBuffer.*")
+        .blocklist_function("GEOSUnionCascaded.*")
+
         // TODO: remove; these were deprecated a long time ago but are still used here
-        // .blocklist_function("GEOS_getWKBOutputDims")
-        // .blocklist_function("GEOS_getWKBOutputDims_r")
-        // .blocklist_function("GEOS_setWKBOutputDims")
-        // .blocklist_function("GEOS_setWKBOutputDims_r")
-        // .blocklist_function("GEOS_getWKBByteOrder")
-        // .blocklist_function("GEOS_getWKBByteOrder_r")
-        // .blocklist_function("GEOS_setWKBByteOrder")
-        // .blocklist_function("GEOS_setWKBByteOrder_r")
-        // .blocklist_function("GEOSGeomFromWKB_buf")
-        // .blocklist_function("GEOSGeomFromWKB_buf_r")
-        // .blocklist_function("GEOSGeomToWKB_buf")
-        // .blocklist_function("GEOSGeomToWKB_buf_r")
-        // .blocklist_function("GEOSGeomFromHEX_buf")
-        // .blocklist_function("GEOSGeomFromHEX_buf_r")
+        // .blocklist_function("GEOS_getWKBOutputDims.*")
+        // .blocklist_function("GEOS_setWKBOutputDims.*")
+        // .blocklist_function("GEOS_getWKBByteOrder.*")
+        // .blocklist_function("GEOS_setWKBByteOrder.*")
+        // .blocklist_function("GEOSGeomFromWKB_buf.*")
+        // .blocklist_function("GEOSGeomToWKB_buf.*")
+        // .blocklist_function("GEOSGeomFromHEX_buf.*")
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(out_path)
         .expect("Unable to write bindings to file");
-
-    // replace f64 => c_double, f32 => c_float
-    let mut content = fs::read_to_string(out_path).expect("Could not read generated bindings");
-    content = content
-        .replace(" f64", " libc::c_double")
-        .replace(" f32", " libc::c_float");
-    fs::write(out_path, content).expect("Unable to write bindings to file");
 
     println!("Bindings generated successfully; please review the results");
 }
@@ -209,14 +198,14 @@ fn main() {
     if out_path.exists() {
         println!("\n\n=======================");
         println!(
-            "Prebuilt bindings already exist for GEOS {}.{}\nDo you want to overwrite it (y/n)?",
+            "Prebuilt bindings already exist for GEOS {}.{}\nDo you want to overwrite it (y/N)?",
             version.major, version.minor
         );
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         if input.to_string().to_lowercase().trim() != "y" {
             println!("exiting...");
-            exit(0);
+            return;
         }
     }
 

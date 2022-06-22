@@ -5,7 +5,6 @@ edition = "2021"
 
 description = "Generate GEOS C API bindings"
 
-
 [dependencies]
 bindgen = "0.60.1"
 pkg-config = "0.3.25"
