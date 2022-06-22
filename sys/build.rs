@@ -1,6 +1,6 @@
 use semver::Version;
 use std::env;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
@@ -40,7 +40,7 @@ fn detect_geos_via_geos_config() -> Option<Version> {
                 geos_config[0].replace("-L", "")
             );
 
-            Some(parse_geos_version(&geos_config[1]))
+            Some(parse_geos_version(geos_config[1]))
         }
         Err(_) => None,
     }
@@ -76,7 +76,6 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
         }
     }
 }
-
 
 /// Hardcode a prebuilt binding version while generating docs.
 /// Otherwise docs.rs will explode due to not actually having libgeos installed.
@@ -116,7 +115,7 @@ fn main() {
 
     let mut version: Option<Version>;
     let lib_dir_env = env::var_os("GEOS_LIB_DIR");
-        let version_env = env::var_os("GEOS_VERSION");
+    let version_env = env::var_os("GEOS_VERSION");
 
     // static feature includes building the included GEOS prior to this build step.
     // The statically-linked GEOS is the version pinned in the GEOS submodule
@@ -130,8 +129,9 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", geos_path);
         println!("cargo:includedir={}/include", geos_path);
 
-        version = Some(Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version"));
-
+        version = Some(
+            Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version"),
+        );
     } else if lib_dir_env.is_some() || version_env.is_some() {
         // if any env vars are set, all must be set
         println!("cargo:rustc-link-lib=dylib=geos_c");
@@ -150,7 +150,9 @@ fn main() {
         // GEOS_VERSION
         match version_env {
             Some(raw_version) => {
-                version = Some(parse_geos_version(&raw_version.to_string_lossy().to_string()));
+                version = Some(parse_geos_version(
+                    &raw_version.to_string_lossy().to_string(),
+                ));
             }
             None => {
                 panic!("GEOS_VERSION must be set");
@@ -169,7 +171,6 @@ fn main() {
             panic!("Could not detect GEOS using pkg-config or geos-config");
         }
     }
-
 
     let version = version.unwrap();
 

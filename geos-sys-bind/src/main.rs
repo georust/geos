@@ -43,7 +43,7 @@ fn detect_geos_via_geos_config() -> Option<GEOSConfig> {
 
             Some(GEOSConfig {
                 include_dir: PathBuf::from(geos_config[0].trim()),
-                version: parse_geos_version(&geos_config[1]),
+                version: parse_geos_version(geos_config[1]),
             })
         }
         Err(_) => None,
@@ -146,30 +146,23 @@ fn main() {
     let version_env = env::var_os("GEOS_VERSION");
 
     if include_dir_env.is_some() || version_env.is_some() {
-        let version: Version;
-        let include_dir: PathBuf;
-
         // GEOS_INCLUDE_DIR
-        match include_dir_env {
-            Some(path) => {
-                include_dir = PathBuf::from(path);
-            }
+        let include_dir = match include_dir_env {
+            Some(path) => PathBuf::from(path),
             None => {
                 println!("GEOS_INCLUDE_DIR must be set");
                 exit(1);
             }
-        }
+        };
 
         // GEOS_VERSION
-        match version_env {
-            Some(raw_version) => {
-                version = parse_geos_version(&raw_version.to_string_lossy().to_string());
-            }
+        let version = match version_env {
+            Some(raw_version) => parse_geos_version(&raw_version.to_string_lossy().to_string()),
             None => {
                 println!("GEOS_VERSION must be set");
                 exit(1);
             }
-        }
+        };
 
         config = Some(GEOSConfig {
             include_dir,
