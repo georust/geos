@@ -1,7 +1,9 @@
 use bindgen::Builder;
+use clap::Parser;
 use pkg_config::Config;
+use regex::Regex;
 use semver::Version;
-use std::env;
+use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
@@ -9,7 +11,7 @@ use std::process::{exit, Command};
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
 
 struct GEOSConfig {
-    include_dir: PathBuf,
+    header: String,
     version: Version,
 }
 
@@ -41,7 +43,11 @@ fn detect_geos_via_geos_config() -> Option<GEOSConfig> {
             assert!(geos_config.len() == 2);
 
             Some(GEOSConfig {
-                include_dir: PathBuf::from(geos_config[0].trim()),
+                header: PathBuf::from(geos_config[0].trim())
+                    .join("geos_c.h")
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
                 version: parse_geos_version(geos_config[1]),
             })
         }
@@ -61,10 +67,12 @@ fn detect_geos_via_pkg_config() -> Option<GEOSConfig> {
     match &geos_pkg_config {
         Ok(geos) => {
             // GEOS should only have one include path for geos_c.h header
-            // include_path = PathBuf::from(geos.include_paths.first().unwrap());
-            // version = parse_geos_version(&geos.version);
             Some(GEOSConfig {
-                include_dir: PathBuf::from(geos.include_paths.first().unwrap()),
+                header: PathBuf::from(geos.include_paths.first().unwrap())
+                    .join("geos_c.h")
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
                 version: parse_geos_version(&geos.version),
             })
         }
@@ -81,16 +89,12 @@ fn detect_geos_via_pkg_config() -> Option<GEOSConfig> {
 }
 
 /// Generate bindings based on GEOS header file
-fn write_bindings(include_dir: &Path, out_path: &Path) {
-    let geos_header = include_dir.join("geos_c.h").to_str().unwrap().to_string();
-
+fn write_bindings(geos_header: &str, out_path: &Path) {
     println!("Generating bindings using GEOS header: {}", geos_header);
 
     Builder::default()
         .size_t_is_usize(true)
         .header(geos_header)
-        .clang_arg("-I")
-        .clang_arg(include_dir.to_str().unwrap())
         // use libc instead of default std::os::raw
         .ctypes_prefix("libc")
         // avoid converting double / float to f64 / f32
@@ -111,7 +115,6 @@ fn write_bindings(include_dir: &Path, out_path: &Path) {
         .blocklist_function("GEOSGeomToWKT.*")
         .blocklist_function("GEOSSingleSidedBuffer.*")
         .blocklist_function("GEOSUnionCascaded.*")
-
         // TODO: remove; these were deprecated a long time ago but are still used here
         // .blocklist_function("GEOS_getWKBOutputDims.*")
         // .blocklist_function("GEOS_setWKBOutputDims.*")
@@ -128,34 +131,54 @@ fn write_bindings(include_dir: &Path, out_path: &Path) {
     println!("Bindings generated successfully; please review the results");
 }
 
+#[derive(Parser, Debug)]
+#[clap(about)]
+struct Args {
+    /// GEOS geos_c.h header file path
+    #[clap(short = 'h', long = "header")]
+    header: Option<PathBuf>,
+}
+
 fn main() {
+    let args = Args::parse();
+
     let mut config: Option<GEOSConfig>;
 
-    let include_dir_env = env::var_os("GEOS_INCLUDE_DIR");
-    let version_env = env::var_os("GEOS_VERSION");
+    if args.header.is_some() {
+        let header_path = args.header.unwrap();
 
-    if include_dir_env.is_some() || version_env.is_some() {
-        // GEOS_INCLUDE_DIR
-        let include_dir = match include_dir_env {
-            Some(path) => PathBuf::from(path),
-            None => {
-                println!("GEOS_INCLUDE_DIR must be set");
-                exit(1);
-            }
-        };
+        if !header_path.exists() {
+            println!("header path {:?} does not exist", header_path);
+            exit(1);
+        }
 
-        // GEOS_VERSION
-        let version = match version_env {
-            Some(raw_version) => parse_geos_version(&raw_version.to_string_lossy().to_string()),
-            None => {
-                println!("GEOS_VERSION must be set");
-                exit(1);
-            }
-        };
+        if !header_path.is_file() {
+            println!("header path {:?} is not a file", header_path);
+            exit(1);
+        }
+
+        let header = header_path
+            .canonicalize()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+
+        // Extract version from header; always follows a consistent pattern
+        let content = fs::read_to_string(&header).expect("Could not read GEOS header file");
+        let re = Regex::new(r#"define GEOS_VERSION "\S+""#).unwrap();
+        let raw_version = re
+            .find(&content)
+            .map(|x| {
+                let mut split = x.as_str().split('"');
+                split.next();
+                split.next().unwrap()
+            })
+            .expect("Could not read GEOS_VERSION from GEOS header file");
 
         config = Some(GEOSConfig {
-            include_dir,
-            version,
+            header,
+            version: parse_geos_version(raw_version),
         })
     } else {
         // try to detect using pkg-config, if available
@@ -209,5 +232,5 @@ fn main() {
         }
     }
 
-    write_bindings(&detected.include_dir, &out_path);
+    write_bindings(&detected.header, &out_path);
 }

@@ -17,20 +17,21 @@ This crate will attempt to automatically detect your installation of GEOS:
 -   `pkg-config` is used to automatically detect GEOS >= 3.9
 -   `geos-config` is used to automatically detect GEOS < 3.9
 
-If GEOS is in a custom location, you can instead use environment variables to
-configure GEOS detection (both must be set):
-
--   `GEOS_INCLUDE_DIR`
--   `GEOS_VERSION`
-
 ## Adding a new GEOS version
 
 ### 1. Generate new bindings
 
-Install the desired GEOS version on your system and then run:
+By default, the bindings are generated against your installed version of GEOS:
 
 ```bash
 cargo run
+```
+
+You can also use the `-h` / `--header` command line flag to specify the location
+of the GEOS header file:
+
+```bash
+cargo run -- --header <path_to_geos_c.h>
 ```
 
 This will produce a new binding in
@@ -42,9 +43,9 @@ will be problematic to integrate in Rust, such as data types that vary by
 architecture. Common data types are provided using `libc`. You can compare to
 bindings from a previous version of GEOS for reference.
 
-### 2. Add new feature
+### 2. Add feature entry for new version
 
-Add a new version feature for this GEOS version with the pattern
+Add a new feature entry for this GEOS version with the pattern
 `"v<major>_<minor>_0"` to `Cargo.toml` in the root of this repository and
 `sys/Cargo.toml`. The feature for each newer version of GEOS depends on the
 previous version.

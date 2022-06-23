@@ -7,5 +7,7 @@ description = "Generate GEOS C API bindings"
 
 [dependencies]
 bindgen = "0.60.1"
+clap = { version = "3.2.6", features = ["derive"] }
 pkg-config = "0.3.25"
+regex = "1.5"
 semver = "1.0"
