@@ -78,13 +78,16 @@ jobs:
         toolchain:
           - stable
           - nightly
-        geos:
-          - "3.6.5"
-          - "3.7.5"
-          - "3.8.3"
-          - "3.9.3"
-          - "3.10.3"
-
+        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3"]
+        include:
+          - geos: "3.7.5"
+            version_feature: "v3_7_0"
+          - geos: "3.8.3"
+            version_feature: "v3_8_0"
+          - geos: "3.9.3"
+            version_feature: "v3_9_0"
+          - geos: "3.10.3"
+            version_feature: "v3_10_0"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -134,23 +137,27 @@ jobs:
           cmake -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release ..
           sudo ninja install
 
-      - name: Set version feature env
-        run: |
-          echo "VERSION_FEATURE=v$(echo ${{ matrix.geos }} | sed 's/\./_/g')" >> $GITHUB_ENV
-
       - name: Build geos crate
         run: |
           cargo build
           cargo build --features 'geo,json'
-          cargo build --features $VERSION_FEATURE
-          cargo build --features '$VERSION_FEATURE,geo,son'
+
+      - name: Build geos crate for GEOS version > 3.6
+        if: ${{ matrix.version_feature }}
+        run: |
+          cargo build --features ${{ matrix.version_feature }}
+          cargo build --features '${{ matrix.version_feature }},geo,json'
 
       - name: Run geos tests
         run: |
           cargo test
           cargo test --features 'geo,json'
-          cargo test --features $VERSION_FEATURE
-          cargo test --features '$VERSION_FEATURE,geo,son'
+
+      - name: Run geos tests for GEOS version > 3.6
+        if: ${{ matrix.version_feature }}
+        run: |
+          cargo test --features ${{ matrix.version_feature }}
+          cargo test --features '${{ matrix.version_feature }},geo,json'
 
       - name: Check doc generation
         run: |
