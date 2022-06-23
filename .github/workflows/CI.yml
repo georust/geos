@@ -71,6 +71,7 @@ jobs:
       LD_LIBRARY_PATH: /usr/local/lib
       GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
       GEOS_VERSION: ${{ matrix.geos }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -80,11 +81,9 @@ jobs:
         geos:
           - "3.6.5"
           - "3.7.5"
-          - "3.8.1"  # TEMP: since 3.8.1 worked previously
           - "3.8.3"
           - "3.9.3"
           - "3.10.3"
-          - "3.11.0beta1"
 
     steps:
       - uses: actions/checkout@v2
@@ -135,80 +134,23 @@ jobs:
           cmake -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release ..
           sudo ninja install
 
+      - name: Set version feature env
+        run: |
+          echo "VERSION_FEATURE=v$(echo ${{ matrix.geos }} | sed 's/\./_/g')" >> $GITHUB_ENV
+
       - name: Build geos crate
         run: |
           cargo build
-
-      - name: Build GEOS 3.6.0 features
-        if: ${{ startsWith(matrix.geos, '3.6') }}
-        run: |
-          cargo build --features v3_6_0
-
-      - name: Build GEOS 3.7.0 features
-        if: ${{ startsWith(matrix.geos, '3.7') }}
-        run: |
-          cargo build --features v3_7_0
-
-      - name: Build GEOS 3.8.0 features
-        if: ${{ startsWith(matrix.geos, '3.8') }}
-        run: |
-          cargo build --features v3_8_0
-
-      - name: Build GEOS 3.9.0 features
-        if: ${{ startsWith(matrix.geos, '3.9') }}
-        run: |
-          cargo build --features v3_9_0
-
-      - name: Build GEOS 3.10.0 features
-        if: ${{ startsWith(matrix.geos, '3.10') }}
-        run: |
-          cargo build --features v3_10_0
-
-      - name: Build GEOS 3.11.0 features
-        if: ${{ startsWith(matrix.geos, '3.11') }}
-        run: |
-          cargo build --features v3_11_0
+          cargo build --features 'geo,json'
+          cargo build --features $VERSION_FEATURE
+          cargo build --features '$VERSION_FEATURE,geo,son'
 
       - name: Run geos tests
         run: |
           cargo test
           cargo test --features 'geo,json'
-
-      - name: Test GEOS 3.6.0 features
-        if: ${{ startsWith(matrix.geos, '3.6') }}
-        run: |
-          cargo test --features v3_6_0
-          cargo test --features 'v3_6_0,geo,json'
-
-      - name: Test GEOS 3.7.0 features
-        if: ${{ startsWith(matrix.geos, '3.7') }}
-        run: |
-          cargo test --features v3_7_0
-          cargo test --features 'v3_7_0,geo,json'
-
-      - name: Test GEOS 3.8.0 features
-        if: ${{ startsWith(matrix.geos, '3.8') }}
-        run: |
-          cargo test --features v3_8_0
-          cargo test --features 'v3_8_0,geo,json'
-
-      - name: Test GEOS 3.9.0 features
-        if: ${{ startsWith(matrix.geos, '3.9') }}
-        run: |
-          cargo test --features v3_9_0
-          cargo test --features 'v3_9_0,geo,json'
-
-      - name: Test GEOS 3.10.0 features
-        if: ${{ startsWith(matrix.geos, '3.10') }}
-        run: |
-          cargo test --features v3_10_0
-          cargo test --features 'v3_10_0,geo,json'
-
-      - name: Test GEOS 3.11.0 features
-        if: ${{ startsWith(matrix.geos, '3.11') }}
-        run: |
-          cargo test --features v3_11_0
-          cargo test --features 'v3_11_0,geo,json'
+          cargo test --features $VERSION_FEATURE
+          cargo test --features '$VERSION_FEATURE,geo,son'
 
       - name: Check doc generation
         run: |

@@ -77,41 +77,16 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
     }
 }
 
-/// Hardcode a prebuilt binding version while generating docs.
-/// Otherwise docs.rs will explode due to not actually having libgeos installed.
-fn set_bindings_for_docs(out_path: &PathBuf) {
-    let version = Version::parse(BUNDLED_GEOS_VERSION).expect("invalid version for docs.rs");
-    println!(
-        "cargo:rustc-cfg=geos_sys_{}_{}_{}",
-        version.major, version.minor, version.patch
-    );
+#[cfg(feature = "dox")]
+fn main() {} // skip linking to bindings if generating docs
 
-    let binding_path = PathBuf::from(format!(
-        "prebuilt-bindings/geos_{}.{}.rs",
-        version.major, version.minor
-    ));
-
-    if !binding_path.exists() {
-        panic!("Missing bindings for docs.rs (version {})", version);
-    }
-
-    std::fs::copy(&binding_path, &out_path).expect("Can't copy bindings to output directory");
-}
-
+#[cfg(not(feature = "dox"))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-env-changed=GEOS_INCLUDE_DIR");
     println!("cargo:rerun-if-env-changed=GEOS_LIB_DIR");
-    // println!("cargo:rerun-if-env-changed=GEOS_VERSION");
+    println!("cargo:rerun-if-env-changed=GEOS_VERSION");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
-    // let mut version = Version::new(0, 0, 0);
-    // let include_path: PathBuf;
-
-    if env::var("DOCS_RS").is_ok() {
-        set_bindings_for_docs(&out_path);
-        return;
-    }
 
     let mut version: Option<Version>;
     let lib_dir_env = env::var_os("GEOS_LIB_DIR");
@@ -207,13 +182,6 @@ fn main() {
         binding_version = Version::new(3, 10, 0);
     }
 
-    if cfg!(feature = "v3_11_0") {
-        // binding_version = Version::new(3, 11, 0);
-
-        // FIXME: remove string parsing once released
-        binding_version = Version::parse("3.11.0-beta2").unwrap();
-    }
-
     if version < binding_version {
         panic!("You requested a version of GEOS ({}.{}) that is greater than your installed GEOS version ({}.{}.{})", binding_version.major, binding_version.minor, version.major, version.minor, version.patch);
     }
@@ -233,7 +201,7 @@ fn main() {
     std::fs::copy(&binding_path, &out_path).expect("Can't copy bindings to output directory");
 
     println!(
-        "cargo:rustc-cfg=geos_sys_{}_{}",
+        "cargo:rustc-cfg=geos_sys_{}_{}_0",
         binding_version.major, binding_version.minor
     );
 }

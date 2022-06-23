@@ -21,4 +21,5 @@ extern crate libc;
 #[cfg(feature = "static")]
 extern crate link_cplusplus;
 
+#[cfg(not(feature = "dox"))]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

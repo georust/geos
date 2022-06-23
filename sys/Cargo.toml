@@ -29,6 +29,7 @@ name = "geos_sys"
 
 [features]
 default = []
+dox = []
 static = ["geos-src", "link-cplusplus"]
 v3_6_0 = []
 v3_7_0 = []
