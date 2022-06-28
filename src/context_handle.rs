@@ -8,6 +8,8 @@ use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
 
+pub type HandlerCallback<'a> = Box<dyn Fn(&str) + Send + Sync + 'a>;
+
 macro_rules! set_callbacks {
     ($c_func:ident, $kind:ident, $callback_name:ident, $last:ident) => {
         fn $kind<'a>(ptr: GEOSContextHandle_t, nf: *mut InnerContext<'a>) {
@@ -64,8 +66,8 @@ unsafe impl<T> Sync for PtrWrap<T> {}
 pub(crate) struct InnerContext<'a> {
     last_notification: Mutex<Option<String>>,
     last_error: Mutex<Option<String>>,
-    notif_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>>,
-    error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>>,
+    notif_callback: Mutex<HandlerCallback<'a>>,
+    error_callback: Mutex<HandlerCallback<'a>>,
 }
 
 pub struct ContextHandle<'a> {
@@ -102,10 +104,8 @@ impl<'a> ContextHandle<'a> {
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);
 
-        let notif_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> =
-            Mutex::new(Box::new(|_| {}));
-        let error_callback: Mutex<Box<dyn Fn(&str) + Send + Sync + 'a>> =
-            Mutex::new(Box::new(|_| {}));
+        let notif_callback: Mutex<HandlerCallback<'a>> = Mutex::new(Box::new(|_| {}));
+        let error_callback: Mutex<HandlerCallback<'a>> = Mutex::new(Box::new(|_| {}));
 
         let inner = Box::into_raw(Box::new(InnerContext {
             last_notification,
@@ -144,7 +144,7 @@ impl<'a> ContextHandle<'a> {
     ///
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    pub fn set_notice_message_handler(&self, nf: Option<Box<dyn Fn(&str) + Send + Sync + 'a>>) {
+    pub fn set_notice_message_handler(&self, nf: Option<HandlerCallback<'a>>) {
         let inner_context = self.get_inner();
         if let Ok(mut callback) = inner_context.notif_callback.lock() {
             if let Some(nf) = nf {
@@ -168,7 +168,7 @@ impl<'a> ContextHandle<'a> {
     ///
     /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    pub fn set_error_message_handler(&self, ef: Option<Box<dyn Fn(&str) + Send + Sync + 'a>>) {
+    pub fn set_error_message_handler(&self, ef: Option<HandlerCallback<'a>>) {
         let inner_context = self.get_inner();
         if let Ok(mut callback) = inner_context.error_callback.lock() {
             if let Some(ef) = ef {
