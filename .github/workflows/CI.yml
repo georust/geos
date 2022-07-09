@@ -78,7 +78,7 @@ jobs:
         toolchain:
           - stable
           - nightly
-        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3"]
+        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0"]
         include:
           - geos: "3.7.5"
             version_feature: "v3_7_0"
@@ -88,6 +88,8 @@ jobs:
             version_feature: "v3_9_0"
           - geos: "3.10.3"
             version_feature: "v3_10_0"
+          - geos: "3.11.0"
+            version_feature: "v3_11_0"
     steps:
       - uses: actions/checkout@v2
         with:
