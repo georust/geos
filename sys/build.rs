@@ -73,7 +73,8 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
 
 #[cfg(feature = "dox")]
 fn main() {
-    let binding_version = Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version");
+    let binding_version =
+        Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version");
 
     println!(
         "cargo:rustc-cfg=geos_sys_{}_{}",
