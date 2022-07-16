@@ -43,14 +43,39 @@ will be problematic to integrate in Rust, such as data types that vary by
 architecture. Common data types are provided using `libc`. You can compare to
 bindings from a previous version of GEOS for reference.
 
-### 2. Add feature entry for new version
+### 2. Add entry to `build.rs`
+
+Add a new entry with the following pattern toward the end of `build.rs` to
+enable this binding version:
+
+```rust
+if cfg!(feature = "v<major>_<minor>_0") {
+    binding_version = Version::new(<major>, <minor>, 0);
+}
+```
+
+### 3. Update `lib.rs`
+
+Add a new cfg entry to `lib.rs` with the following pattern to enable binding
+against this version:
+
+```rust
+#[cfg(geos_sys_<major>_<minor>)]
+include!("../prebuilt-bindings/geos_<major>.<minor>.rs");
+```
+
+Update the GEOS version number in the docstring that is used for referencing the
+version of GEOS that is included in the docs; it should be based on the latest
+version of GEOS.
+
+### 4. Add feature entry for new version
 
 Add a new feature entry for this GEOS version with the pattern
 `"v<major>_<minor>_0"` to `Cargo.toml` in the root of this repository and
 `sys/Cargo.toml`. The feature for each newer version of GEOS depends on the
 previous version.
 
-### 3. Update included version of GEOS
+### 5. Update included version of GEOS
 
 * update the GEOS submodule to the latest available GEOS version
 * update `BUNDLED_GEOS_VERSION` in `sys/build.rs` to match this version

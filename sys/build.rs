@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
-const BUNDLED_GEOS_VERSION: &str = "3.10.0";
+const BUNDLED_GEOS_VERSION: &str = "3.11.0";
 
 /// standardize GEOS prerelease versions to match semver format:
 fn parse_geos_version(raw_version: &str) -> Version {
@@ -58,12 +58,6 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
     match &geos_pkg_config {
         Ok(geos) => {
             // GEOS should only have one include path for geos_c.h header
-            // include_path = PathBuf::from(geos.include_paths.first().unwrap());
-            // version = parse_geos_version(&geos.version);
-            // Some(GEOSConfig {
-            //     include_dir: PathBuf::from(geos.include_paths.first().unwrap()),
-            //     version: parse_geos_version(&geos.version),
-            // })
             Some(parse_geos_version(&geos.version))
         }
         Err(pkg_config_err) => {
@@ -78,15 +72,20 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
 }
 
 #[cfg(feature = "dox")]
-fn main() {} // skip linking to bindings if generating docs
+fn main() {
+    let binding_version = Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version");
+
+    println!(
+        "cargo:rustc-cfg=geos_sys_{}_{}",
+        binding_version.major, binding_version.minor
+    );
+}
 
 #[cfg(not(feature = "dox"))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=GEOS_LIB_DIR");
     println!("cargo:rerun-if-env-changed=GEOS_VERSION");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
 
     let mut version: Option<Version>;
     let lib_dir_env = env::var_os("GEOS_LIB_DIR");
@@ -182,26 +181,16 @@ fn main() {
         binding_version = Version::new(3, 10, 0);
     }
 
+    if cfg!(feature = "v3_11_0") {
+        binding_version = Version::new(3, 11, 0);
+    }
+
     if version < binding_version {
         panic!("You requested a version of GEOS ({}.{}) that is greater than your installed GEOS version ({}.{}.{})", binding_version.major, binding_version.minor, version.major, version.minor, version.patch);
     }
 
-    // copy requested prebuilt binding (if exists) to output directory
-    let binding_path = PathBuf::from(format!(
-        "prebuilt-bindings/geos_{}.{}.rs",
-        binding_version.major, binding_version.minor
-    ));
-
-    // this shouldn't happen except when a new version feature is added but the
-    // binding has not yet been created
-    if !binding_path.exists() {
-        panic!("No pre-built bindings available for requested GEOS version {}.{}\nUse features to select an available version.", binding_version.major, binding_version.minor);
-    }
-
-    std::fs::copy(&binding_path, &out_path).expect("Can't copy bindings to output directory");
-
     println!(
-        "cargo:rustc-cfg=geos_sys_{}_{}_0",
+        "cargo:rustc-cfg=geos_sys_{}_{}",
         binding_version.major, binding_version.minor
     );
 }

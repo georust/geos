@@ -17,7 +17,7 @@ readme = "README.md"
 edition = "2021"
 
 [features]
-dox = ["geo-types", "wkt", "json"]
+dox = ["geo-types", "wkt", "json", "geos-sys/dox"]
 geo = ["geo-types", "wkt"]
 json = ["geojson"]
 static = ["geos-sys/static"]

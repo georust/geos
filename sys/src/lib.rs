@@ -1,4 +1,4 @@
-//! Low level [GEOS](https://libgeos.org/) C API bindings for GEOS >= 3.7.0.
+//! Low level [GEOS](https://libgeos.org/) C API bindings for GEOS >= 3.6.0.
 //!
 //! It provides C-interface as is. If you want to use a more Rust-friendly crate,
 //! use the [georust/geos](https://github.com/georust/geos) crate.
@@ -10,6 +10,10 @@
 //! You can build the included version of GEOS using the `static` feature, which
 //! will also statically link libgeos to this crate.  In order to build GEOS, you
 //! need to have `cmake` and a C++ compiler.
+//!
+//! This documentation is generated based on GEOS 3.11.  Please see the
+//! [GEOS Changelog](https://github.com/libgeos/geos/blob/main/NEWS.md) for
+//! a listing of which entries were added for each GEOS version.
 
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
@@ -21,5 +25,20 @@ extern crate libc;
 #[cfg(feature = "static")]
 extern crate link_cplusplus;
 
-#[cfg(not(feature = "dox"))]
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+#[cfg(geos_sys_3_6)]
+include!("../prebuilt-bindings/geos_3.6.rs");
+
+#[cfg(geos_sys_3_7)]
+include!("../prebuilt-bindings/geos_3.7.rs");
+
+#[cfg(geos_sys_3_8)]
+include!("../prebuilt-bindings/geos_3.8.rs");
+
+#[cfg(geos_sys_3_9)]
+include!("../prebuilt-bindings/geos_3.9.rs");
+
+#[cfg(geos_sys_3_10)]
+include!("../prebuilt-bindings/geos_3.10.rs");
+
+#[cfg(geos_sys_3_11)]
+include!("../prebuilt-bindings/geos_3.11.rs");
