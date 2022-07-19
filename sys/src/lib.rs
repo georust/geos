@@ -25,20 +25,21 @@ extern crate libc;
 #[cfg(feature = "static")]
 extern crate link_cplusplus;
 
-#[cfg(geos_sys_3_6)]
+
+#[cfg(not(any(feature = "v3_7_0", feature = "dox")))]
 include!("../prebuilt-bindings/geos_3.6.rs");
 
-#[cfg(geos_sys_3_7)]
+#[cfg(all(feature = "v3_7_0", not(any(feature = "v3_8_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.7.rs");
 
-#[cfg(geos_sys_3_8)]
+#[cfg(all(feature = "v3_8_0", not(any(feature = "v3_9_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.8.rs");
 
-#[cfg(geos_sys_3_9)]
+#[cfg(all(feature = "v3_9_0", not(any(feature = "v3_10_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.9.rs");
 
-#[cfg(geos_sys_3_10)]
+#[cfg(all(feature = "v3_10_0", not(any(feature = "v3_11_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.10.rs");
 
-#[cfg(geos_sys_3_11)]
+#[cfg(any(feature = "v3_11_0", feature = "dox"))]
 include!("../prebuilt-bindings/geos_3.11.rs");

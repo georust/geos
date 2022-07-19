@@ -19,7 +19,12 @@ This crate will attempt to automatically detect your installation of GEOS:
 
 ## Adding a new GEOS version
 
-### 1. Generate new bindings
+### 1. Update included version of GEOS
+
+* update the GEOS submodule to the latest available GEOS version
+* update `BUNDLED_GEOS_VERSION` in `sys/build.rs` to match this version
+
+### 2. Generate new bindings
 
 By default, the bindings are generated against your installed version of GEOS:
 
@@ -43,7 +48,7 @@ will be problematic to integrate in Rust, such as data types that vary by
 architecture. Common data types are provided using `libc`. You can compare to
 bindings from a previous version of GEOS for reference.
 
-### 2. Add entry to `build.rs`
+### 3. Add entry to `build.rs`
 
 Add a new entry with the following pattern toward the end of `build.rs` to
 enable this binding version:
@@ -54,28 +59,32 @@ if cfg!(feature = "v<major>_<minor>_0") {
 }
 ```
 
-### 3. Update `lib.rs`
+### 4. Update `lib.rs`
 
 Add a new cfg entry to `lib.rs` with the following pattern to enable binding
 against this version:
 
 ```rust
-#[cfg(geos_sys_<major>_<minor>)]
+#[cfg(any(feature = "v<major>_<minor>_0", feature = "dox"))]
 include!("../prebuilt-bindings/geos_<major>.<minor>.rs");
 ```
 
-Update the GEOS version number in the docstring that is used for referencing the
-version of GEOS that is included in the docs; it should be based on the latest
-version of GEOS.
+NOTE: docs are always generated from the latest version.
 
-### 4. Add feature entry for new version
+
+Update the entry for the previous version to exclude the latest version:
+
+```rust
+#[cfg(all(feature = "v<prev_major>_<prev_minor>_0", not(any(feature = "v<major>_<minor>_0", feature = "dox"))))]
+include!("../prebuilt-bindings/geos_<major>.<minor>.rs");
+```
+
+Update the GEOS version number in the docstring at the top of `lib.rs` to the
+latest version of GEOS.
+
+### 5. Add feature entry for new version
 
 Add a new feature entry for this GEOS version with the pattern
 `"v<major>_<minor>_0"` to `Cargo.toml` in the root of this repository and
 `sys/Cargo.toml`. The feature for each newer version of GEOS depends on the
 previous version.
-
-### 5. Update included version of GEOS
-
-* update the GEOS submodule to the latest available GEOS version
-* update `BUNDLED_GEOS_VERSION` in `sys/build.rs` to match this version

@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
+// BUNDLED_GEOS_VERSION is the GEOS version tracked by submodule
 const BUNDLED_GEOS_VERSION: &str = "3.11.0";
 
 /// standardize GEOS prerelease versions to match semver format:
@@ -72,15 +73,8 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
 }
 
 #[cfg(feature = "dox")]
-fn main() {
-    let binding_version =
-        Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version");
+fn main() {}
 
-    println!(
-        "cargo:rustc-cfg=geos_sys_{}_{}",
-        binding_version.major, binding_version.minor
-    );
-}
 
 #[cfg(not(feature = "dox"))]
 fn main() {
@@ -189,9 +183,4 @@ fn main() {
     if version < binding_version {
         panic!("You requested a version of GEOS ({}.{}) that is greater than your installed GEOS version ({}.{}.{})", binding_version.major, binding_version.minor, version.major, version.minor, version.patch);
     }
-
-    println!(
-        "cargo:rustc-cfg=geos_sys_{}_{}",
-        binding_version.major, binding_version.minor
-    );
 }
