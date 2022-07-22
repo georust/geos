@@ -1,26 +1,40 @@
 # geos-sys
 
-[GEOS](https://trac.osgeo.org/geos/) C API bindings.
+Low level [GEOS](https://libgeos.org/) C API bindings for GEOS >= 3.6.0.
 
 It provides C-interface as is. If you want to use a more Rust-friendly crate,
-prefer to use the [georust/geos](https://github.com/georust/geos) crate.
+use the [georust/geos](https://github.com/georust/geos) crate.
 
 You can also find it on [crates.io](https://crates.io/crates/geos).
 
-## Static build
+## Build
 
-If you want to link statically to libgeos, then use the `static` feature. It will build `libgeos` so you need to have `cmake` and a C++ compiler.
+By default, the build will use system-installed GEOS if available:
 
-## Add more functions
+-   `pkg-config` is used to automatically detect GEOS >= 3.9
+-   `geos-config` is used to automatically detect GEOS < 3.9
 
-This binding is written manually.
+If GEOS is in a custom location, you can instead use environment variables to
+configure GEOS detection (both must be set):
 
-A little script is available to check what functions aren't available yet. You can run it as follows:
+-   `GEOS_LIB_DIR`
+-   `GEOS_VERSION`
+
+You can build the included version of GEOS using the `static` feature, which
+will also statically link libgeos to this crate. In order to build GEOS, you
+need to have `cmake` and a C++ compiler. Building GEOS may take several minutes.
+
+## Bindings
+
+Pre-built bindings are available for all supported GEOS versions.
+
+Use the version feature for the version of GEOS that you want to target; your
+installed version of GEOS must be greater than or equal to this version.
+
+Example:
 
 ```bash
-> python3 check_missing/check_missing.py
+cargo build --features v3_8_0
 ```
 
-It simply reads `geos` C header file and compare it with the `geos-sys`'s `src/functions.rs` file. Normally, you should never have more functions in the Rust code than the C code (deprecated functions aren't reexported in Rust).
-
-If you want to support a newer GEOS version, please update the `check_missing/geos_c.h` file and then run the `check_missing.py` script to see what was added/removed.
+New bindings can be created using the sibling `geos-sys-bind` crate.

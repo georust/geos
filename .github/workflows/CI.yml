@@ -1,13 +1,19 @@
+name: CI
+
 on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
-name: CI
+# cancel running jobs on new commit to PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   rustfmt:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -20,7 +26,7 @@ jobs:
       - run: cd sys && cargo fmt -- --check
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -29,97 +35,137 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libgeos-dev
       - run: cargo clippy -- -D warnings
       - run: cd sys && cargo clippy -- -D warnings
 
   check_static:
     name: Check static feature
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       LD_LIBRARY_PATH: /usr/local/lib
+
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'true'
+          submodules: "true"
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install valgrind
-          sudo apt remove libgeos-dev -y
-      - name: Install geos
-        # First we install the 3.8 version of libgeos and then checkout the 3.8.1 version
-        run: |
-          git clone https://github.com/libgeos/geos
-          cd geos
-          git checkout 24650422b3982f17cc493fe92a70228f2ad624b4
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
+
       - name: Build static geos crate
         run: cargo build --features static
 
   check:
-    name: Check ${{ matrix.toolchain }} / ${{ matrix.triple.target }}
-    runs-on: ubuntu-latest
+    name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }} - ${{ matrix.triple.target }}
+    runs-on: ubuntu-20.04
     env:
       LD_LIBRARY_PATH: /usr/local/lib
+      GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
+      GEOS_VERSION: ${{ matrix.geos }}
+
     strategy:
       fail-fast: false
       matrix:
         toolchain:
           - stable
           - nightly
+        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0"]
+        include:
+          - geos: "3.7.5"
+            version_feature: "v3_7_0"
+          - geos: "3.8.3"
+            version_feature: "v3_8_0"
+          - geos: "3.9.3"
+            version_feature: "v3_9_0"
+          - geos: "3.10.3"
+            version_feature: "v3_10_0"
+          - geos: "3.11.0"
+            version_feature: "v3_11_0"
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           override: true
+
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install valgrind
-          sudo apt remove libgeos-dev -y
-      - name: Install geos
-        # First we install the 3.8 version of libgeos and then checkout the 3.8.1 version
+          sudo apt install build-essential ccache ninja-build pkg-config valgrind
+          sudo /usr/sbin/update-ccache-symlinks
+
+      - name: Prepare ccache
+        run: ccache --clear --set-config cache_dir=~/.ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v2
+        env:
+          cache-name: ccache-v1
+        with:
+          path: ~/.ccache
+          key: ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}-${{ github.sha }}-${{ github.head_ref }}
+          restore-keys: |
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}-${{ github.sha }}
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}-${{ github.ref }}
+            ${{ env.cache-name }}-${{ matrix.os }}-${{ github.job }}
+
+      - name: Clear ccache statistics
         run: |
-          git clone https://github.com/libgeos/geos
-          cd geos
-          git checkout 24650422b3982f17cc493fe92a70228f2ad624b4
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
+          ccache --zero-stats --set-config cache_dir=~/.ccache
+          ccache --max-size=2G --set-config cache_dir=~/.ccache
+          ccache --show-stats --set-config cache_dir=~/.ccache
+
+      - name: Install GEOS
+        run: |
+          cd sys/geos-src/source
+          git fetch --unshallow --tags origin
+          git checkout "tags/${{ matrix.geos }}"
+          mkdir build
+          cd build
+          cmake -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release ..
+          sudo ninja install
+
       - name: Build geos crate
         run: |
           cargo build
-          cargo build --features v3_8_0
-          cargo build --features v3_7_0
-          cargo build --features v3_6_0
+          cargo build --features 'geo,json'
+
+      - name: Build geos crate for GEOS version > 3.6
+        if: ${{ matrix.version_feature }}
+        run: |
+          cargo build --features ${{ matrix.version_feature }}
+          cargo build --features '${{ matrix.version_feature }},geo,json'
+
       - name: Run geos tests
         run: |
-          cargo test --features v3_8_0
-          cargo test --features v3_7_0
-          cargo test --features v3_6_0
-          cargo test --features geo
-          cargo test --features json
-          cargo test --features 'v3_8_0,geo,json'
           cargo test
+          cargo test --features 'geo,json'
+
+      - name: Run geos tests for GEOS version > 3.6
+        if: ${{ matrix.version_feature }}
+        run: |
+          cargo test --features ${{ matrix.version_feature }}
+          cargo test --features '${{ matrix.version_feature }},geo,json'
+
       - name: Check doc generation
         run: |
           cargo doc --features dox
           cargo doc
+
       - name: Run examples
         run: |
           cargo run --example verbose_example
@@ -127,6 +173,7 @@ jobs:
           cargo run --features geo --example prepared_geom
           cargo run --example from_geo
           cargo run --features geo --example from_geo
+
       - name: Check memory leaks
         # run valgrind to check that there are no memoryleaks
         # Note: cargo seems to randomly name the executable, so we use find to find all the tests

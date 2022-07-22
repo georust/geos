@@ -17,13 +17,17 @@ readme = "README.md"
 edition = "2021"
 
 [features]
-json = ["geojson"]
+dox = ["geo-types", "wkt", "json", "geos-sys/dox"]
 geo = ["geo-types", "wkt"]
-v3_6_0 = ["geos-sys/v3_6_0"]
+json = ["geojson"]
+static = ["geos-sys/static"]
+
+v3_6_0 = []
 v3_7_0 = ["geos-sys/v3_7_0", "v3_6_0"]
 v3_8_0 = ["geos-sys/v3_8_0", "v3_7_0"]
-dox = ["geo-types", "wkt", "json"]
-static = ["geos-sys/static"]
+v3_9_0 = ["geos-sys/v3_9_0", "v3_8_0"]
+v3_10_0 = ["geos-sys/v3_10_0", "v3_9_0"]
+v3_11_0 = ["geos-sys/v3_11_0", "v3_10_0"]
 
 [dependencies]
 libc = "0.2"
