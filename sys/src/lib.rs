@@ -25,7 +25,6 @@ extern crate libc;
 #[cfg(feature = "static")]
 extern crate link_cplusplus;
 
-
 #[cfg(not(any(feature = "v3_7_0", feature = "dox")))]
 include!("../prebuilt-bindings/geos_3.6.rs");
 

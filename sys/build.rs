@@ -75,7 +75,6 @@ fn detect_geos_via_pkg_config() -> Option<Version> {
 #[cfg(feature = "dox")]
 fn main() {}
 
-
 #[cfg(not(feature = "dox"))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
