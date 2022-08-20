@@ -20,6 +20,24 @@ configure GEOS detection (both must be set):
 -   `GEOS_LIB_DIR`
 -   `GEOS_VERSION`
 
+If `GEOS_LIB_DIR` is not also in your system's standard dynamic library search
+path, you may need to add it to the dynamic library search path before
+running the tests or executable produced by `cargo build`.
+
+Linux:
+
+```bash
+LD_LIBRARY_PATH=<path to GEOS>/lib GEOS_LIB_DIR=<path to GEOS>/lib GEOS_VERSION=<version> cargo test
+
+```
+
+MacOS:
+
+```bash
+DYLD_FALLBACK_LIBRARY_PATH=<path to GEOS>/lib GEOS_LIB_DIR=<path to GEOS>/lib GEOS_VERSION=<version> cargo test
+
+```
+
 You can build the included version of GEOS using the `static` feature, which
 will also statically link libgeos to this crate. In order to build GEOS, you
 need to have `cmake` and a C++ compiler. Building GEOS may take several minutes.

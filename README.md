@@ -1,5 +1,4 @@
-geos
-====
+# geos
 
 Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
 
@@ -23,7 +22,9 @@ let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")
                          .expect("invalid WKT");
 let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")
                          .expect("invalid WKT");
-let gg3 = gg1.difference(&gg2).expect("difference failed");
+let mut gg3 = gg1.difference(&gg2).expect("difference failed");
+// normalize is only used for consistent ordering of vertices
+gg3.normalize().expect("normalize failed");
 assert_eq!(
     gg3.to_wkt_precision(0).expect("to_wkt failed"),
     "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))",
