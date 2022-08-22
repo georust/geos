@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use geo_types::Geometry;
+use std::str::FromStr;
 use wkt;
 
 use std::convert::TryFrom;
@@ -18,11 +19,7 @@ impl<'a, 'b$(,$lt)?> TryFrom<&'b $ty_name<'a$(,$lt)?>> for Geometry<f64> {
         let wkt_obj = wkt::Wkt::from_str(&wkt_str)
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
 
-        let o: wkt::Geometry<f64> = wkt_obj
-            .items
-            .into_iter()
-            .next()
-            .ok_or(Error::ConversionError("invalid wkt".into()))?;
+        let o: wkt::Geometry<f64> = wkt_obj.item;
 
         o.try_into()
             .map_err(|e| Error::ConversionError(format!("impossible to built from wkt: {}", e)))
@@ -44,7 +41,7 @@ impl_try_into!(ConstGeometry, 'c);
 #[cfg(test)]
 mod test {
     use crate::Geometry as GGeometry;
-    use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
+    use geo_types::{Coordinate, Geometry, LineString, MultiPoint, MultiPolygon, Point, Polygon};
     use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
@@ -70,5 +67,25 @@ mod test {
         assert_eq!(expected, geo_polygon);
         // This check is to enforce that `TryFrom` is implemented for both reference and value.
         assert_eq!(expected, poly.try_into().unwrap());
+    }
+
+    #[test]
+    fn geom_to_geo_multipoint() {
+        let mp = "MULTIPOINT (33.6894226736894140 31.2137365763723125, 61.8251328250639602 -15.0881732790307694)";
+        let mp = GGeometry::new_from_wkt(mp).unwrap();
+
+        let geo_polygon: Geometry<f64> = (&mp).try_into().unwrap();
+
+        let expected_multipoint = MultiPoint(vec![
+            Point(Coordinate::from((33.6894226736894140, 31.2137365763723125))),
+            Point(Coordinate::from((
+                61.8251328250639602,
+                -15.0881732790307694,
+            ))),
+        ]);
+        let expected: Geometry<_> = expected_multipoint.into();
+        assert_eq!(expected, geo_polygon);
+        // This check is to enforce that `TryFrom` is implemented for both reference and value.
+        assert_eq!(expected, mp.try_into().unwrap());
     }
 }
