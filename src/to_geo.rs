@@ -69,14 +69,14 @@ mod test {
         let mp = "MULTIPOINT (0 0, 1 1)";
         let mp = GGeometry::new_from_wkt(mp).unwrap();
 
-        let geo_polygon: Geometry<f64> = (&mp).try_into().unwrap();
+        let geo_multipoint: Geometry<f64> = (&mp).try_into().unwrap();
 
         let expected_multipoint = MultiPoint(vec![
             Point(Coordinate::from((0., 0.))),
             Point(Coordinate::from((1., 1.))),
         ]);
         let expected: Geometry<_> = expected_multipoint.into();
-        assert_eq!(expected, geo_polygon);
+        assert_eq!(expected, geo_multipoint);
         // This check is to enforce that `TryFrom` is implemented for both reference and value.
         assert_eq!(expected, mp.try_into().unwrap());
     }
