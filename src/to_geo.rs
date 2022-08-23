@@ -66,17 +66,14 @@ mod test {
 
     #[test]
     fn geom_to_geo_multipoint() {
-        let mp = "MULTIPOINT (33.6894226736894140 31.2137365763723125, 61.8251328250639602 -15.0881732790307694)";
+        let mp = "MULTIPOINT (0 0, 1 1)";
         let mp = GGeometry::new_from_wkt(mp).unwrap();
 
         let geo_polygon: Geometry<f64> = (&mp).try_into().unwrap();
 
         let expected_multipoint = MultiPoint(vec![
-            Point(Coordinate::from((33.6894226736894140, 31.2137365763723125))),
-            Point(Coordinate::from((
-                61.8251328250639602,
-                -15.0881732790307694,
-            ))),
+            Point(Coordinate::from((0., 0.))),
+            Point(Coordinate::from((1., 1.))),
         ]);
         let expected: Geometry<_> = expected_multipoint.into();
         assert_eq!(expected, geo_polygon);
