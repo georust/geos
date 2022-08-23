@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use geo_types::Geometry;
 use wkt;
+use wkt::TryFromWkt;
 
 use std::convert::TryFrom;
 
@@ -15,17 +16,8 @@ impl<'a, 'b$(,$lt)?> TryFrom<&'b $ty_name<'a$(,$lt)?>> for Geometry<f64> {
         // translate the geometry.
         // We should at least use wkb, or even better implement a direct translation
         let wkt_str = other.to_wkt()?;
-        let wkt_obj = wkt::Wkt::from_str(&wkt_str)
-            .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
-
-        let o: wkt::Geometry<f64> = wkt_obj
-            .items
-            .into_iter()
-            .next()
-            .ok_or(Error::ConversionError("invalid wkt".into()))?;
-
-        o.try_into()
-            .map_err(|e| Error::ConversionError(format!("impossible to built from wkt: {}", e)))
+        geo_types::Geometry::try_from_wkt_str(&wkt_str)
+            .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
     }
 }
 impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry<f64> {
@@ -44,7 +36,7 @@ impl_try_into!(ConstGeometry, 'c);
 #[cfg(test)]
 mod test {
     use crate::Geometry as GGeometry;
-    use geo_types::{Coordinate, Geometry, LineString, MultiPolygon, Polygon};
+    use geo_types::{Coordinate, Geometry, LineString, MultiPoint, MultiPolygon, Point, Polygon};
     use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
@@ -70,5 +62,22 @@ mod test {
         assert_eq!(expected, geo_polygon);
         // This check is to enforce that `TryFrom` is implemented for both reference and value.
         assert_eq!(expected, poly.try_into().unwrap());
+    }
+
+    #[test]
+    fn geom_to_geo_multipoint() {
+        let mp = "MULTIPOINT (0 0, 1 1)";
+        let mp = GGeometry::new_from_wkt(mp).unwrap();
+
+        let geo_multipoint: Geometry<f64> = (&mp).try_into().unwrap();
+
+        let expected_multipoint = MultiPoint(vec![
+            Point(Coordinate::from((0., 0.))),
+            Point(Coordinate::from((1., 1.))),
+        ]);
+        let expected: Geometry<_> = expected_multipoint.into();
+        assert_eq!(expected, geo_multipoint);
+        // This check is to enforce that `TryFrom` is implemented for both reference and value.
+        assert_eq!(expected, mp.try_into().unwrap());
     }
 }
