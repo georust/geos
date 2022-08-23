@@ -1,8 +1,8 @@
 use crate::error::Error;
 use crate::{ConstGeometry, Geom, Geometry as GGeometry};
 use geo_types::Geometry;
-use std::str::FromStr;
 use wkt;
+use wkt::TryFromWkt;
 
 use std::convert::TryFrom;
 
@@ -16,13 +16,8 @@ impl<'a, 'b$(,$lt)?> TryFrom<&'b $ty_name<'a$(,$lt)?>> for Geometry<f64> {
         // translate the geometry.
         // We should at least use wkb, or even better implement a direct translation
         let wkt_str = other.to_wkt()?;
-        let wkt_obj = wkt::Wkt::from_str(&wkt_str)
-            .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))?;
-
-        let o: wkt::Geometry<f64> = wkt_obj.item;
-
-        o.try_into()
-            .map_err(|e| Error::ConversionError(format!("impossible to built from wkt: {}", e)))
+        geo_types::Geometry::try_from_wkt_str(&wkt_str)
+            .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
     }
 }
 impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry<f64> {
