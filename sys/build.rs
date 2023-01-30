@@ -94,8 +94,8 @@ fn main() {
         // Note: static lib "geos_c" isn't available for GEOS 3.7.x
         println!("cargo:rustc-link-lib=static=geos_c");
         println!("cargo:rustc-link-lib=static=geos");
-        println!("cargo:rustc-link-search=native={}", geos_path);
-        println!("cargo:includedir={}/include", geos_path);
+        println!("cargo:rustc-link-search=native={geos_path}");
+        println!("cargo:includedir={geos_path}/include");
 
         version = Some(
             Version::parse(BUNDLED_GEOS_VERSION).expect("Could not parse bundled GEOS version"),
@@ -108,7 +108,7 @@ fn main() {
         match lib_dir_env {
             Some(path) => {
                 let lib_dir = PathBuf::from(path).as_path().to_str().unwrap().to_string();
-                println!("cargo:rustc-link-search={}", lib_dir);
+                println!("cargo:rustc-link-search={lib_dir}");
             }
             None => {
                 panic!("GEOS_LIB_DIR must be set");

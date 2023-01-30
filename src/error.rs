@@ -16,21 +16,19 @@ impl std::error::Error for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::InvalidGeometry(ref s) => write!(f, "Invalid geometry, {}", s),
-            Error::ImpossibleOperation(ref s) => write!(f, "Impossible operation, {}", s),
-            Error::GeosError(ref s) => write!(f, "error while calling libgeos while {}", s),
+            Error::InvalidGeometry(ref s) => write!(f, "Invalid geometry, {s}"),
+            Error::ImpossibleOperation(ref s) => write!(f, "Impossible operation, {s}"),
+            Error::GeosError(ref s) => write!(f, "error while calling libgeos while {s}"),
             Error::GeosFunctionError(p, e) => write!(
                 f,
-                "error while calling libgeos method {} (error number = {})",
-                p, e
+                "error while calling libgeos method {p} (error number = {e})",
             ),
             Error::NoConstructionFromNullPtr(ref s) => write!(
                 f,
-                "impossible to build a geometry from a nullptr in \"{}\"",
-                s
+                "impossible to build a geometry from a nullptr in \"{s}\"",
             ),
-            Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {}", s),
-            Error::GenericError(ref s) => write!(f, "generic error: {}", s),
+            Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {s}"),
+            Error::GenericError(ref s) => write!(f, "generic error: {s}"),
         }
     }
 }
@@ -68,6 +66,6 @@ pub enum PredicateType {
 
 impl std::fmt::Display for PredicateType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }

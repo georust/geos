@@ -6,10 +6,12 @@ use std;
 use std::borrow::Borrow;
 use std::convert::{TryFrom, TryInto};
 
+#[allow(clippy::needless_lifetimes)]
 fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Coordinate<f64>]) -> Result<CoordSeq<'b>, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
+#[allow(clippy::needless_lifetimes)]
 fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, Error>
 where
     It: Iterator<Item = &'a Coordinate<f64>>,
@@ -46,7 +48,7 @@ impl<'a, T: Borrow<Point<f64>>> TryFrom<&'a [T]> for GGeometry<'a> {
 
     fn try_from(other: &'a [T]) -> Result<GGeometry<'a>, Self::Error> {
         let geom_points = other
-            .into_iter()
+            .iter()
             .map(|p| p.borrow().try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
