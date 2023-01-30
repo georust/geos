@@ -33,7 +33,7 @@ v3_11_0 = ["geos-sys/v3_11_0", "v3_10_0"]
 libc = "0.2"
 num = "0.4"
 c_vec = "2"
-geojson = { version = "0.22", optional = true }
+geojson = { version = "0.24", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.10.3", optional = true }
 geos-sys = { path = "sys", version = "2.0.4" }
