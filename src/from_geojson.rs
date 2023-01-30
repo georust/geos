@@ -5,10 +5,12 @@ use geojson::{Geometry, Value};
 use std::convert::{TryFrom, TryInto};
 use std::iter;
 
+#[allow(clippy::needless_lifetimes)]
 fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
+#[allow(clippy::needless_lifetimes)]
 fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, Error>
 where
     It: Iterator<Item = &'a Vec<f64>>,
@@ -25,6 +27,7 @@ where
 
 // We need to ensure that rings of polygons are closed
 // to create valid GEOS LinearRings (geojson crate doesn't enforce this for now)
+#[allow(clippy::needless_lifetimes)]
 fn create_closed_coord_seq_from_vec<'a, 'b>(points: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
     let nb_points = points.len();
     // if the geom is not closed we close it

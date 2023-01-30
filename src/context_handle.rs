@@ -94,8 +94,7 @@ impl<'a> ContextHandle<'a> {
         if ptr.is_null() {
             return if let Some(ref caller) = caller {
                 Err(Error::GenericError(format!(
-                    "GEOS_init_r failed from \"{}\"",
-                    caller
+                    "GEOS_init_r failed from \"{caller}\"",
                 )))
             } else {
                 Err(Error::GenericError("GEOS_init_r failed".to_owned()))

@@ -17,16 +17,14 @@ use std::sync::Arc;
 pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char, caller: &str) -> GResult<String> {
     if raw_ptr.is_null() {
         return Err(Error::NoConstructionFromNullPtr(format!(
-            "{}::unmanaged_string",
-            caller
+            "{caller}::unmanaged_string",
         )));
     }
     let c_str = CStr::from_ptr(raw_ptr);
     match str::from_utf8(c_str.to_bytes()) {
         Ok(s) => Ok(s.to_string()),
         Err(e) => Err(Error::GenericError(format!(
-            "{}::unmanaged_string failed: {}",
-            caller, e
+            "{caller}::unmanaged_string failed: {e}",
         ))),
     }
 }
@@ -38,8 +36,7 @@ pub(crate) unsafe fn managed_string(
 ) -> GResult<String> {
     if raw_ptr.is_null() {
         return Err(Error::NoConstructionFromNullPtr(format!(
-            "{}::managed_string",
-            caller
+            "{caller}::managed_string",
         )));
     }
     let s = unmanaged_string(raw_ptr, caller);
@@ -151,6 +148,7 @@ pub fn orientation_index(
 ///
 /// Available using the `v3_7_0` feature.
 #[cfg(any(feature = "v3_7_0", feature = "dox"))]
+#[allow(clippy::too_many_arguments)]
 pub fn segment_intersection(
     ax0: f64,
     ay0: f64,

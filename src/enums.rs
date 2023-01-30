@@ -266,20 +266,15 @@ impl Into<c_int> for Precision {
 }
 
 /// Join styles for a [`Geometry`](crate::Geometry) [buffer](crate::Geom::buffer_with_style) operation
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum JoinStyle {
     /// Specifies a round join style.
+    #[default]
     Round,
     /// Specifies a mitre join style.
     Mitre,
     /// Specifies a bevel join style.
     Bevel,
-}
-
-impl Default for JoinStyle {
-    fn default() -> Self {
-        JoinStyle::Round
-    }
 }
 
 impl TryFrom<c_int> for JoinStyle {
@@ -307,20 +302,15 @@ impl Into<c_int> for JoinStyle {
 }
 
 /// End cap styles for a [`Geometry`](crate::Geometry) [buffer](crate::Geom::buffer_with_style) operation
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum CapStyle {
     /// Specifies a round line buffer end cap style.
+    #[default]
     Round,
     /// Specifies a flat line buffer end cap style.
     Flat,
     /// Specifies a square line buffer end cap style.
     Square,
-}
-
-impl Default for CapStyle {
-    fn default() -> Self {
-        CapStyle::Round
-    }
 }
 
 impl TryFrom<c_int> for CapStyle {

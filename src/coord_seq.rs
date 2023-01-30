@@ -133,9 +133,7 @@ impl<'a> CoordSeq<'a> {
                         unsafe {
                             if funcs[pos](raw_context, raw_coord, line as _, *elem) == 0 {
                                 let err = format!(
-                                    "Failed to set value at position {} on \
-                                                   line {}",
-                                    pos, line
+                                    "Failed to set value at position {pos} on line {line}",
                                 );
                                 return Err(Error::GenericError(err));
                             }
@@ -160,13 +158,12 @@ impl<'a> CoordSeq<'a> {
     ) -> GResult<CoordSeq<'a>> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
-                format!("\nLast error: {}", x)
+                format!("\nLast error: {x}")
             } else {
                 String::new()
             };
             return Err(Error::NoConstructionFromNullPtr(format!(
-                "CoordSeq::{}{}",
-                caller, extra
+                "CoordSeq::{caller}{extra}",
             )));
         }
         Ok(CoordSeq {
@@ -289,8 +286,7 @@ impl<'a> CoordSeq<'a> {
         };
         if ret_val == 0 {
             Err(Error::GeosError(format!(
-                "impossible to set value for ordinate {}",
-                ordinate
+                "impossible to set value for ordinate {ordinate}",
             )))
         } else {
             Ok(())
@@ -321,7 +317,7 @@ impl<'a> CoordSeq<'a> {
                 "failed to get coordinates from CoordSeq".into(),
             ))
         } else {
-            Ok(n as f64)
+            Ok(n as _)
         }
     }
 
@@ -352,7 +348,7 @@ impl<'a> CoordSeq<'a> {
                 "failed to get coordinates from CoordSeq".into(),
             ))
         } else {
-            Ok(n as f64)
+            Ok(n as _)
         }
     }
 
@@ -383,7 +379,7 @@ impl<'a> CoordSeq<'a> {
                 "failed to get coordinates from CoordSeq".into(),
             ))
         } else {
-            Ok(n as f64)
+            Ok(n as _)
         }
     }
 

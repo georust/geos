@@ -2358,8 +2358,7 @@ impl<'a> Geometry<'a> {
                     Geometry::new_from_raw(ptr, Arc::new(context_handle), "new_from_wkt")
                 },
                 Err(e) => Err(Error::GenericError(format!(
-                    "Conversion to CString failed: {}",
-                    e
+                    "Conversion to CString failed: {e}",
                 ))),
             },
             Err(e) => Err(e),
@@ -2603,13 +2602,12 @@ impl<'a> Geometry<'a> {
     ) -> GResult<Geometry<'a>> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
-                format!("\nLast error: {}", x)
+                format!("\nLast error: {x}")
             } else {
                 String::new()
             };
             return Err(Error::NoConstructionFromNullPtr(format!(
-                "Geometry::{}{}",
-                caller, extra
+                "Geometry::{caller}{extra}",
             )));
         }
         Ok(Geometry {
@@ -2996,13 +2994,12 @@ impl<'a, 'b> ConstGeometry<'a, 'b> {
     ) -> GResult<ConstGeometry<'a, 'b>> {
         if ptr.is_null() {
             let extra = if let Some(x) = original.context.get_last_error() {
-                format!("\nLast error: {}", x)
+                format!("\nLast error: {x}")
             } else {
                 String::new()
             };
             return Err(Error::NoConstructionFromNullPtr(format!(
-                "ConstGeometry::{}{}",
-                caller, extra
+                "ConstGeometry::{caller}{extra}",
             )));
         }
         Ok(ConstGeometry {
