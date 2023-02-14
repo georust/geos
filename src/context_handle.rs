@@ -12,7 +12,9 @@ pub type HandlerCallback<'a> = Box<dyn Fn(&str) + Send + Sync + 'a>;
 
 macro_rules! set_callbacks {
     ($c_func:ident, $kind:ident, $callback_name:ident, $last:ident) => {
+        #[allow(clippy::needless_lifetimes)]
         fn $kind<'a>(ptr: GEOSContextHandle_t, nf: *mut InnerContext<'a>) {
+            #[allow(clippy::extra_unused_lifetimes)]
             unsafe extern "C" fn message_handler_func<'a>(
                 message: *const c_char,
                 data: *mut c_void,
