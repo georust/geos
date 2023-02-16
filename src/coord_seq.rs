@@ -8,6 +8,9 @@ use geos_sys::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
+#[cfg(feature = "v3_10_0")]
+type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
+
 /// `CoordSeq` represents a list of coordinates inside a [`Geometry`].
 ///
 /// # Example
@@ -58,12 +61,10 @@ impl<'a> CoordSeq<'a> {
     /// assert_eq!(coord_seq2.get_x(1), Ok(1.));
     /// ```
     pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
-        match ContextHandle::init_e(Some("CoordSeq::new")) {
-            Ok(context_handle) => unsafe {
-                let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
-                CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into(), "new")
-            },
-            Err(e) => Err(e),
+        let context_handle = ContextHandle::init_e(Some("CoordSeq::new"))?;
+        unsafe {
+            let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
+            CoordSeq::new_from_raw(ptr, Arc::new(context_handle), size, dims.into(), "new")
         }
     }
 
@@ -146,6 +147,132 @@ impl<'a> CoordSeq<'a> {
             Err(Error::GenericError(
                 "Can't determine dimension for the CoordSeq".to_owned(),
             ))
+        }
+    }
+
+    /// Creates a new `CoordSeq` from an interleaved coordinate buffer.
+    ///
+    /// # Parameters
+    ///
+    /// - `data`: The data buffer as a contiguous f64 slice.
+    /// - `size`: The number of coordinates in the provided data buffer.
+    /// - `has_z`: Whether the data buffer contains `z` coordinates. If `false`, the coordinate
+    ///   buffer must be either `XY` or `XYM`. If `true`, the coordinate buffer must be either
+    ///   `XYZ` or `XYZM`.
+    /// - `has_m`: Whether the data buffer contains `m` coordinates. If `false`, the coordinate
+    ///   buffer must be either `XY` or `XYZ`. If `true`, the coordinate buffer must be either
+    ///   `XYM` or `XYZM`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let buffer = vec![0., 1., 2., 3., 4., 5.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 3, false, false)
+    ///                       .expect("failed to create CoordSeq");
+    /// assert_eq!(coords.get_y(1), Ok(3.));
+    /// assert_eq!(coords.get_x(2), Ok(4.));
+    /// ```
+    #[cfg(feature = "v3_10_0")]
+    pub fn new_from_buffer(
+        data: &[f64],
+        size: usize,
+        has_z: bool,
+        has_m: bool,
+    ) -> GResult<CoordSeq<'a>> {
+        let mut dims: u32 = 2;
+        if has_z {
+            dims += 1;
+        }
+        if has_m {
+            dims += 1;
+        }
+
+        assert_eq!(data.len(), size * dims as usize, "Incorrect buffer length");
+
+        let context_handle = ContextHandle::init_e(Some("CoordSeq::new_from_buffer"))?;
+        unsafe {
+            let ptr = GEOSCoordSeq_copyFromBuffer_r(
+                context_handle.as_raw(),
+                data.as_ptr(),
+                size as _,
+                has_z as _,
+                has_m as _,
+            );
+            CoordSeq::new_from_raw(
+                ptr,
+                Arc::new(context_handle),
+                size as _,
+                dims,
+                "new_from_buffer",
+            )
+        }
+    }
+
+    /// Creates a new `CoordSeq` from separated coordinate buffers.
+    ///
+    /// # Parameters
+    ///
+    /// - `x`: A slice of x coordinates.
+    /// - `y`: A slice of y coordinates.
+    /// - `z`: An optional slice of z coordinates.
+    /// - `m`: An optional slice of m coordinates.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let x = vec![0., 2., 4.];
+    /// let y = vec![1., 3., 5.];
+    /// let coords = CoordSeq::new_from_arrays(&x, &y, None, None)
+    ///                       .expect("failed to create CoordSeq");
+    /// assert_eq!(coords.get_y(1), Ok(3.));
+    /// assert_eq!(coords.get_x(2), Ok(4.));
+    /// ```
+    #[cfg(feature = "v3_10_0")]
+    pub fn new_from_arrays(
+        x: &[f64],
+        y: &[f64],
+        z: Option<&[f64]>,
+        m: Option<&[f64]>,
+    ) -> GResult<CoordSeq<'a>> {
+        assert_eq!(x.len(), y.len(), "Arrays have different lengths.");
+
+        let mut dims: u32 = 2;
+        let z_ptr = if let Some(z) = z {
+            assert_eq!(x.len(), z.len(), "Arrays have different lengths.");
+            dims += 1;
+            z.as_ptr()
+        } else {
+            std::ptr::null()
+        };
+        let m_ptr = if let Some(m) = m {
+            assert_eq!(x.len(), m.len(), "Arrays have different lengths.");
+            dims += 1;
+            m.as_ptr()
+        } else {
+            std::ptr::null()
+        };
+
+        let context_handle = ContextHandle::init_e(Some("CoordSeq::new_from_arrays"))?;
+        unsafe {
+            let ptr = GEOSCoordSeq_copyFromArrays_r(
+                context_handle.as_raw(),
+                x.as_ptr(),
+                y.as_ptr(),
+                z_ptr,
+                m_ptr,
+                x.len() as _,
+            );
+            CoordSeq::new_from_raw(
+                ptr,
+                Arc::new(context_handle),
+                x.len() as u32,
+                dims,
+                "new_from_buffer",
+            )
         }
     }
 
@@ -381,6 +508,169 @@ impl<'a> CoordSeq<'a> {
         } else {
             Ok(n as _)
         }
+    }
+
+    /// Gets the entire `CoordSeq` object as an interleaved buffer.
+    ///
+    /// # Parameters:
+    ///
+    /// - `dims`: Optionally, the number of dimensions to include in the output buffer. If `None`,
+    ///   will be inferred from the number of dimensions on the geometry. A user may want to
+    ///   override this for performance because GEOS always stores coordinates internally with 3 or
+    ///   4 dimensions. So copying 2-dimensional GEOS coordinates to a 3-dimensional output buffer
+    ///   is slightly faster (a straight `memcpy`) than copying 2-dimensionalal GEOS coordinates to
+    ///   a 2-dimensional output buffer (iterating over every coordinate and copying only the XY
+    ///   values).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// // Create a two-dimensional `CoordSeq` from a buffer with three points
+    /// let buffer = vec![0., 1., 2., 3., 4., 5.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 3, false, false)
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// // Return an output buffer, inferring the number of coordinates (2)
+    /// let output_buffer = coords.as_buffer(None)
+    ///                           .expect("failed to get buffer");
+    ///
+    /// let expected_output_buffer = vec![0., 1., 2., 3., 4., 5.];
+    /// assert_eq!(output_buffer, expected_output_buffer);
+    /// ```
+    ///
+    /// You can also force GEOS to return a 3D buffer from 2D coordinates
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let buffer = vec![0., 1., 2., 3., 4., 5.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 3, false, false)
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// // Return an output buffer, forcing it to be 3-dimensional
+    /// let output_buffer = coords.as_buffer(Some(3))
+    ///                           .expect("failed to get buffer");
+    ///
+    /// let expected_output_buffer = vec![0., 1., f64::NAN, 2., 3., f64::NAN, 4., 5., f64::NAN];
+    /// assert_eq!(output_buffer[0], expected_output_buffer[0]);
+    /// assert_eq!(output_buffer[3], expected_output_buffer[3]);
+    /// ```
+    ///
+    /// You can also force GEOS to return a 2D buffer from 3D coordinates
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let buffer = vec![0., 1., 100., 2., 3., 200.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 2, true, false)
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// // Return an output buffer, forcing it to be 2-dimensional
+    /// let output_buffer = coords.as_buffer(Some(2))
+    ///                           .expect("failed to get buffer");
+    ///
+    /// let expected_output_buffer = vec![0., 1., 2., 3.];
+    /// assert_eq!(output_buffer, expected_output_buffer);
+    /// ```
+    #[cfg(feature = "v3_10_0")]
+    pub fn as_buffer(&self, dims: Option<usize>) -> GResult<Vec<f64>> {
+        let size = self.nb_lines;
+        let dims = dims.unwrap_or(self.nb_dimensions);
+
+        let has_z = dims >= 3;
+        let has_m = dims >= 4;
+
+        let mut output_buffer = vec![0.; size * dims];
+        unsafe {
+            GEOSCoordSeq_copyToBuffer_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                output_buffer.as_mut_ptr(),
+                has_z as _,
+                has_m as _,
+            );
+        }
+
+        Ok(output_buffer)
+    }
+
+    /// Gets the entire `CoordSeq` object as individual coordinate arrays.
+    ///
+    /// Returns a tuple with four vectors. The first and second vectors correspond to `x` and `y`
+    /// coordinates. The third corresponds to an optional third dimension if it exists (`z` or
+    /// `m`). The fourth corresponds to an optional fourth dimension if it exists (`m` in the case
+    /// of an `XYZM` geometry).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let buffer = vec![0., 1., 2., 3., 4., 5.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 3, false, false)
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let output_arrays = coords.as_arrays()
+    ///                           .expect("failed to get arrays");
+    ///
+    /// assert_eq!(output_arrays.0, vec![0., 2., 4.]);
+    /// assert_eq!(output_arrays.1, vec![1., 3., 5.]);
+    /// assert_eq!(output_arrays.2, None);
+    /// assert_eq!(output_arrays.3, None);
+    /// ```
+    ///
+    /// If the `CoordSeq` contains three dimensions, the third dimension will be returned as the
+    /// third value in the tuple:
+    ///
+    /// ```
+    /// use geos::CoordSeq;
+    ///
+    /// let buffer = vec![0., 1., 100., 3., 4., 200., 6., 7., 300.];
+    /// let coords = CoordSeq::new_from_buffer(&buffer, 3, true, false)
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let output_arrays = coords.as_arrays()
+    ///                           .expect("failed to get arrays");
+    ///
+    /// assert_eq!(output_arrays.0, vec![0., 3., 6.]);
+    /// assert_eq!(output_arrays.1, vec![1., 4., 7.]);
+    /// assert_eq!(output_arrays.2, Some(vec![100., 200., 300.]));
+    /// assert_eq!(output_arrays.3, None);
+    /// ```
+    #[cfg(feature = "v3_10_0")]
+    pub fn as_arrays(&self) -> GResult<AsArrayOutput> {
+        let size = self.nb_lines;
+        let mut x = vec![0.; size];
+        let mut y = vec![0.; size];
+        let mut z = if self.nb_dimensions == 3 {
+            Some(vec![0.; size])
+        } else {
+            None
+        };
+        let mut m = if self.nb_dimensions == 4 {
+            Some(vec![0.; size])
+        } else {
+            None
+        };
+
+        unsafe {
+            GEOSCoordSeq_copyToArrays_r(
+                self.get_raw_context(),
+                self.as_raw(),
+                x.as_mut_ptr(),
+                y.as_mut_ptr(),
+                z.as_mut()
+                    .map(|arr| arr.as_mut_ptr())
+                    .unwrap_or(std::ptr::null_mut()),
+                m.as_mut()
+                    .map(|arr| arr.as_mut_ptr())
+                    .unwrap_or(std::ptr::null_mut()),
+            );
+        }
+
+        Ok((x, y, z, m))
     }
 
     /// Gets the value at the given `ordinate` (aka position).
