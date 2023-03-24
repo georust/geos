@@ -1,6 +1,6 @@
 # geos
 
-Rust bindings for [GEOS](https://trac.osgeo.org/geos/) C API.
+Rust bindings for [GEOS](https://libgeos.org/) C API.
 
 The supported geos version is >= 3.5
 
@@ -47,7 +47,7 @@ assert_eq!(result, true);
 
 ### Conversion from [geo](https://github.com/georust/geo)
 
-[geo](https://github.com/georust/geo)'s objects can be converted into [GEOS](https://trac.osgeo.org/geos/)
+[geo](https://github.com/georust/geo)'s objects can be converted into [GEOS](https://libgeos.org/)
 to use all geos algorithms.
 
 Complete example can be found in `examples/from_geo.rs`
