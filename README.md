@@ -53,7 +53,6 @@ to use all geos algorithms.
 Complete example can be found in `examples/from_geo.rs`
 
 ```rust,ignore
-use geos::from_geo::TryInto;
 use geos::geo_types::{LineString, Coordinate, Polygon};
 
 // first we create a Geo object
