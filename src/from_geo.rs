@@ -1,6 +1,8 @@
 use crate::error::Error;
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
-use geo_types::{Coordinate, LineString, MultiPolygon, Point, Polygon};
+use geo_types::{
+    Coordinate, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
+};
 
 use std;
 use std::borrow::Borrow;
@@ -56,6 +58,28 @@ impl<'a, T: Borrow<Point<f64>>> TryFrom<&'a [T]> for GGeometry<'a> {
     }
 }
 
+impl<'a, 'b> TryFrom<&'a MultiPoint<f64>> for GGeometry<'b> {
+    type Error = Error;
+
+    fn try_from(other: &'a MultiPoint<f64>) -> Result<GGeometry<'b>, Self::Error> {
+        let points: Vec<_> = other
+            .0
+            .iter()
+            .map(|p| p.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        GGeometry::create_multipoint(points)
+    }
+}
+
+impl<'a> TryFrom<MultiPoint<f64>> for GGeometry<'a> {
+    type Error = Error;
+
+    fn try_from(other: MultiPoint<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        GGeometry::try_from(&other)
+    }
+}
+
 impl<'a, 'b> TryFrom<&'a LineString<f64>> for GGeometry<'b> {
     type Error = Error;
 
@@ -70,6 +94,28 @@ impl<'a> TryFrom<LineString<f64>> for GGeometry<'a> {
     type Error = Error;
 
     fn try_from(other: LineString<f64>) -> Result<GGeometry<'a>, Self::Error> {
+        GGeometry::try_from(&other)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'a MultiLineString<f64>> for GGeometry<'b> {
+    type Error = Error;
+
+    fn try_from(other: &'a MultiLineString<f64>) -> Result<GGeometry<'b>, Self::Error> {
+        let lines: Vec<_> = other
+            .0
+            .iter()
+            .map(|p| p.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        GGeometry::create_multiline_string(lines)
+    }
+}
+
+impl<'a> TryFrom<MultiLineString<f64>> for GGeometry<'a> {
+    type Error = Error;
+
+    fn try_from(other: MultiLineString<f64>) -> Result<GGeometry<'a>, Self::Error> {
         GGeometry::try_from(&other)
     }
 }
@@ -160,7 +206,9 @@ impl<'a> TryFrom<MultiPolygon<f64>> for GGeometry<'a> {
 mod test {
     use super::LineRing;
     use crate::{Geom, Geometry as GGeometry};
-    use geo_types::{Coordinate, LineString, MultiPolygon, Polygon};
+    use geo_types::{
+        Coordinate, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
+    };
     use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
@@ -332,5 +380,22 @@ mod test {
         assert!(geom.is_valid());
         assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
+    }
+
+    #[test]
+    fn test_conversion_multilinestring() {
+        let ls1 = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.)]));
+        let ls2 = LineString(coords(vec![(2., 2.), (3., 3.), (3., 2.)]));
+        let geom: GGeometry = MultiLineString(vec![ls1, ls2]).try_into().unwrap();
+        assert!(geom.is_valid());
+    }
+
+    #[test]
+    fn test_conversion_multipoint() {
+        let p1 = Point::new(0., 0.);
+        let p2 = Point::new(0., 1.);
+        let p3 = Point::new(1., 2.);
+        let geom: GGeometry = MultiPoint(vec![p1, p2, p3]).try_into().unwrap();
+        assert!(geom.is_valid());
     }
 }
