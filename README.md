@@ -98,7 +98,19 @@ let voronoi = compute_voronoi(&points, None, 0., false)
 
 ## Static build
 
-By default, this crate links dynamically. If you want to link statically, use the `static` feature.
+By default, this crate links dynamically to your system-installed GEOS or a
+different version that you configure. See [sys/README.md](./sys/README.md) for
+more information.
+
+If you want to link GEOS statically, use the `static` feature.
+
+The static build uses the GEOS version in the git submodule in`sys/geos-src/source`.
+This is currently GEOS 3.11.2.
+
+You will need to have a build environment supported for the static version of
+GEOS. See [GEOS build instructions](https://libgeos.org/usage/download/#build-from-source)
+for more information but please note that instructions may be for a newer
+version of GEOS than is currently included in the static build.
 
 ## Contributing
 

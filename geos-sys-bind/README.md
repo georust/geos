@@ -21,8 +21,9 @@ This crate will attempt to automatically detect your installation of GEOS:
 
 ### 1. Update included version of GEOS
 
-* update the GEOS submodule to the latest available GEOS version
-* update `BUNDLED_GEOS_VERSION` in `sys/build.rs` to match this version
+-   update the GEOS submodule to the latest available GEOS version
+-   update `BUNDLED_GEOS_VERSION` in `sys/build.rs` to match this version
+-   update the version in the top-level README.md static build section
 
 ### 2. Generate new bindings
 
@@ -70,7 +71,6 @@ include!("../prebuilt-bindings/geos_<major>.<minor>.rs");
 ```
 
 NOTE: docs are always generated from the latest version.
-
 
 Update the entry for the previous version to exclude the latest version:
 
