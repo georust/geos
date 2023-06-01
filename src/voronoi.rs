@@ -16,9 +16,11 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
 
     let mut voronoi = geom_points
         .voronoi(envelope, tolerance, only_edges)
-        .expect("voronoi failed");
+        .map_err(|e| Error::VoronoiError(e.to_string()))?;
 
-    voronoi.normalize().expect("failed to normalize");
+    voronoi
+        .normalize()
+        .map_err(|e| Error::NormalizeError(e.to_string()))?;
 
     voronoi
         .try_into()
