@@ -36,14 +36,14 @@ mod coord_seq;
 mod error;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod from_geo;
-#[cfg(all(feature = "json"))]
+#[cfg(feature = "json")]
 pub mod from_geojson;
 mod geometry;
 mod prepared_geometry;
 mod spatial_index;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod to_geo;
-#[cfg(all(feature = "json"))]
+#[cfg(feature = "json")]
 pub mod to_geojson;
 pub use error::{Error, GResult};
 #[cfg(any(feature = "geo", feature = "dox"))]
