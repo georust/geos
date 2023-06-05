@@ -9,6 +9,8 @@ pub enum Error {
     NoConstructionFromNullPtr(String),
     ConversionError(String),
     GenericError(String),
+    VoronoiError(String),
+    NormalizeError(String),
 }
 
 impl std::error::Error for Error {}
@@ -27,8 +29,10 @@ impl fmt::Display for Error {
                 f,
                 "impossible to build a geometry from a nullptr in \"{s}\"",
             ),
+            Error::NormalizeError(ref s) => write!(f, "failed to normalize: {s}"),
             Error::ConversionError(ref s) => write!(f, "impossible to convert geometry, {s}"),
             Error::GenericError(ref s) => write!(f, "generic error: {s}"),
+            Error::VoronoiError(ref s) => write!(f, "voronoi error: {s}"),
         }
     }
 }
