@@ -6,6 +6,10 @@ use std::borrow::Borrow;
 use std::convert::TryInto;
 
 /// Available using the `geo` feature.
+/// About the `tolerance` argument, the underlying C library mentions:
+/// > snapping tolerance to use for improved robustness. A tolerance of 0.0 specifies that no snapping
+/// > will take place. This argument can be finicky and is known to cause the algorithm to fail in
+/// > several cases. If you're using tolerance and getting a failure, try setting it to 0.0.
 pub fn compute_voronoi<T: Borrow<Point<f64>>>(
     points: &[T],
     envelope: Option<&GGeometry>,
