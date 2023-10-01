@@ -35,7 +35,6 @@ pub struct CoordSeq<'a> {
 pub struct ConstCoordSeq<'a, 'b> {
     pub(crate) ptr: PtrWrap<*const GEOSCoordSequence>,
     pub(crate) original: &'b Geometry<'a>,
-    // pub(crate) context: ContextHandle<'a>,
     nb_dimensions: usize,
     nb_lines: usize,
 }
