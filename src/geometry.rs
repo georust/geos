@@ -1,19 +1,15 @@
-use crate::context_handle::PtrWrap;
+use crate::context_handle::{with_context, PtrWrap};
 use crate::enums::*;
 use crate::error::{Error, GResult, PredicateType};
 use crate::functions::*;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
-use crate::{
-    AsRaw, AsRawMut, BufferParams, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
-    PreparedGeometry, WKTWriter,
-};
+use crate::{AsRaw, AsRawMut, BufferParams, ContextHandle, CoordSeq, PreparedGeometry, WKTWriter};
 use c_vec::CVec;
 use geos_sys::*;
 use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::ffi::CString;
-use std::sync::Arc;
 use std::{self, str};
 
 /// Representation of a GEOS geometry.
@@ -30,7 +26,6 @@ use std::{self, str};
 /// ```
 pub struct Geometry {
     pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
-    pub(crate) context: Arc<ContextHandle>,
 }
 
 // Representation of a GEOS geometry. Since it's only a view over another GEOS geometry data,
@@ -54,9 +49,7 @@ pub struct ConstGeometry<'a> {
     pub(crate) original: &'a Geometry,
 }
 
-pub trait Geom:
-    AsRaw<RawType = GEOSGeometry> + ContextHandling<Context = Arc<ContextHandle>>
-{
+pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// Returns the type of the geometry.
     ///
     /// # Example
@@ -1338,7 +1331,6 @@ pub trait Geom:
     /// ```
     #[allow(clippy::needless_lifetimes)]
     fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry>;
-    /// Also passes the context to the newly created `Geometry`.
     fn clone(&self) -> Geometry;
     /// Returns the 1-based nth geometry.
     ///
@@ -1434,46 +1426,47 @@ macro_rules! impl_geom {
     ($ty_name:ident, $($lt:lifetime)?, $($field:ident)?) => (
 impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     fn get_type(&self) -> GResult<String> {
-        unsafe {
-            let ptr = GEOSGeomType_r(self.get_raw_context(), self.as_raw());
-            managed_string(ptr, self.get_context_handle(), "GGeom::get_type")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomType_r(ctx.as_raw(), self.as_raw());
+            managed_string(ptr, ctx, "GGeom::get_type")
+        })
     }
 
     fn geometry_type(&self) -> GeometryTypes {
-        let type_geom = unsafe { GEOSGeomTypeId_r(self.get_raw_context(), self.as_raw()) as i32 };
-
+        let type_geom = with_context(|ctx| unsafe { GEOSGeomTypeId_r(ctx.as_raw(), self.as_raw()) as i32 } );
         GeometryTypes::try_from(type_geom).expect("Failed to convert to GeometryTypes")
     }
 
     fn is_valid(&self) -> bool {
-        unsafe { GEOSisValid_r(self.get_raw_context(), self.as_raw()) == 1 }
+        with_context(|ctx| unsafe {
+            GEOSisValid_r(ctx.as_raw(), self.as_raw()) == 1
+        })
     }
 
     fn is_valid_reason(&self) -> GResult<String> {
-        unsafe {
-            let ptr = GEOSisValidReason_r(self.get_raw_context(), self.as_raw());
-            managed_string(ptr, self.get_context_handle(), "GGeom::is_valid_reason")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSisValidReason_r(ctx.as_raw(), self.as_raw());
+            managed_string(ptr, ctx, "GGeom::is_valid_reason")
+        })
     }
 
     fn get_coord_seq(&self) -> GResult<CoordSeq> {
         let type_geom = self.geometry_type();
         match type_geom {
-            GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing => unsafe {
-                let coord = GEOSGeom_getCoordSeq_r(self.get_raw_context(), self.as_raw());
-                let t = GEOSCoordSeq_clone_r(self.get_raw_context(), coord);
+            GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing => with_context(|ctx| unsafe {
+                let coord = GEOSGeom_getCoordSeq_r(ctx.as_raw(), self.as_raw());
+                let t = GEOSCoordSeq_clone_r(ctx.as_raw(), coord);
                 let mut size = 0;
                 let mut dims = 0;
 
-                if GEOSCoordSeq_getSize_r(self.get_raw_context(), coord, &mut size) == 0 {
+                if GEOSCoordSeq_getSize_r(ctx.as_raw(), coord, &mut size) == 0 {
                     return Err(Error::GenericError("GEOSCoordSeq_getSize_r failed".to_owned()));
                 }
-                if GEOSCoordSeq_getDimensions_r(self.get_raw_context(), coord, &mut dims) == 0 {
+                if GEOSCoordSeq_getDimensions_r(ctx.as_raw(), coord, &mut dims) == 0 {
                     return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
                 }
-                CoordSeq::new_from_raw(t, self.clone_context(), size, dims, "get_coord_seq")
-            },
+                CoordSeq::new_from_raw(t, ctx, size, dims, "get_coord_seq")
+            }),
             _ => Err(Error::ImpossibleOperation(
                 "Geometry must be a Point, LineString or LinearRing to extract its coordinates"
                     .into(),
@@ -1484,7 +1477,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     fn area(&self) -> GResult<f64> {
         let mut n = 0.;
 
-        let res = unsafe { GEOSArea_r(self.get_raw_context(), self.as_raw(), &mut n) };
+        let res = with_context(|ctx| unsafe { GEOSArea_r(ctx.as_raw(), self.as_raw(), &mut n) });
         if res != 1 {
             Err(Error::GeosError(format!("area failed with code {}", res)))
         } else {
@@ -1493,133 +1486,130 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn to_wkt(&self) -> GResult<String> {
-        match WKTWriter::new_with_context(self.clone_context()) {
-            Ok(mut w) => w.write(self),
-            Err(e) => Err(e),
-        }
+        WKTWriter::new()?.write(self)
     }
 
     fn to_wkt_precision(&self, precision: u32) -> GResult<String> {
-        unsafe {
-            let writer = GEOSWKTWriter_create_r(self.get_raw_context());
-            GEOSWKTWriter_setRoundingPrecision_r(self.get_raw_context(), writer, precision as _);
-            let c_result = GEOSWKTWriter_write_r(self.get_raw_context(), writer, self.as_raw());
-            GEOSWKTWriter_destroy_r(self.get_raw_context(), writer);
-            managed_string(c_result, self.get_context_handle(), "GResult::to_wkt_precision")
-        }
+        with_context(|ctx| unsafe {
+            let writer = GEOSWKTWriter_create_r(ctx.as_raw());
+            GEOSWKTWriter_setRoundingPrecision_r(ctx.as_raw(), writer, precision as _);
+            let c_result = GEOSWKTWriter_write_r(ctx.as_raw(), writer, self.as_raw());
+            GEOSWKTWriter_destroy_r(ctx.as_raw(), writer);
+            managed_string(c_result, ctx, "GResult::to_wkt_precision")
+        })
     }
 
     fn is_ring(&self) -> GResult<bool> {
-        let rv = unsafe { GEOSisRing_r(self.get_raw_context(), self.as_raw()) };
+        let rv = with_context(|ctx| unsafe { GEOSisRing_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(rv as _, PredicateType::IsRing)
     }
 
     fn intersects<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSIntersects_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSIntersects_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Intersects)
     }
 
     fn crosses<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSCrosses_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Crosses)
     }
 
     fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSDisjoint_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSDisjoint_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Disjoint)
     }
 
     fn touches<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSTouches_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Touches)
     }
 
     fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSOverlaps_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSOverlaps_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Overlaps)
     }
 
     fn within<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSWithin_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Within)
     }
 
     fn equals<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSEquals_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSEquals_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Equals)
     }
 
     fn equals_exact<G: Geom>(&self, other: &G, precision: f64) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSEqualsExact_r(self.get_raw_context(), self.as_raw(), other.as_raw(), precision)
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSEqualsExact_r(ctx.as_raw(), self.as_raw(), other.as_raw(), precision)
+        });
         check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
     fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSCovers_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Covers)
     }
 
     fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSCoveredBy_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSCoveredBy_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
     fn contains<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSContains_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSContains_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::Contains)
     }
 
     fn buffer(&self, width: f64, quadsegs: i32) -> GResult<Geometry> {
         assert!(quadsegs > 0);
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSBuffer_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 width,
                 quadsegs as _,
             );
-            Geometry::new_from_raw(ptr, self.clone_context(), "buffer")
-        }
+            Geometry::new_from_raw(ptr, ctx, "buffer")
+        })
     }
 
     fn buffer_with_params(&self, width: f64, buffer_params: &BufferParams) -> GResult<Geometry> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSBufferWithParams_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 buffer_params.as_raw(),
                 width
             );
-            Geometry::new_from_raw(ptr, self.clone_context(), "buffer_with_params")
-        }
+            Geometry::new_from_raw(ptr, ctx, "buffer_with_params")
+        })
     }
 
     fn buffer_with_style(&self, width: f64, quadsegs: i32, end_cap_style: CapStyle, join_style: JoinStyle, mitre_limit: f64) -> GResult<Geometry> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSBufferWithStyle_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 width,
                 quadsegs,
@@ -1627,60 +1617,60 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
                 join_style.into(),
                 mitre_limit
             );
-            Geometry::new_from_raw(ptr, self.clone_context(), "buffer_with_style")
-        }
+            Geometry::new_from_raw(ptr, ctx, "buffer_with_style")
+        })
     }
 
     fn is_empty(&self) -> GResult<bool> {
-        let ret_val = unsafe { GEOSisEmpty_r(self.get_raw_context(), self.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe { GEOSisEmpty_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(ret_val as _, PredicateType::IsEmpty)
     }
 
     fn is_simple(&self) -> GResult<bool> {
-        let ret_val = unsafe { GEOSisSimple_r(self.get_raw_context(), self.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe { GEOSisSimple_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
     fn difference<G: Geom>(&self, other: &G) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "difference")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSDifference_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "difference")
+        })
     }
 
     fn envelope(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSEnvelope_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "envelope")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSEnvelope_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "envelope")
+        })
     }
 
     fn sym_difference<G: Geom>(&self, other: &G) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSSymDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "sym_difference")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSSymDifference_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "sym_difference")
+        })
     }
 
     fn union<G: Geom>(&self, other: &G) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSUnion_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "union")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSUnion_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "union")
+        })
     }
 
     fn get_centroid(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGetCentroid_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "get_centroid")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGetCentroid_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "get_centroid")
+        })
     }
 
     fn unary_union(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSUnaryUnion_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "unary_union")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSUnaryUnion_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "unary_union")
+        })
     }
 
     fn voronoi<G: Geom>(
@@ -1689,9 +1679,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         tolerance: f64,
         only_edges: bool,
     ) -> GResult<Geometry> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let raw_voronoi = GEOSVoronoiDiagram_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 envelope
                     .map(|e| e.as_raw())
@@ -1699,33 +1689,33 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
                 tolerance,
                 only_edges as _,
             );
-            Geometry::new_from_raw(raw_voronoi, self.clone_context(), "voronoi")
-        }
+            Geometry::new_from_raw(raw_voronoi, ctx, "voronoi")
+        })
     }
 
     fn intersection<G: Geom>(&self, other: &G) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSIntersection_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "intersection")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSIntersection_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "intersection")
+        })
     }
 
     fn convex_hull(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSConvexHull_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "convex_hull")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSConvexHull_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "convex_hull")
+        })
     }
 
     fn boundary(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSBoundary_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "boundary")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSBoundary_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "boundary")
+        })
     }
 
     fn has_z(&self) -> GResult<bool> {
-        let ret_val = unsafe { GEOSHasZ_r(self.get_raw_context(), self.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe { GEOSHasZ_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
@@ -1734,35 +1724,35 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
            self.geometry_type() != GeometryTypes::MultiLineString {
             return Err(Error::GenericError("Geometry must be a LineString or a MultiLineString".to_owned()));
         }
-        let ret_val = unsafe { GEOSisClosed_r(self.get_raw_context(), self.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe { GEOSisClosed_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
     fn length(&self) -> GResult<f64> {
         let mut length = 0.;
-        unsafe {
-            let ret = GEOSLength_r(self.get_raw_context(), self.as_raw(), &mut length);
+        with_context(|ctx| unsafe {
+            let ret = GEOSLength_r(ctx.as_raw(), self.as_raw(), &mut length);
             check_ret(ret, PredicateType::IsSimple).map(|_| length)
-        }
+        })
     }
 
     fn distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSDistance_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn distance_indexed<G: Geom>(&self, other: &G) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut distance = 0.;
-            if GEOSDistanceIndexed_r(self.get_raw_context(),
+            if GEOSDistanceIndexed_r(ctx.as_raw(),
                                      self.as_raw(),
                                      other.as_raw(),
                                      &mut distance) != 1 {
@@ -1770,101 +1760,101 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             } else {
                 Ok(distance)
             }
-        }
+        })
     }
 
     fn hausdorff_distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSHausdorffDistance_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
-        }
+        })
     }
 
     fn hausdorff_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSHausdorffDistanceDensify_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
                 distance_frac,
                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn frechet_distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSFrechetDistance_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn frechet_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSFrechetDistanceDensify_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
                 distance_frac,
                 &mut distance);
             check_ret(ret, PredicateType::IsSimple).map(|_| distance)
-        }
+        })
     }
 
     fn get_length(&self) -> GResult<f64> {
         let mut length = 0.;
-        unsafe {
-            let ret = GEOSGeomGetLength_r(self.get_raw_context(), self.as_raw(), &mut length);
+        with_context(|ctx| unsafe {
+            let ret = GEOSGeomGetLength_r(ctx.as_raw(), self.as_raw(), &mut length);
             check_ret(ret, PredicateType::IsSimple).map(|_| length)
-        }
+        })
     }
 
     fn snap<G: Geom>(&self, other: &G, tolerance: f64) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSSnap_r(self.get_raw_context(), self.as_raw(), other.as_raw(), tolerance);
-            Geometry::new_from_raw(ptr, self.clone_context(), "snap")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSSnap_r(ctx.as_raw(), self.as_raw(), other.as_raw(), tolerance);
+            Geometry::new_from_raw(ptr, ctx, "snap")
+        })
     }
 
     fn extract_unique_points(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGeom_extractUniquePoints_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "extract_unique_points")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_extractUniquePoints_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "extract_unique_points")
+        })
     }
 
     fn nearest_points<G: Geom>(&self, other: &G) -> GResult<CoordSeq> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSNearestPoints_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 other.as_raw(),
             );
             let mut size = 0;
             let mut dims = 0;
 
-            if GEOSCoordSeq_getSize_r(self.get_raw_context(), ptr, &mut size) == 0 {
+            if GEOSCoordSeq_getSize_r(ctx.as_raw(), ptr, &mut size) == 0 {
                 return Err(Error::GenericError("GEOSCoordSeq_getSize_r failed".to_owned()));
             }
-            if GEOSCoordSeq_getDimensions_r(self.get_raw_context(), ptr, &mut dims) == 0 {
+            if GEOSCoordSeq_getDimensions_r(ctx.as_raw(), ptr, &mut dims) == 0 {
                 return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
             }
-            CoordSeq::new_from_raw(ptr, self.clone_context(), size, dims, "nearest_points")
-        }
+            CoordSeq::new_from_raw(ptr, ctx, size, dims, "nearest_points")
+        })
     }
 
     fn get_x(&self) -> GResult<f64> {
@@ -1872,13 +1862,13 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
         let mut x = 0.;
-        unsafe {
-            if GEOSGeomGetX_r(self.get_raw_context(), self.as_raw(), &mut x) == 1 {
+        with_context(|ctx| unsafe {
+            if GEOSGeomGetX_r(ctx.as_raw(), self.as_raw(), &mut x) == 1 {
                 Ok(x)
             } else {
                 Err(Error::GenericError("GEOSGeomGetX_r failed".to_owned()))
             }
-        }
+        })
     }
 
     fn get_y(&self) -> GResult<f64> {
@@ -1886,13 +1876,13 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
         let mut y = 0.;
-        unsafe {
-            if GEOSGeomGetY_r(self.get_raw_context(), self.as_raw(), &mut y) == 1 {
+        with_context(|ctx| unsafe {
+            if GEOSGeomGetY_r(ctx.as_raw(), self.as_raw(), &mut y) == 1 {
                 Ok(y)
             } else {
                 Err(Error::GenericError("GEOSGeomGetY_r failed".to_owned()))
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
@@ -1901,305 +1891,305 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             return Err(Error::GenericError("Geometry must be a point".to_owned()));
         }
         let mut z = 0.;
-        unsafe {
-            if GEOSGeomGetZ_r(self.get_raw_context(), self.as_raw(), &mut z) == 1 {
+        with_context(|ctx| unsafe {
+            if GEOSGeomGetZ_r(ctx.as_raw(), self.as_raw(), &mut z) == 1 {
                 Ok(z)
             } else {
                 Err(Error::GenericError("GEOSGeomGetZ_r failed".to_owned()))
             }
-        }
+        })
     }
 
     fn get_point_n(&self, n: usize) -> GResult<Geometry> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSGeomGetPointN_r(self.get_raw_context(), self.as_raw(), n as _);
-            Geometry::new_from_raw(ptr, self.clone_context(), "get_point_n")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomGetPointN_r(ctx.as_raw(), self.as_raw(), n as _);
+            Geometry::new_from_raw(ptr, ctx, "get_point_n")
+        })
     }
 
     fn get_start_point(&self) -> GResult<Geometry> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSGeomGetStartPoint_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "get_start_point")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomGetStartPoint_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "get_start_point")
+        })
     }
 
     fn get_end_point(&self) -> GResult<Geometry> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSGeomGetEndPoint_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "get_end_point")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomGetEndPoint_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "get_end_point")
+        })
     }
 
     fn get_num_points(&self) -> GResult<usize> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ret = GEOSGeomGetNumPoints_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGeomGetNumPoints_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
                 Err(Error::GenericError("GEOSGeomGetNumPoints_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     fn get_num_interior_rings(&self) -> GResult<usize> {
-        unsafe {
-            let ret = GEOSGetNumInteriorRings_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGetNumInteriorRings_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
                 Err(Error::GenericError("GEOSGetNumInteriorRings_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     fn get_num_coordinates(&self) -> GResult<usize> {
-        unsafe {
-            let ret = GEOSGetNumCoordinates_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGetNumCoordinates_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
                 Err(Error::GenericError("GEOSGetNumCoordinates_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     fn get_num_dimensions(&self) -> GResult<usize> {
-        unsafe {
-            let ret = GEOSGeom_getDimensions_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGeom_getDimensions_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
                 Err(Error::GenericError("GEOSGeom_getDimensions_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     fn get_coordinate_dimension(&self) -> GResult<Dimensions> {
-        unsafe {
-            let ret = GEOSGeom_getCoordinateDimension_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGeom_getCoordinateDimension_r(ctx.as_raw(), self.as_raw());
             if ret != 2 && ret != 3 {
                 Err(Error::GenericError("GEOSGeom_getCoordinateDimension_r failed".to_owned()))
             } else {
                 Ok(Dimensions::try_from(ret).expect("Failed to convert to Dimensions"))
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_8_0", feature = "dox"))]
     fn make_valid(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSMakeValid_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "make_valid")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSMakeValid_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "make_valid")
+        })
     }
 
     fn get_num_geometries(&self) -> GResult<usize> {
-        unsafe {
-            let ret = GEOSGetNumGeometries_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGetNumGeometries_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
                 Err(Error::GenericError("GEOSGetNumGeometries_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     fn get_srid(&self) -> GResult<usize> {
-        unsafe {
-            let ret = GEOSGetSRID_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGetSRID_r(ctx.as_raw(), self.as_raw());
             if ret < 1 {
                 Err(Error::GenericError("GEOSGetSRID_r failed".to_owned()))
             } else {
                 Ok(ret as _)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn get_precision(&self) -> GResult<f64> {
-        unsafe {
-            let ret = GEOSGeom_getPrecision_r(self.get_raw_context(), self.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSGeom_getPrecision_r(ctx.as_raw(), self.as_raw());
             if ret == -1. {
                 Err(Error::GenericError("GEOSGeom_getPrecision_r failed".to_owned()))
             } else {
                 Ok(ret)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn set_precision(&self, grid_size: f64, flags: Precision) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGeom_setPrecision_r(self.get_raw_context(),
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_setPrecision_r(ctx.as_raw(),
                                               self.as_raw(),
                                               grid_size,
                                               flags.into());
-            Geometry::new_from_raw(ptr, self.clone_context(), "set_precision")
-        }
+            Geometry::new_from_raw(ptr, ctx, "set_precision")
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn get_x_max(&self) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut value = 0.;
-            if GEOSGeom_getXMax_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+            if GEOSGeom_getXMax_r(ctx.as_raw(), self.as_raw(), &mut value) == 0 {
                 Err(Error::GenericError("GEOSGeom_getXMax_r failed".to_owned()))
             } else {
                 Ok(value)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn get_x_min(&self) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut value = 0.;
-            if GEOSGeom_getXMin_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+            if GEOSGeom_getXMin_r(ctx.as_raw(), self.as_raw(), &mut value) == 0 {
                 Err(Error::GenericError("GEOSGeom_getXMin_r failed".to_owned()))
             } else {
                 Ok(value)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn get_y_max(&self) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut value = 0.;
-            if GEOSGeom_getYMax_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+            if GEOSGeom_getYMax_r(ctx.as_raw(), self.as_raw(), &mut value) == 0 {
                 Err(Error::GenericError("GEOSGeom_getYMax_r failed".to_owned()))
             } else {
                 Ok(value)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn get_y_min(&self) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut value = 0.;
-            if GEOSGeom_getYMin_r(self.get_raw_context(), self.as_raw(), &mut value) == 0 {
+            if GEOSGeom_getYMin_r(ctx.as_raw(), self.as_raw(), &mut value) == 0 {
                 Err(Error::GenericError("GEOSGeom_getYMin_r failed".to_owned()))
             } else {
                 Ok(value)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn minimum_clearance(&self) -> GResult<f64> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let mut value = 0.;
-            if GEOSMinimumClearance_r(self.get_raw_context(), self.as_raw(), &mut value) != 0 {
+            if GEOSMinimumClearance_r(ctx.as_raw(), self.as_raw(), &mut value) != 0 {
                 Err(Error::GenericError("GEOSMinimumClearance_r failed".to_owned()))
             } else {
                 Ok(value)
             }
-        }
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn minimum_clearance_line(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSMinimumClearanceLine_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "minimum_clearance_line")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSMinimumClearanceLine_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "minimum_clearance_line")
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn minimum_rotated_rectangle(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSMinimumRotatedRectangle_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "minimum_rotated_rectangle")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSMinimumRotatedRectangle_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "minimum_rotated_rectangle")
+        })
     }
 
     #[cfg(any(feature = "v3_6_0", feature = "dox"))]
     fn minimum_width(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSMinimumWidth_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "minimum_width")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSMinimumWidth_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "minimum_width")
+        })
     }
 
     fn delaunay_triangulation(&self, tolerance: f64, only_edges: bool) -> GResult<Geometry> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSDelaunayTriangulation_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 tolerance,
                 only_edges as _,
             );
-            Geometry::new_from_raw(ptr, self.clone_context(), "delaunay_triangulation")
-        }
+            Geometry::new_from_raw(ptr, ctx, "delaunay_triangulation")
+        })
     }
 
     fn interpolate(&self, d: f64) -> GResult<Geometry> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSInterpolate_r(self.get_raw_context(), self.as_raw(), d);
-            Geometry::new_from_raw(ptr, self.clone_context(), "interpolate")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSInterpolate_r(ctx.as_raw(), self.as_raw(), d);
+            Geometry::new_from_raw(ptr, ctx, "interpolate")
+        })
     }
 
     fn interpolate_normalized(&self, d: f64) -> GResult<Geometry> {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSInterpolateNormalized_r(self.get_raw_context(), self.as_raw(), d);
-            Geometry::new_from_raw(ptr, self.clone_context(), "interpolate_normalized")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSInterpolateNormalized_r(ctx.as_raw(), self.as_raw(), d);
+            Geometry::new_from_raw(ptr, ctx, "interpolate_normalized")
+        })
     }
 
     fn project<G: Geom>(&self, p: &G) -> GResult<f64> {
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
-        unsafe {
-            let ret = GEOSProject_r(self.get_raw_context(), self.as_raw(), p.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSProject_r(ctx.as_raw(), self.as_raw(), p.as_raw());
             if (ret - -1.).abs() < 0.001 {
                 Err(Error::GenericError("GEOSProject_r failed".to_owned()))
             } else {
                 Ok(ret)
             }
-        }
+        })
     }
 
     fn project_normalized<G: Geom>(&self, p: &G) -> GResult<f64> {
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
-        unsafe {
-            let ret = GEOSProjectNormalized_r(self.get_raw_context(), self.as_raw(), p.as_raw());
+        with_context(|ctx| unsafe {
+            let ret = GEOSProjectNormalized_r(ctx.as_raw(), self.as_raw(), p.as_raw());
             if (ret - -1.).abs() < 0.001 {
                 Err(Error::GenericError("GEOSProjectNormalized_r failed".to_owned()))
             } else {
                 Ok(ret)
             }
-        }
+        })
     }
 
     fn node(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSNode_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "node")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSNode_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "node")
+        })
     }
 
     fn offset_curve(
@@ -2212,18 +2202,18 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         if self.geometry_type() != GeometryTypes::LineString {
             return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
         }
-        unsafe {
-            let ptr = GEOSOffsetCurve_r(self.get_raw_context(), self.as_raw(), width,
+        with_context(|ctx| unsafe {
+            let ptr = GEOSOffsetCurve_r(ctx.as_raw(), self.as_raw(), width,
                                         quadrant_segments, join_style.into(), mitre_limit);
-            Geometry::new_from_raw(ptr, self.clone_context(), "offset_curve")
-        }
+            Geometry::new_from_raw(ptr, ctx, "offset_curve")
+        })
     }
 
     fn point_on_surface(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSPointOnSurface_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "point_on_surface")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSPointOnSurface_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "point_on_surface")
+        })
     }
 
     fn polygonize_full(
@@ -2233,45 +2223,45 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         let mut dangles: *mut GEOSGeometry = ::std::ptr::null_mut();
         let mut invalids: *mut GEOSGeometry = ::std::ptr::null_mut();
 
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSPolygonize_full_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw(),
                 &mut cuts,
                 &mut dangles,
                 &mut invalids,
             );
             let cuts = if !cuts.is_null() {
-                Geometry::new_from_raw(cuts, self.clone_context(), "polygonize_full").ok()
+                Geometry::new_from_raw(cuts, ctx, "polygonize_full").ok()
             } else {
                 None
             };
             let dangles = if !dangles.is_null() {
-                Geometry::new_from_raw(dangles, self.clone_context(), "polygonize_full").ok()
+                Geometry::new_from_raw(dangles, ctx, "polygonize_full").ok()
             } else {
                 None
             };
             let invalids = if !invalids.is_null() {
-                Geometry::new_from_raw(invalids, self.clone_context(), "polygonize_full").ok()
+                Geometry::new_from_raw(invalids, ctx, "polygonize_full").ok()
             } else {
                 None
             };
-            Geometry::new_from_raw(ptr, self.clone_context(), "polygonize_full")
+            Geometry::new_from_raw(ptr, ctx, "polygonize_full")
                   .map(|x| (x, cuts, dangles, invalids))
-        }
+        })
     }
 
     fn shared_paths<G: Geom>(&self, other: &G) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSSharedPaths_r(self.get_raw_context(), self.as_raw(), other.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "shared_paths")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSSharedPaths_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "shared_paths")
+        })
     }
 
     fn to_hex(&self) -> GResult<CVec<u8>> {
         let mut size = 0;
-        unsafe {
-            let ptr = GEOSGeomToHEX_buf_r(self.get_raw_context(), self.as_raw(), &mut size);
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomToHEX_buf_r(ctx.as_raw(), self.as_raw(), &mut size);
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
                     "Geometry::to_hex failed: GEOSGeomToHEX_buf_r returned null pointer".to_owned())
@@ -2279,13 +2269,13 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             } else {
                 Ok(CVec::new(ptr, size as _))
             }
-        }
+        })
     }
 
     fn to_wkb(&self) -> GResult<CVec<u8>> {
         let mut size = 0;
-        unsafe {
-            let ptr = GEOSGeomToWKB_buf_r(self.get_raw_context(), self.as_raw(), &mut size);
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomToWKB_buf_r(ctx.as_raw(), self.as_raw(), &mut size);
             if ptr.is_null() {
                 Err(Error::NoConstructionFromNullPtr(
                     "Geometry::to_wkb failed: GEOSGeomToWKB_buf_r returned null pointer".to_owned())
@@ -2293,7 +2283,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             } else {
                 Ok(CVec::new(ptr, size as _))
             }
-        }
+        })
     }
 
     #[allow(clippy::needless_lifetimes)]
@@ -2302,50 +2292,48 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn clone(&self) -> Geometry {
-        let context = self.clone_context();
-        let ptr = unsafe { GEOSGeom_clone_r(context.as_raw(), self.as_raw()) };
+        let ptr = with_context(|ctx| unsafe { GEOSGeom_clone_r(ctx.as_raw(), self.as_raw()) });
         if ptr.is_null() {
             panic!("Couldn't clone geometry...");
         }
         Geometry {
             ptr: PtrWrap(ptr),
-            context,
         }
     }
 
     fn get_geometry_n(&self, n: usize) -> GResult<ConstGeometry> {
-        unsafe {
-            let ptr = GEOSGetGeometryN_r(self.get_raw_context(), self.as_raw(), n as _);
-            ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_geometry_n")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGetGeometryN_r(ctx.as_raw(), self.as_raw(), n as _);
+            ConstGeometry::new_from_raw(ptr, ctx, self$(.$field)?, "get_geometry_n")
+        })
     }
 
     fn get_interior_ring_n(&self, n: u32) -> GResult<ConstGeometry> {
-        unsafe {
-            let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
-            ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_interior_ring_n")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGetInteriorRingN_r(ctx.as_raw(), self.as_raw(), n as _);
+            ConstGeometry::new_from_raw(ptr, ctx, self$(.$field)?, "get_interior_ring_n")
+        })
     }
 
     fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
-        unsafe {
-            let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
-            ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_exterior_ring")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGetExteriorRing_r(ctx.as_raw(), self.as_raw());
+            ConstGeometry::new_from_raw(ptr, ctx, self$(.$field)?, "get_exterior_ring")
+        })
     }
 
     #[cfg(feature = "v3_11_0")]
     fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(&self, on_transform_point: F) -> GResult<Geometry> {
-        unsafe {
-            let mut closure = on_transform_point;
-            let cb = get_transform_trampoline(&closure);
+        let mut closure = on_transform_point;
+        let cb = get_transform_trampoline(&closure);
 
-            let ptr = GEOSGeom_transformXY_r(self.get_raw_context(), self.as_raw(), cb, &mut closure as *mut _ as *mut libc::c_void);
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_transformXY_r(ctx.as_raw(), self.as_raw(), cb, &mut closure as *mut _ as *mut libc::c_void);
             match ptr.is_null() {
                 true => Err(Error::GenericError("Geometry::transform_xy failed due to closure error".to_owned())),
-                false => Geometry::new_from_raw(ptr, self.clone_context(), "transform_xy")
+                false => Geometry::new_from_raw(ptr, ctx, "transform_xy")
             }
-        }
+        })
     }
 }
 
@@ -2406,20 +2394,17 @@ impl Geometry {
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
     /// ```
     pub fn new_from_wkt(wkt: &str) -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::new_from_wkt")) {
-            Ok(context_handle) => match CString::new(wkt) {
-                Ok(c_str) => unsafe {
-                    let reader = GEOSWKTReader_create_r(context_handle.as_raw());
-                    let ptr = GEOSWKTReader_read_r(context_handle.as_raw(), reader, c_str.as_ptr());
-                    GEOSWKTReader_destroy_r(context_handle.as_raw(), reader);
-                    Geometry::new_from_raw(ptr, Arc::new(context_handle), "new_from_wkt")
-                },
-                Err(e) => Err(Error::GenericError(format!(
-                    "Conversion to CString failed: {e}",
-                ))),
+        with_context(|ctx| match CString::new(wkt) {
+            Ok(c_str) => unsafe {
+                let reader = GEOSWKTReader_create_r(ctx.as_raw());
+                let ptr = GEOSWKTReader_read_r(ctx.as_raw(), reader, c_str.as_ptr());
+                GEOSWKTReader_destroy_r(ctx.as_raw(), reader);
+                Geometry::new_from_raw(ptr, ctx, "new_from_wkt")
             },
-            Err(e) => Err(e),
-        }
+            Err(e) => Err(Error::GenericError(format!(
+                "Conversion to CString failed: {e}",
+            ))),
+        })
     }
 
     /// Create a new [`Geometry`] from the HEX format.
@@ -2438,13 +2423,10 @@ impl Geometry {
     /// assert_eq!(point_geom.equals(&new_geom), Ok(true));
     /// ```
     pub fn new_from_hex(hex: &[u8]) -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::new_from_hex")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeomFromHEX_buf_r(context.as_raw(), hex.as_ptr(), hex.len());
-                Geometry::new_from_raw(ptr, Arc::new(context), "new_from_hex")
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomFromHEX_buf_r(ctx.as_raw(), hex.as_ptr(), hex.len());
+            Geometry::new_from_raw(ptr, ctx, "new_from_hex")
+        })
     }
 
     /// Create a new [`Geometry`] from the WKB format.
@@ -2463,13 +2445,10 @@ impl Geometry {
     /// assert_eq!(point_geom.equals(&new_geom), Ok(true));
     /// ```
     pub fn new_from_wkb(wkb: &[u8]) -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::new_from_wkb")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeomFromWKB_buf_r(context.as_raw(), wkb.as_ptr(), wkb.len());
-                Geometry::new_from_raw(ptr, Arc::new(context), "new_from_wkb")
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeomFromWKB_buf_r(ctx.as_raw(), wkb.as_ptr(), wkb.len());
+            Geometry::new_from_raw(ptr, ctx, "new_from_wkb")
+        })
     }
 
     /// Creates an areal geometry formed by the constituent linework of given geometry.
@@ -2496,10 +2475,10 @@ impl Geometry {
     /// ```
     #[cfg(any(feature = "v3_8_0", feature = "dox"))]
     pub fn build_area(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSBuildArea_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "build_area")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSBuildArea_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "build_area")
+        })
     }
 
     /// Description from [postgis](https://postgis.net/docs/ST_Polygonize.html):
@@ -2541,43 +2520,28 @@ impl Geometry {
     ///                                           -71.1716600000000028 42.3536750000000026)))");
     /// ```
     pub fn polygonize<T: Borrow<Geometry>>(geometries: &[T]) -> GResult<Geometry> {
-        unsafe {
-            let context = match geometries.first() {
-                Some(g) => g.borrow().clone_context(),
-                None => match ContextHandle::init_e(Some("Geometry::polygonize")) {
-                    Ok(context) => Arc::new(context),
-                    Err(e) => return Err(e),
-                },
-            };
+        with_context(|ctx| unsafe {
             let geoms = geometries
                 .iter()
                 .map(|g| g.borrow().as_raw() as *const _)
                 .collect::<Vec<_>>();
-            let ptr = GEOSPolygonize_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
-            Geometry::new_from_raw(ptr, context, "polygonize")
-        }
+            let ptr = GEOSPolygonize_r(ctx.as_raw(), geoms.as_ptr(), geoms.len() as _);
+            Geometry::new_from_raw(ptr, ctx, "polygonize")
+        })
     }
 
     pub fn polygonizer_get_cut_edges<T: Borrow<Geometry>>(
         &self,
         geometries: &[T],
     ) -> GResult<Geometry> {
-        unsafe {
-            let context = match geometries.first() {
-                Some(g) => g.borrow().clone_context(),
-                None => match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
-                    Ok(context) => Arc::new(context),
-                    Err(e) => return Err(e),
-                },
-            };
+        with_context(|ctx| unsafe {
             let geoms = geometries
                 .iter()
                 .map(|g| g.borrow().as_raw() as *const _)
                 .collect::<Vec<_>>();
-            let ptr =
-                GEOSPolygonizer_getCutEdges_r(context.as_raw(), geoms.as_ptr(), geoms.len() as _);
-            Geometry::new_from_raw(ptr, context, "polygonizer_get_cut_edges")
-        }
+            let ptr = GEOSPolygonizer_getCutEdges_r(ctx.as_raw(), geoms.as_ptr(), geoms.len() as _);
+            Geometry::new_from_raw(ptr, ctx, "polygonizer_get_cut_edges")
+        })
     }
 
     /// Merges `Multi Line String` geometry into a (set of) `Line String`.
@@ -2602,10 +2566,10 @@ impl Geometry {
     /// );
     /// ```
     pub fn line_merge(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSLineMerge_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "line_merge")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSLineMerge_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "line_merge")
+        })
     }
 
     /// Reverses the order of the vertexes.
@@ -2628,33 +2592,32 @@ impl Geometry {
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     pub fn reverse(&self) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSReverse_r(self.get_raw_context(), self.as_raw());
-            Geometry::new_from_raw(ptr, self.clone_context(), "reverse")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSReverse_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "reverse")
+        })
     }
 
     /// Returns a simplified version of the given geometry.
     pub fn simplify(&self, tolerance: f64) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
-            Geometry::new_from_raw(ptr, self.clone_context(), "simplify")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSSimplify_r(ctx.as_raw(), self.as_raw(), tolerance);
+            Geometry::new_from_raw(ptr, ctx, "simplify")
+        })
     }
 
     /// Returns a simplified version of the given geometry. It will avoid creating invalid derived
     /// geometries.
     pub fn topology_preserve_simplify(&self, tolerance: f64) -> GResult<Geometry> {
-        unsafe {
-            let ptr =
-                GEOSTopologyPreserveSimplify_r(self.get_raw_context(), self.as_raw(), tolerance);
-            Geometry::new_from_raw(ptr, self.clone_context(), "topology_preserve_simplify")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSTopologyPreserveSimplify_r(ctx.as_raw(), self.as_raw(), tolerance);
+            Geometry::new_from_raw(ptr, ctx, "topology_preserve_simplify")
+        })
     }
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSGeometry,
-        context: Arc<ContextHandle>,
+        context: &ContextHandle,
         caller: &str,
     ) -> GResult<Geometry> {
         if ptr.is_null() {
@@ -2667,10 +2630,7 @@ impl Geometry {
                 "Geometry::{caller}{extra}",
             )));
         }
-        Ok(Geometry {
-            ptr: PtrWrap(ptr),
-            context,
-        })
+        Ok(Geometry { ptr: PtrWrap(ptr) })
     }
 
     /// Set SRID of `self`.
@@ -2686,7 +2646,7 @@ impl Geometry {
     /// assert_eq!(point_geom.get_srid(), Ok(4326));
     /// ```
     pub fn set_srid(&mut self, srid: usize) {
-        unsafe { GEOSSetSRID_r(self.get_raw_context(), self.as_raw_mut(), srid as _) }
+        with_context(|ctx| unsafe { GEOSSetSRID_r(ctx.as_raw(), self.as_raw_mut(), srid as _) })
     }
 
     /// Normalizes `self` in its normalized/canonical form. May reorder vertices in polygon rings,
@@ -2708,7 +2668,8 @@ impl Geometry {
     ///                                 POINT (2.0 3.0))");
     /// ```
     pub fn normalize(&mut self) -> GResult<()> {
-        let ret_val = unsafe { GEOSNormalize_r(self.get_raw_context(), self.as_raw_mut()) };
+        let ret_val =
+            with_context(|ctx| unsafe { GEOSNormalize_r(ctx.as_raw(), self.as_raw_mut()) });
         if ret_val == -1 {
             Err(Error::GeosFunctionError(PredicateType::Normalize, ret_val))
         } else {
@@ -2728,13 +2689,10 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt().unwrap(), "POLYGON EMPTY");
     /// ```
     pub fn create_empty_polygon() -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::create_empty_polygon")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeom_createEmptyPolygon_r(context.as_raw());
-                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_polygon")
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyPolygon_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_polygon")
+        })
     }
 
     /// Creates an empty point geometry.
@@ -2749,13 +2707,10 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT EMPTY");
     /// ```
     pub fn create_empty_point() -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::create_empty_point")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeom_createEmptyPoint_r(context.as_raw());
-                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_point")
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyPoint_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_point")
+        })
     }
 
     /// Creates an empty line string geometry.
@@ -2770,13 +2725,10 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt().unwrap(), "LINESTRING EMPTY");
     /// ```
     pub fn create_empty_line_string() -> GResult<Geometry> {
-        match ContextHandle::init_e(Some("Geometry::create_empty_line_string")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeom_createEmptyLineString_r(context.as_raw());
-                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_line_string")
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyLineString_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_line_string")
+        })
     }
 
     /// Creates an empty collection.
@@ -2806,13 +2758,11 @@ impl Geometry {
             | GeometryTypes::MultiPolygon => {}
             _ => return Err(Error::GenericError("Invalid geometry type".to_owned())),
         }
-        match ContextHandle::init_e(Some("Geometry::create_empty_collection")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSGeom_createEmptyCollection_r(context.as_raw(), type_.into());
-                Geometry::new_from_raw(ptr, Arc::new(context), "create_empty_collection")
-            },
-            Err(e) => Err(e),
-        }
+
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyCollection_r(ctx.as_raw(), type_.into());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_collection")
+        })
     }
 
     /// Creates a polygon formed by the given shell and array of holes.
@@ -2845,19 +2795,18 @@ impl Geometry {
                 "exterior must be a LinearRing".to_owned(),
             ));
         }
-        let context_handle = exterior.clone_context();
         let nb_interiors = interiors.len();
-        let res = unsafe {
+        let res = with_context(|ctx| unsafe {
             let mut geoms: Vec<*mut GEOSGeometry> =
                 interiors.iter_mut().map(|g| g.as_raw_mut()).collect();
             let ptr = GEOSGeom_createPolygon_r(
-                context_handle.as_raw(),
+                ctx.as_raw(),
                 exterior.as_raw_mut(),
                 geoms.as_mut_ptr() as *mut _,
                 nb_interiors as _,
             );
-            Geometry::new_from_raw(ptr, context_handle, "create_polygon")
-        };
+            Geometry::new_from_raw(ptr, ctx, "create_polygon")
+        });
 
         // We transfered the ownership of the ptr to the new Geometry,
         // so the old ones need to forget their c ptr to avoid double free.
@@ -2983,12 +2932,12 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "POINT (1.0 2.0)");
     /// ```
     pub fn create_point(mut s: CoordSeq) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGeom_createPoint_r(s.get_raw_context(), s.as_raw_mut());
-            let res = Geometry::new_from_raw(ptr, s.clone_context(), "create_point");
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createPoint_r(ctx.as_raw(), s.as_raw_mut());
+            let res = Geometry::new_from_raw(ptr, ctx, "create_point");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
-        }
+        })
     }
 
     /// Creates a line string geometry.
@@ -3006,12 +2955,12 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "LINESTRING (1.0 2.0, 3.0 4.0)");
     /// ```
     pub fn create_line_string(mut s: CoordSeq) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGeom_createLineString_r(s.get_raw_context(), s.as_raw_mut());
-            let res = Geometry::new_from_raw(ptr, s.clone_context(), "create_line_string");
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createLineString_r(ctx.as_raw(), s.as_raw_mut());
+            let res = Geometry::new_from_raw(ptr, ctx, "create_line_string");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
-        }
+        })
     }
 
     /// Creates a linear ring geometry.
@@ -3034,23 +2983,24 @@ impl Geometry {
     ///            "LINEARRING (75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5)");
     /// ```
     pub fn create_linear_ring(mut s: CoordSeq) -> GResult<Geometry> {
-        unsafe {
-            let ptr = GEOSGeom_createLinearRing_r(s.get_raw_context(), s.as_raw_mut());
-            let res = Geometry::new_from_raw(ptr, s.clone_context(), "create_linear_ring");
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createLinearRing_r(ctx.as_raw(), s.as_raw_mut());
+            let res = Geometry::new_from_raw(ptr, ctx, "create_linear_ring");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
-        }
+        })
     }
 }
 
 impl<'b> ConstGeometry<'b> {
     pub(crate) unsafe fn new_from_raw(
         ptr: *const GEOSGeometry,
+        ctx: &ContextHandle,
         original: &'b Geometry,
         caller: &str,
     ) -> GResult<ConstGeometry<'b>> {
         if ptr.is_null() {
-            let extra = if let Some(x) = original.context.get_last_error() {
+            let extra = if let Some(x) = ctx.get_last_error() {
                 format!("\nLast error: {x}")
             } else {
                 String::new()
@@ -3064,23 +3014,9 @@ impl<'b> ConstGeometry<'b> {
             original,
         })
     }
-
-    /// Get the context handle of the geometry.
-    ///
-    /// ```
-    /// use geos::{ContextInteractions, Geometry};
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let context = point_geom.get_context_handle();
-    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// ```
-    pub fn get_context_handle(&self) -> &ContextHandle {
-        &self.original.context
-    }
 }
 
 impl Clone for Geometry {
-    /// Also passes the context to the newly created `Geometry`.
     fn clone(&self) -> Geometry {
         Geom::clone(self)
     }
@@ -3089,37 +3025,8 @@ impl Clone for Geometry {
 impl Drop for Geometry {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
-            unsafe { GEOSGeom_destroy_r(self.get_raw_context(), self.as_raw_mut()) }
+            with_context(|ctx| unsafe { GEOSGeom_destroy_r(ctx.as_raw(), self.as_raw_mut()) })
         }
-    }
-}
-
-impl ContextInteractions for Geometry {
-    /// Set the context handle to the geometry.
-    ///
-    /// ```
-    /// use geos::{ContextInteractions, ContextHandle, Geometry};
-    ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
-    /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// let mut point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// point_geom.set_context_handle(context_handle);
-    /// ```
-    fn set_context_handle(&mut self, context: ContextHandle) {
-        self.context = Arc::new(context);
-    }
-
-    /// Get the context handle of the geometry.
-    ///
-    /// ```
-    /// use geos::{ContextInteractions, Geometry};
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let context = point_geom.get_context_handle();
-    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// ```
-    fn get_context_handle(&self) -> &ContextHandle {
-        &self.context
     }
 }
 
@@ -3139,35 +3046,11 @@ impl AsRawMut for Geometry {
     }
 }
 
-impl ContextHandling for Geometry {
-    type Context = Arc<ContextHandle>;
-
-    fn get_raw_context(&self) -> GEOSContextHandle_t {
-        self.context.as_raw()
-    }
-
-    fn clone_context(&self) -> Arc<ContextHandle> {
-        Arc::clone(&self.context)
-    }
-}
-
 impl AsRaw for ConstGeometry<'_> {
     type RawType = GEOSGeometry;
 
     fn as_raw(&self) -> *const Self::RawType {
         *self.ptr
-    }
-}
-
-impl ContextHandling for ConstGeometry<'_> {
-    type Context = Arc<ContextHandle>;
-
-    fn get_raw_context(&self) -> GEOSContextHandle_t {
-        self.original.context.as_raw()
-    }
-
-    fn clone_context(&self) -> Arc<ContextHandle> {
-        Arc::clone(&self.original.context)
     }
 }
 

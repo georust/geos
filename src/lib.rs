@@ -56,7 +56,6 @@ mod wkb_writer;
 mod wkt_writer;
 
 pub(crate) use traits::{AsRaw, AsRawMut};
-pub use traits::{ContextHandling, ContextInteractions};
 
 #[cfg(test)]
 mod test;

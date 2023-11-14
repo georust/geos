@@ -1,10 +1,8 @@
-use crate::context_handle::PtrWrap;
+use crate::context_handle::{with_context, PtrWrap};
 use crate::error::{Error, PredicateType};
 use crate::functions::*;
-use crate::{AsRaw, ContextHandle, ContextHandling, ContextInteractions, GResult, Geom};
+use crate::{AsRaw, ContextHandle, GResult, Geom};
 use geos_sys::*;
-
-use std::sync::Arc;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`](crate::Geometry) for greater performance
 /// on repeated calls.
@@ -25,7 +23,6 @@ use std::sync::Arc;
 /// ```
 pub struct PreparedGeometry {
     ptr: PtrWrap<*const GEOSPreparedGeometry>,
-    context: Arc<ContextHandle>,
 }
 
 impl PreparedGeometry {
@@ -41,15 +38,15 @@ impl PreparedGeometry {
     /// let prepared_geom = PreparedGeometry::new(&geom1);
     /// ```
     pub fn new<G: Geom>(g: &G) -> GResult<PreparedGeometry> {
-        unsafe {
-            let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
-            PreparedGeometry::new_from_raw(ptr, g.clone_context(), "new")
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSPrepare_r(ctx.as_raw(), g.as_raw());
+            PreparedGeometry::new_from_raw(ptr, ctx, "new")
+        })
     }
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *const GEOSPreparedGeometry,
-        context: Arc<ContextHandle>,
+        context: &ContextHandle,
         caller: &str,
     ) -> GResult<PreparedGeometry> {
         if ptr.is_null() {
@@ -62,10 +59,7 @@ impl PreparedGeometry {
                 "PreparedGeometry::{caller}{extra}",
             )));
         }
-        Ok(PreparedGeometry {
-            ptr: PtrWrap(ptr),
-            context,
-        })
+        Ok(PreparedGeometry { ptr: PtrWrap(ptr) })
     }
 
     /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
@@ -86,9 +80,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
     /// ```
     pub fn contains<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedContains_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedContains_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedContains)
     }
 
@@ -110,9 +104,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.contains_properly(&geom2), Ok(true));
     /// ```
     pub fn contains_properly<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedContainsProperly_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedContainsProperly_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedContainsProperly)
     }
 
@@ -139,9 +133,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_big_geom.covered_by(&little_geom), Ok(false));
     /// ```
     pub fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedCoveredBy_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedCoveredBy_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedCoveredBy)
     }
 
@@ -168,8 +162,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
     /// ```
     pub fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val =
-            unsafe { GEOSPreparedCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedCovers_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedCovers)
     }
 
@@ -189,8 +184,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
     /// ```
     pub fn crosses<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val =
-            unsafe { GEOSPreparedCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedCrosses_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedCrosses)
     }
 
@@ -219,9 +215,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.disjoint(&geom3), Ok(false));
     /// ```
     pub fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedDisjoint_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedDisjoint_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedDisjoint)
     }
 
@@ -253,9 +249,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.intersects(&geom3), Ok(true));
     /// ```
     pub fn intersects<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedIntersects_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedIntersects_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedIntersects)
     }
 
@@ -285,9 +281,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(true));
     /// ```
     pub fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = unsafe {
-            GEOSPreparedOverlaps_r(self.get_raw_context(), self.as_raw(), other.as_raw())
-        };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedOverlaps_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedOverlaps)
     }
 
@@ -313,8 +309,9 @@ impl PreparedGeometry {
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(true));
     /// ```
     pub fn touches<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val =
-            unsafe { GEOSPreparedTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedTouches_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedTouches)
     }
 
@@ -342,8 +339,9 @@ impl PreparedGeometry {
     /// assert_eq!(big_prepared_geom.within(&small_geom), Ok(false));
     /// ```
     pub fn within<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val =
-            unsafe { GEOSPreparedWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw()) };
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSPreparedWithin_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
         check_geos_predicate(ret_val as _, PredicateType::PreparedWithin)
     }
 }
@@ -353,50 +351,7 @@ unsafe impl Sync for PreparedGeometry {}
 
 impl Drop for PreparedGeometry {
     fn drop(&mut self) {
-        unsafe { GEOSPreparedGeom_destroy_r(self.get_raw_context(), self.as_raw()) };
-    }
-}
-
-impl ContextInteractions for PreparedGeometry {
-    /// Set the context handle to the `PreparedGeometry`.
-    ///
-    /// ```
-    /// use geos::{
-    ///     ContextInteractions, ContextHandle, Geom, Geometry, PreparedGeometry,
-    /// };
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
-    ///                           .expect("Invalid geometry");
-    /// let context_handle = ContextHandle::init().expect("invalid init");
-    /// let mut prepared_geom = point_geom
-    ///     .to_prepared_geom()
-    ///     .expect("failed to create prepared geom");
-    /// context_handle.set_notice_message_handler(
-    ///     Some(Box::new(|s| println!("new message: {}", s)))
-    /// );
-    /// prepared_geom.set_context_handle(context_handle);
-    /// ```
-    fn set_context_handle(&mut self, context: ContextHandle) {
-        self.context = Arc::new(context);
-    }
-
-    /// Get the context handle of the `PreparedGeometry`.
-    ///
-    /// ```
-    /// use geos::{
-    ///     ContextInteractions, CoordDimensions, Geom, Geometry,
-    ///     PreparedGeometry,
-    /// };
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
-    ///                           .expect("Invalid geometry");
-    /// let prepared_geom = point_geom.to_prepared_geom()
-    ///                               .expect("failed to create prepared geom");
-    /// let context = prepared_geom.get_context_handle();
-    /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
-    /// ```
-    fn get_context_handle(&self) -> &ContextHandle {
-        &self.context
+        with_context(|ctx| unsafe { GEOSPreparedGeom_destroy_r(ctx.as_raw(), self.as_raw()) });
     }
 }
 
@@ -405,18 +360,6 @@ impl AsRaw for PreparedGeometry {
 
     fn as_raw(&self) -> *const Self::RawType {
         *self.ptr
-    }
-}
-
-impl ContextHandling for PreparedGeometry {
-    type Context = Arc<ContextHandle>;
-
-    fn get_raw_context(&self) -> GEOSContextHandle_t {
-        self.context.as_raw()
-    }
-
-    fn clone_context(&self) -> Arc<ContextHandle> {
-        Arc::clone(&self.context)
     }
 }
 

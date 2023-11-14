@@ -1,14 +1,13 @@
-use crate::context_handle::PtrWrap;
+use crate::context_handle::{with_context, PtrWrap};
 use crate::enums::*;
 use crate::error::{Error, GResult, PredicateType};
 use crate::geometry::Geometry;
-use crate::{AsRawMut, ContextHandle, ContextHandling, Geom};
+use crate::{AsRawMut, ContextHandle, Geom};
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::str;
-use std::sync::Arc;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
 // this has to be checked method by method in geos
@@ -31,7 +30,7 @@ pub(crate) unsafe fn unmanaged_string(raw_ptr: *const c_char, caller: &str) -> G
 
 pub(crate) unsafe fn managed_string(
     raw_ptr: *mut c_char,
-    context: &ContextHandle,
+    ctx: &ContextHandle,
     caller: &str,
 ) -> GResult<String> {
     if raw_ptr.is_null() {
@@ -40,7 +39,7 @@ pub(crate) unsafe fn managed_string(
         )));
     }
     let s = unmanaged_string(raw_ptr, caller);
-    GEOSFree_r(context.as_raw(), raw_ptr as *mut _);
+    GEOSFree_r(ctx.as_raw(), raw_ptr as *mut _);
     s
 }
 
@@ -52,11 +51,10 @@ pub fn clip_by_rect<G: Geom>(
     xmax: f64,
     ymax: f64,
 ) -> GResult<Geometry> {
-    unsafe {
-        let context = g.clone_context();
-        let ptr = GEOSClipByRect_r(context.as_raw(), g.as_raw(), xmin, ymin, xmax, ymax);
-        Geometry::new_from_raw(ptr, context, "clip_by_rect")
-    }
+    with_context(|ctx| unsafe {
+        let ptr = GEOSClipByRect_r(ctx.as_raw(), g.as_raw(), xmin, ymin, xmax, ymax);
+        Geometry::new_from_raw(ptr, ctx, "clip_by_rect")
+    })
 }
 
 pub fn version() -> GResult<String> {
@@ -87,25 +85,17 @@ pub(crate) fn create_multi_geom(
     output_type: GeometryTypes,
 ) -> GResult<Geometry> {
     let nb_geoms = geoms.len();
-    let context = if geoms.is_empty() {
-        match ContextHandle::init() {
-            Ok(ch) => Arc::new(ch),
-            _ => return Err(Error::GenericError("GEOS_init_r failed".to_owned())),
-        }
-    } else {
-        geoms[0].clone_context()
-    };
     let res = {
         let mut geoms: Vec<*mut GEOSGeometry> = geoms.iter_mut().map(|g| g.as_raw_mut()).collect();
-        unsafe {
+        with_context(|ctx| unsafe {
             let ptr = GEOSGeom_createCollection_r(
-                context.as_raw(),
+                ctx.as_raw(),
                 output_type.into(),
                 geoms.as_mut_ptr() as *mut _,
                 nb_geoms as _,
             );
-            Geometry::new_from_raw(ptr, context, "create_multi_geom")
-        }
+            Geometry::new_from_raw(ptr, ctx, "create_multi_geom")
+        })
     };
 
     // we'll transfert the ownership of the ptr to the new Geometry,
@@ -125,23 +115,12 @@ pub fn orientation_index(
     px: f64,
     py: f64,
 ) -> GResult<Orientation> {
-    match ContextHandle::init() {
-        Ok(context) => unsafe {
-            match Orientation::try_from(GEOSOrientationIndex_r(
-                context.as_raw(),
-                ax,
-                ay,
-                bx,
-                by,
-                px,
-                py,
-            )) {
-                Ok(o) => Ok(o),
-                Err(e) => Err(Error::GenericError(e.to_owned())),
-            }
-        },
-        Err(e) => Err(e),
-    }
+    with_context(|ctx| unsafe {
+        match Orientation::try_from(GEOSOrientationIndex_r(ctx.as_raw(), ax, ay, bx, by, px, py)) {
+            Ok(o) => Ok(o),
+            Err(e) => Err(Error::GenericError(e.to_owned())),
+        }
+    })
 }
 
 /// Returns [`None`] if the segments don't intersect, otherwise returns `Some(x_pos, y_pos)`.
@@ -159,36 +138,33 @@ pub fn segment_intersection(
     bx1: f64,
     by1: f64,
 ) -> GResult<Option<(f64, f64)>> {
-    match ContextHandle::init() {
-        Ok(context) => unsafe {
-            let mut cx = 0.;
-            let mut cy = 0.;
+    with_context(|ctx| unsafe {
+        let mut cx = 0.;
+        let mut cy = 0.;
 
-            let ret = GEOSSegmentIntersection_r(
-                context.as_raw(),
-                ax0,
-                ay0,
-                ax1,
-                ay1,
-                bx0,
-                by0,
-                bx1,
-                by1,
-                &mut cx,
-                &mut cy,
-            );
-            if ret == -1 {
-                Ok(None)
-            } else if ret == 0 {
-                Ok(Some((cx, cy)))
-            } else {
-                Err(Error::GenericError(
-                    "GEOSSegmentIntersection_r failed".to_owned(),
-                ))
-            }
-        },
-        Err(e) => Err(e),
-    }
+        let ret = GEOSSegmentIntersection_r(
+            ctx.as_raw(),
+            ax0,
+            ay0,
+            ax1,
+            ay1,
+            bx0,
+            by0,
+            bx1,
+            by1,
+            &mut cx,
+            &mut cy,
+        );
+        if ret == -1 {
+            Ok(None)
+        } else if ret == 0 {
+            Ok(Some((cx, cy)))
+        } else {
+            Err(Error::GenericError(
+                "GEOSSegmentIntersection_r failed".to_owned(),
+            ))
+        }
+    })
 }
 
 #[cfg(test)]
