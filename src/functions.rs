@@ -101,7 +101,7 @@ pub(crate) fn create_multi_geom(
             let ptr = GEOSGeom_createCollection_r(
                 context.as_raw(),
                 output_type.into(),
-                geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
+                geoms.as_mut_ptr() as *mut _,
                 nb_geoms as _,
             );
             Geometry::new_from_raw(ptr, context, "create_multi_geom")
