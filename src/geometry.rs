@@ -2485,7 +2485,7 @@ impl<'a> Geometry<'a> {
     /// ```
     pub fn polygonize<T: Borrow<Geometry<'a>>>(geometries: &[T]) -> GResult<Geometry<'a>> {
         unsafe {
-            let context = match geometries.get(0) {
+            let context = match geometries.first() {
                 Some(g) => g.borrow().clone_context(),
                 None => match ContextHandle::init_e(Some("Geometry::polygonize")) {
                     Ok(context) => Arc::new(context),
@@ -2506,7 +2506,7 @@ impl<'a> Geometry<'a> {
         geometries: &[T],
     ) -> GResult<Geometry<'a>> {
         unsafe {
-            let context = match geometries.get(0) {
+            let context = match geometries.first() {
                 Some(g) => g.borrow().clone_context(),
                 None => match ContextHandle::init_e(Some("Geometry::polygonizer_get_cut_edges")) {
                     Ok(context) => Arc::new(context),
@@ -2796,7 +2796,7 @@ impl<'a> Geometry<'a> {
             let ptr = GEOSGeom_createPolygon_r(
                 context_handle.as_raw(),
                 exterior.as_raw_mut(),
-                geoms.as_mut_ptr() as *mut *mut GEOSGeometry,
+                geoms.as_mut_ptr() as *mut _,
                 nb_interiors as _,
             );
             Geometry::new_from_raw(ptr, context_handle, "create_polygon")
