@@ -15,7 +15,7 @@ categories = ["external-ffi-bindings", "algorithms"]
 description = "Rust bindings for GEOS C API"
 readme = "README.md"
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.65"
 
 [features]
 dox = ["geo-types", "wkt", "json", "geos-sys/dox"]
