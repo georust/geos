@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "geos"
-version = "8.3.0"
+version = "8.3.1"
 dependencies = [
  "c_vec",
  "geo-types",
@@ -87,7 +87,7 @@ dependencies = [
 
 [[package]]
 name = "geos-sys"
-version = "2.0.5"
+version = "2.0.6"
 dependencies = [
  "geos-src",
  "libc",
