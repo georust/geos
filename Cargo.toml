@@ -1,6 +1,6 @@
 [package]
 name = "geos"
-version = "8.3.0"
+version = "8.3.1"
 authors = [
   "Matthieu Viry <matthieu.viry@cnrs.fr>",
   "Adrien Matissart <a.matissart@qwantresearch.com>",
@@ -37,7 +37,7 @@ c_vec = "2"
 geojson = { version = "0.24", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.10.3", optional = true }
-geos-sys = { path = "sys", version = "2.0.5" }
+geos-sys = { path = "sys", version = "2.0.6" }
 
 [package.metadata.docs.rs]
 features = ["dox"]
