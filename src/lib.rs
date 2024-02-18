@@ -14,7 +14,7 @@ pub(crate) mod functions;
 
 pub use buffer_params::{BufferParams, BufferParamsBuilder};
 pub use context_handle::{ContextHandle, HandlerCallback};
-pub use coord_seq::CoordSeq;
+pub use coord_seq::{ConstCoordSeq, CoordSeq};
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 pub use enums::Precision;
 pub use enums::{

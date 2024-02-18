@@ -5,8 +5,8 @@ use crate::functions::*;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{
-    AsRaw, AsRawMut, BufferParams, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
-    PreparedGeometry, WKTWriter,
+    AsRaw, AsRawMut, BufferParams, ConstCoordSeq, ContextHandle, ContextHandling,
+    ContextInteractions, CoordSeq, PreparedGeometry, WKTWriter,
 };
 use c_vec::CVec;
 use geos_sys::*;
@@ -33,8 +33,8 @@ pub struct Geometry<'a> {
     pub(crate) context: Arc<ContextHandle<'a>>,
 }
 
-// Representation of a GEOS geometry. Since it's only a view over another GEOS geometry data,
-/// only not mutable operations are implemented on it.
+/// Representation of an immutable GEOS geometry. Since it's only a view over another GEOS
+/// geometry's data, only immutable operations are implemented on it.
 ///
 /// # Example
 ///
@@ -117,7 +117,7 @@ pub trait Geom<'a>:
     /// assert_eq!(coord_seq.get_x(0), Ok(2.));
     /// assert_eq!(coord_seq.get_y(0), Ok(3.));
     /// ```
-    fn get_coord_seq(&self) -> GResult<CoordSeq<'a>>;
+    fn get_coord_seq<'c>(&'c self) -> GResult<ConstCoordSeq<'a, 'c>>;
     /// Returns the area of the geometry. Units are specified by the SRID of the given geometry.
     ///
     /// # Example
@@ -1446,7 +1446,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
     }
 
-    fn get_coord_seq(&self) -> GResult<CoordSeq<'a>> {
+    fn get_coord_seq<'c>(&'c self) -> GResult<ConstCoordSeq<'a, 'c>> {
         let type_geom = self.geometry_type();
         match type_geom {
             GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing => unsafe {
@@ -1461,7 +1461,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
                 if GEOSCoordSeq_getDimensions_r(self.get_raw_context(), coord, &mut dims) == 0 {
                     return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
                 }
-                CoordSeq::new_from_raw(t, self.clone_context(), size, dims, "get_coord_seq")
+                ConstCoordSeq::new_from_raw(t, self$(.$field)?, size, dims, "get_coord_seq")
             },
             _ => Err(Error::ImpossibleOperation(
                 "Geometry must be a Point, LineString or LinearRing to extract its coordinates"
