@@ -23,14 +23,14 @@ type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
 /// coords.set_x(0, 10.);
 /// assert_eq!(coords.get_x(0), Ok(10.));
 /// ```
-pub struct CoordSeq<'a> {
+pub struct CoordSeq {
     pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
-    pub(crate) context: Arc<ContextHandle<'a>>,
+    pub(crate) context: Arc<ContextHandle>,
     nb_dimensions: usize,
     nb_lines: usize,
 }
 
-impl<'a> CoordSeq<'a> {
+impl CoordSeq {
     /// Creates a new `CoordSeq`.
     ///
     /// # Example
@@ -60,7 +60,7 @@ impl<'a> CoordSeq<'a> {
     /// }
     /// assert_eq!(coord_seq2.get_x(1), Ok(1.));
     /// ```
-    pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
+    pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq> {
         let context_handle = ContextHandle::init_e(Some("CoordSeq::new"))?;
         unsafe {
             let ptr = GEOSCoordSeq_create_r(context_handle.as_raw(), size, dims.into());
@@ -93,7 +93,7 @@ impl<'a> CoordSeq<'a> {
     /// let x: &[f64] = &[];
     /// assert!(CoordSeq::new_from_vec(&[x]).is_err());
     /// ```
-    pub fn new_from_vec<T: AsRef<[f64]>>(data: &[T]) -> GResult<CoordSeq<'a>> {
+    pub fn new_from_vec<T: AsRef<[f64]>>(data: &[T]) -> GResult<CoordSeq> {
         let size = data.len();
 
         if size > 0 {
@@ -180,7 +180,7 @@ impl<'a> CoordSeq<'a> {
         size: usize,
         has_z: bool,
         has_m: bool,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         let mut dims: u32 = 2;
         if has_z {
             dims += 1;
@@ -237,7 +237,7 @@ impl<'a> CoordSeq<'a> {
         y: &[f64],
         z: Option<&[f64]>,
         m: Option<&[f64]>,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         assert_eq!(x.len(), y.len(), "Arrays have different lengths.");
 
         let mut dims: u32 = 2;
@@ -278,11 +278,11 @@ impl<'a> CoordSeq<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSCoordSequence,
-        context: Arc<ContextHandle<'a>>,
+        context: Arc<ContextHandle>,
         size: u32,
         dims: u32,
         caller: &str,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -814,7 +814,7 @@ impl<'a> CoordSeq<'a> {
     ///
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
     /// ```
-    pub fn create_point(self) -> GResult<Geometry<'a>> {
+    pub fn create_point(self) -> GResult<Geometry> {
         Geometry::create_point(self)
     }
 
@@ -834,20 +834,20 @@ impl<'a> CoordSeq<'a> {
     ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
     ///                         3.0000000000000000 4.0000000000000000)");
     /// ```
-    pub fn create_line_string(self) -> GResult<Geometry<'a>> {
+    pub fn create_line_string(self) -> GResult<Geometry> {
         Geometry::create_line_string(self)
     }
 
     /// Creates a linear ring geometry.
-    pub fn create_linear_ring(self) -> GResult<Geometry<'a>> {
+    pub fn create_linear_ring(self) -> GResult<Geometry> {
         Geometry::create_linear_ring(self)
     }
 }
 
-unsafe impl<'a> Send for CoordSeq<'a> {}
-unsafe impl<'a> Sync for CoordSeq<'a> {}
+unsafe impl Send for CoordSeq {}
+unsafe impl Sync for CoordSeq {}
 
-impl<'a> Drop for CoordSeq<'a> {
+impl Drop for CoordSeq {
     fn drop(&mut self) {
         if self.ptr.is_null() {
             return;
@@ -856,9 +856,9 @@ impl<'a> Drop for CoordSeq<'a> {
     }
 }
 
-impl<'a> Clone for CoordSeq<'a> {
+impl Clone for CoordSeq {
     /// Also pass the context to the newly created `CoordSeq`.
-    fn clone(&self) -> CoordSeq<'a> {
+    fn clone(&self) -> CoordSeq {
         let ptr = unsafe { GEOSCoordSeq_clone_r(self.get_raw_context(), self.as_raw()) };
         if ptr.is_null() {
             panic!("Couldn't clone CoordSeq...");
@@ -872,7 +872,7 @@ impl<'a> Clone for CoordSeq<'a> {
     }
 }
 
-impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
+impl ContextInteractions for CoordSeq {
     /// Set the context handle to the `CoordSeq`.
     ///
     /// ```
@@ -883,7 +883,7 @@ impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
     /// let mut coord_seq = CoordSeq::new(2, CoordDimensions::TwoD).expect("failed to create CoordSeq");
     /// coord_seq.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle) {
         self.context = Arc::new(context);
     }
 
@@ -896,12 +896,12 @@ impl<'a> ContextInteractions<'a> for CoordSeq<'a> {
     /// let context = coord_seq.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &ContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle {
         &self.context
     }
 }
 
-impl<'a> AsRaw for CoordSeq<'a> {
+impl AsRaw for CoordSeq {
     type RawType = GEOSCoordSequence;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -909,7 +909,7 @@ impl<'a> AsRaw for CoordSeq<'a> {
     }
 }
 
-impl<'a> AsRawMut for CoordSeq<'a> {
+impl AsRawMut for CoordSeq {
     type RawType = GEOSCoordSequence;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -917,14 +917,14 @@ impl<'a> AsRawMut for CoordSeq<'a> {
     }
 }
 
-impl<'a> ContextHandling for CoordSeq<'a> {
-    type Context = Arc<ContextHandle<'a>>;
+impl ContextHandling for CoordSeq {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }

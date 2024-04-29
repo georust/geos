@@ -80,7 +80,7 @@ dependencies = [
 
 [[package]]
 name = "geos-src"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "cmake",
 ]

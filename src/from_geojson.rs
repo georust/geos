@@ -6,12 +6,12 @@ use std::convert::{TryFrom, TryInto};
 use std::iter;
 
 #[allow(clippy::needless_lifetimes)]
-fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
+fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
 #[allow(clippy::needless_lifetimes)]
-fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq<'b>, Error>
+fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where
     It: Iterator<Item = &'a Vec<f64>>,
 {
@@ -28,7 +28,7 @@ where
 // We need to ensure that rings of polygons are closed
 // to create valid GEOS LinearRings (geojson crate doesn't enforce this for now)
 #[allow(clippy::needless_lifetimes)]
-fn create_closed_coord_seq_from_vec<'a, 'b>(points: &'a [Vec<f64>]) -> Result<CoordSeq<'b>, Error> {
+fn create_closed_coord_seq_from_vec<'a, 'b>(points: &'a [Vec<f64>]) -> Result<CoordSeq, Error> {
     let nb_points = points.len();
     // if the geom is not closed we close it
     let is_closed = nb_points > 0 && points.first() == points.last();
@@ -42,10 +42,10 @@ fn create_closed_coord_seq_from_vec<'a, 'b>(points: &'a [Vec<f64>]) -> Result<Co
     }
 }
 
-impl<'a, 'b> TryFrom<&'a Geometry> for GGeometry<'b> {
+impl<'a, 'b> TryFrom<&'a Geometry> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a Geometry) -> Result<GGeometry<'b>, Self::Error> {
+    fn try_from(other: &'a Geometry) -> Result<GGeometry, Self::Error> {
         match other.value {
             Value::Point(ref c) => GGeometry::create_point(create_coord_seq(iter::once(c), 1)?),
             Value::MultiPoint(ref pts) => {
@@ -116,10 +116,10 @@ impl<'a, 'b> TryFrom<&'a Geometry> for GGeometry<'b> {
     }
 }
 
-impl<'a> TryFrom<Geometry> for GGeometry<'a> {
+impl TryFrom<Geometry> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: Geometry) -> Result<GGeometry<'a>, Self::Error> {
+    fn try_from(other: Geometry) -> Result<GGeometry, Self::Error> {
         GGeometry::try_from(&other)
     }
 }

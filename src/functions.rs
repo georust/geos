@@ -45,13 +45,13 @@ pub(crate) unsafe fn managed_string(
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect<'a, G: Geom<'a>>(
+pub fn clip_by_rect<'a, G: Geom>(
     g: &G,
     xmin: f64,
     ymin: f64,
     xmax: f64,
     ymax: f64,
-) -> GResult<Geometry<'a>> {
+) -> GResult<Geometry> {
     unsafe {
         let context = g.clone_context();
         let ptr = GEOSClipByRect_r(context.as_raw(), g.as_raw(), xmin, ymin, xmax, ymax);
@@ -83,9 +83,9 @@ pub(crate) fn check_same_geometry_type(geoms: &[Geometry], geom_type: GeometryTy
 }
 
 pub(crate) fn create_multi_geom(
-    mut geoms: Vec<Geometry<'_>>,
+    mut geoms: Vec<Geometry>,
     output_type: GeometryTypes,
-) -> GResult<Geometry<'_>> {
+) -> GResult<Geometry> {
     let nb_geoms = geoms.len();
     let context = if geoms.is_empty() {
         match ContextHandle::init() {

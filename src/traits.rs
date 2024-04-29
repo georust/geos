@@ -28,9 +28,9 @@ pub trait ContextHandling {
     fn clone_context(&self) -> Self::Context;
 }
 
-pub trait ContextInteractions<'a> {
-    fn set_context_handle(&mut self, context: ContextHandle<'a>);
-    fn get_context_handle(&self) -> &ContextHandle<'a>;
+pub trait ContextInteractions {
+    fn set_context_handle(&mut self, context: ContextHandle);
+    fn get_context_handle(&self) -> &ContextHandle;
 
     /// Gets the last error (if any) from the [`ContextHandle`] held by this object.
     ///

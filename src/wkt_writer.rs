@@ -21,12 +21,12 @@ use std::sync::Arc;
 ///
 /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
 /// ```
-pub struct WKTWriter<'a> {
+pub struct WKTWriter {
     ptr: PtrWrap<*mut GEOSWKTWriter>,
-    context: Arc<ContextHandle<'a>>,
+    context: Arc<ContextHandle>,
 }
 
-impl<'a> WKTWriter<'a> {
+impl WKTWriter {
     /// Creates a new `WKTWriter` instance.
     ///
     /// # Example
@@ -39,7 +39,7 @@ impl<'a> WKTWriter<'a> {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn new() -> GResult<WKTWriter<'a>> {
+    pub fn new() -> GResult<WKTWriter> {
         match ContextHandle::init_e(Some("WKTWriter::new")) {
             Ok(context_handle) => Self::new_with_context(Arc::new(context_handle)),
             Err(e) => Err(e),
@@ -59,7 +59,7 @@ impl<'a> WKTWriter<'a> {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn new_with_context(context: Arc<ContextHandle<'a>>) -> GResult<WKTWriter<'a>> {
+    pub fn new_with_context(context: Arc<ContextHandle>) -> GResult<WKTWriter> {
         unsafe {
             let ptr = GEOSWKTWriter_create_r(context.as_raw());
             WKTWriter::new_from_raw(ptr, context, "new_with_context")
@@ -68,9 +68,9 @@ impl<'a> WKTWriter<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSWKTWriter,
-        context: Arc<ContextHandle<'a>>,
+        context: Arc<ContextHandle>,
         caller: &str,
-    ) -> GResult<WKTWriter<'a>> {
+    ) -> GResult<WKTWriter> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -99,7 +99,7 @@ impl<'a> WKTWriter<'a> {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn write<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<String> {
+    pub fn write<'b, G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         unsafe {
             let ptr =
                 GEOSWKTWriter_write_r(self.get_raw_context(), self.as_raw_mut(), geometry.as_raw());
@@ -230,16 +230,16 @@ impl<'a> WKTWriter<'a> {
     }
 }
 
-unsafe impl<'a> Send for WKTWriter<'a> {}
-unsafe impl<'a> Sync for WKTWriter<'a> {}
+unsafe impl Send for WKTWriter {}
+unsafe impl Sync for WKTWriter {}
 
-impl<'a> Drop for WKTWriter<'a> {
+impl Drop for WKTWriter {
     fn drop(&mut self) {
         unsafe { GEOSWKTWriter_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
     }
 }
 
-impl<'a> ContextInteractions<'a> for WKTWriter<'a> {
+impl ContextInteractions for WKTWriter {
     /// Set the context handle to the `WKTWriter`.
     ///
     /// ```
@@ -250,7 +250,7 @@ impl<'a> ContextInteractions<'a> for WKTWriter<'a> {
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// writer.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle) {
         self.context = Arc::new(context);
     }
 
@@ -263,12 +263,12 @@ impl<'a> ContextInteractions<'a> for WKTWriter<'a> {
     /// let context = writer.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &ContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle {
         &self.context
     }
 }
 
-impl<'a> AsRaw for WKTWriter<'a> {
+impl AsRaw for WKTWriter {
     type RawType = GEOSWKTWriter;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -276,7 +276,7 @@ impl<'a> AsRaw for WKTWriter<'a> {
     }
 }
 
-impl<'a> AsRawMut for WKTWriter<'a> {
+impl AsRawMut for WKTWriter {
     type RawType = GEOSWKTWriter;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -284,14 +284,14 @@ impl<'a> AsRawMut for WKTWriter<'a> {
     }
 }
 
-impl<'a> ContextHandling for WKTWriter<'a> {
-    type Context = Arc<ContextHandle<'a>>;
+impl ContextHandling for WKTWriter {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }
