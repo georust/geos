@@ -112,7 +112,7 @@ impl WKBWriter {
     /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_wkb<'b, G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSWKBWriter_write_r(
@@ -147,7 +147,7 @@ impl WKBWriter {
     ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_hex<'b, G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSWKBWriter_writeHEX_r(

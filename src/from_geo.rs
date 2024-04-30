@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
 use geo_types::{
-    Coordinate, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
+    Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
 };
 
 use std;
@@ -9,14 +9,14 @@ use std::borrow::Borrow;
 use std::convert::{TryFrom, TryInto};
 
 #[allow(clippy::needless_lifetimes)]
-fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Coordinate<f64>]) -> Result<CoordSeq, Error> {
+fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Coord<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
 #[allow(clippy::needless_lifetimes)]
 fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where
-    It: Iterator<Item = &'a Coordinate<f64>>,
+    It: Iterator<Item = &'a Coord<f64>>,
 {
     let mut coord_seq =
         CoordSeq::new(len as u32, CoordDimensions::TwoD).expect("failed to create CoordSeq");
@@ -207,12 +207,12 @@ mod test {
     use super::LineRing;
     use crate::{Geom, Geometry as GGeometry};
     use geo_types::{
-        Coordinate, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
+        Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
     };
     use std::convert::TryInto;
 
-    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
-        tuples.into_iter().map(Coordinate::from).collect()
+    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coord<f64>> {
+        tuples.into_iter().map(Coord::from).collect()
     }
 
     #[test]

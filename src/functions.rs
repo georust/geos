@@ -45,7 +45,7 @@ pub(crate) unsafe fn managed_string(
 }
 
 #[allow(dead_code)]
-pub fn clip_by_rect<'a, G: Geom>(
+pub fn clip_by_rect<G: Geom>(
     g: &G,
     xmin: f64,
     ymin: f64,

@@ -8,10 +8,10 @@ use std::convert::TryFrom;
 
 macro_rules! impl_try_into {
     ($ty_name:ident $(,$lt:lifetime)?) => (
-impl<'a, 'b$(,$lt)?> TryFrom<&'b $ty_name<'a$(,$lt)?>> for Geometry<f64> {
+impl<'b$(,$lt)?> TryFrom<&'b $ty_name$(<$lt>)?> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: &'b $ty_name<'a$(,$lt)?>) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: &'b $ty_name$(<$lt>)?) -> Result<Geometry<f64>, Self::Error> {
         // This is a first draft, it's very inefficient, we use wkt as a pivot format to
         // translate the geometry.
         // We should at least use wkb, or even better implement a direct translation
@@ -20,10 +20,10 @@ impl<'a, 'b$(,$lt)?> TryFrom<&'b $ty_name<'a$(,$lt)?>> for Geometry<f64> {
             .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
     }
 }
-impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry<f64> {
+impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: $ty_name<'a$(,$lt)?>) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: $ty_name$(<$lt>)?) -> Result<Geometry<f64>, Self::Error> {
         Geometry::try_from(&other)
     }
 }

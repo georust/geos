@@ -99,7 +99,7 @@ impl WKTWriter {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn write<'b, G: Geom>(&mut self, geometry: &G) -> GResult<String> {
+    pub fn write<G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         unsafe {
             let ptr =
                 GEOSWKTWriter_write_r(self.get_raw_context(), self.as_raw_mut(), geometry.as_raw());

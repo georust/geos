@@ -212,7 +212,7 @@ pub trait Geom:
     /// assert_eq!(geom1.intersects(&geom2), Ok(false));
     /// assert_eq!(geom1.intersects(&geom3), Ok(true));
     /// ```
-    fn intersects<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn intersects<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if `self` and `other` have at least one interior into each other.
     ///
     /// # Example
@@ -244,7 +244,7 @@ pub trait Geom:
     /// assert_eq!(geom1.disjoint(&geom2), Ok(true));
     /// assert_eq!(geom1.disjoint(&geom3), Ok(false));
     /// ```
-    fn disjoint<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if the only points in common between `self` and `other` lie in the union of
     /// the boundaries of `self` and `other`.
     ///
@@ -262,7 +262,7 @@ pub trait Geom:
     ///
     /// assert_eq!(geom1.touches(&geom2), Ok(true));
     /// ```
-    fn touches<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn touches<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if `self` spatially overlaps `other`.
     ///
     /// # Example
@@ -280,7 +280,7 @@ pub trait Geom:
     ///
     /// assert_eq!(geom1.overlaps(&geom2), Ok(true));
     /// ```
-    fn overlaps<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if `self` is completely inside `other`.
     ///
     /// # Example
@@ -296,7 +296,7 @@ pub trait Geom:
     /// assert_eq!(small_geom.within(&big_geom), Ok(true));
     /// assert_eq!(big_geom.within(&small_geom), Ok(false));
     /// ```
-    fn within<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn within<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Checks if the two [`Geometry`] objects are equal.
     ///
     /// # Example
@@ -324,7 +324,7 @@ pub trait Geom:
     /// assert!(geom1 != geom2);
     /// assert!(geom1 == geom3);
     /// ```
-    fn equals<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn equals<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Checks if the two [`Geometry`] objects are exactly equal.
     ///
     /// # Example
@@ -339,7 +339,7 @@ pub trait Geom:
     /// assert_eq!(geom1.equals_exact(&geom2, 0.1), Ok(false));
     /// assert_eq!(geom1.equals_exact(&geom3, 0.1), Ok(true));
     /// ```
-    fn equals_exact<'b, G: Geom>(&self, other: &G, precision: f64) -> GResult<bool>;
+    fn equals_exact<G: Geom>(&self, other: &G, precision: f64) -> GResult<bool>;
     /// Returns `true` if no point of `other` is outside of `self`.
     ///
     /// # Example
@@ -354,7 +354,7 @@ pub trait Geom:
     /// assert_eq!(little_geom.covers(&big_geom), Ok(false));
     /// assert_eq!(big_geom.covers(&little_geom), Ok(true));
     /// ```
-    fn covers<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn covers<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if no point of `self` is outside of `other`.
     ///
     /// # Example
@@ -369,7 +369,7 @@ pub trait Geom:
     /// assert_eq!(little_geom.covered_by(&big_geom), Ok(true));
     /// assert_eq!(big_geom.covered_by(&little_geom), Ok(false));
     /// ```
-    fn covered_by<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if no points of the `other` geometry is outside the exterior of `self`.
     ///
     /// # Example
@@ -382,7 +382,7 @@ pub trait Geom:
     ///
     /// assert_eq!(geom1.contains(&geom2), Ok(true));
     /// ```
-    fn contains<'b, G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn contains<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns a geometry which represents all points whose distance from `self` is less than or
     /// equal to distance.
     ///
@@ -436,8 +436,7 @@ pub trait Geom:
     ///              1.0 5.0, 1.4 5.0, 1.8 4.8, 2.1 4.7, 2.4 4.4, 2.7 4.1, 2.8 3.8, 3.0 3.4, \
     ///              3.0 3.0))");
     /// ```
-    fn buffer_with_params(&self, width: f64, buffer_params: &BufferParams)
-        -> GResult<Geometry>;
+    fn buffer_with_params(&self, width: f64, buffer_params: &BufferParams) -> GResult<Geometry>;
     /// Returns a geometry which represents all points whose distance from `self` is less than or
     /// equal to distance.
     ///
@@ -521,7 +520,7 @@ pub trait Geom:
     /// assert_eq!(difference_geom.to_wkt_precision(1).unwrap(),
     ///            "LINESTRING (50.0 150.0, 50.0 200.0)");
     /// ```
-    fn difference<'b, G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    fn difference<G: Geom>(&self, other: &G) -> GResult<Geometry>;
     /// Returns the minimum bouding box of the given geometry.
     ///
     /// # Example
@@ -558,7 +557,7 @@ pub trait Geom:
     ///     "MULTILINESTRING ((50.0 150.0, 50.0 200.0), (50.0 50.0, 50.0 100.0))",
     /// );
     /// ```
-    fn sym_difference<'b, G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    fn sym_difference<G: Geom>(&self, other: &G) -> GResult<Geometry>;
     /// Aggregates the given geometry with another one.
     ///
     /// # Example
@@ -573,7 +572,7 @@ pub trait Geom:
     ///
     /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(), "MULTIPOINT (1.0 2.0, 3.0 4.0)");
     /// ```
-    fn union<'b, G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    fn union<G: Geom>(&self, other: &G) -> GResult<Geometry>;
     /// Returns the geometric center or (equivalently) the center of mass of the given geometry as
     /// a point.
     ///
@@ -643,7 +642,7 @@ pub trait Geom:
     ///
     /// assert_eq!(expected.equals(&voronoi), Ok(true));
     /// ```
-    fn voronoi<'b, G: Geom>(
+    fn voronoi<G: Geom>(
         &self,
         envelope: Option<&G>,
         tolerance: f64,
@@ -672,7 +671,7 @@ pub trait Geom:
     /// // Intersection!
     /// assert_eq!(intersection_geom.to_wkt_precision(1).unwrap(), "POINT (0.0 0.0)");
     /// ```
-    fn intersection<'b, G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    fn intersection<G: Geom>(&self, other: &G) -> GResult<Geometry>;
     /// Documentation from [postgis](https://postgis.net/docs/ST_ConvexHull.html):
     ///
     /// > The convex hull of a geometry represents the minimum convex geometry that encloses all
@@ -781,7 +780,7 @@ pub trait Geom:
     ///
     /// assert_eq!(geom1.distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
     /// ```
-    fn distance<'b, G: Geom>(&self, other: &G) -> GResult<f64>;
+    fn distance<G: Geom>(&self, other: &G) -> GResult<f64>;
     /// Returns the indexed distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// Available using the `v3_7_0` feature.
@@ -797,7 +796,7 @@ pub trait Geom:
     /// assert_eq!(geom1.distance_indexed(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn distance_indexed<'b, G: Geom>(&self, other: &G) -> GResult<f64>;
+    fn distance_indexed<G: Geom>(&self, other: &G) -> GResult<f64>;
     /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// # Example
@@ -810,7 +809,7 @@ pub trait Geom:
     ///
     /// assert_eq!(geom1.hausdorff_distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "1.00");
     /// ```
-    fn hausdorff_distance<'b, G: Geom>(&self, other: &G) -> GResult<f64>;
+    fn hausdorff_distance<G: Geom>(&self, other: &G) -> GResult<f64>;
     /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// # Example
@@ -824,7 +823,7 @@ pub trait Geom:
     /// assert_eq!(geom1.hausdorff_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
     ///                                                        .unwrap(), "1.00");
     /// ```
-    fn hausdorff_distance_densify<'b, G: Geom>(
+    fn hausdorff_distance_densify<G: Geom>(
         &self,
         other: &G,
         distance_frac: f64,
@@ -844,7 +843,7 @@ pub trait Geom:
     /// assert_eq!(geom1.frechet_distance(&geom2).map(|x| format!("{:.2}", x)).unwrap(), "70.71");
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn frechet_distance<'b, G: Geom>(&self, other: &G) -> GResult<f64>;
+    fn frechet_distance<G: Geom>(&self, other: &G) -> GResult<f64>;
     /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// Available using the `v3_7_0` feature.
@@ -861,11 +860,7 @@ pub trait Geom:
     ///                                                      .unwrap(), "70.71");
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn frechet_distance_densify<'b, G: Geom>(
-        &self,
-        other: &G,
-        distance_frac: f64,
-    ) -> GResult<f64>;
+    fn frechet_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64>;
     /// Returns the length of the given geometry.
     ///
     /// # Example
@@ -914,10 +909,10 @@ pub trait Geom:
     ///                            (51.0 150.0, 101.0 150.0, 76.0 175.0, 51.0 150.0)), \
     ///                           ((151.0 100.0, 151.0 200.0, 176.0 175.0, 151.0 100.0)))");
     /// ```
-    fn snap<'b, G: Geom>(&self, other: &G, tolerance: f64) -> GResult<Geometry>;
+    fn snap<G: Geom>(&self, other: &G, tolerance: f64) -> GResult<Geometry>;
     /// Returns unique points of `self`.
     fn extract_unique_points(&self) -> GResult<Geometry>;
-    fn nearest_points<'b, G: Geom>(&self, other: &G) -> GResult<CoordSeq>;
+    fn nearest_points<G: Geom>(&self, other: &G) -> GResult<CoordSeq>;
     /// Returns the X position. The given `Geometry` must be a `Point`, otherwise it'll fail.
     ///
     /// # Example
@@ -1255,8 +1250,8 @@ pub trait Geom:
     fn delaunay_triangulation(&self, tolerance: f64, only_edges: bool) -> GResult<Geometry>;
     fn interpolate(&self, d: f64) -> GResult<Geometry>;
     fn interpolate_normalized(&self, d: f64) -> GResult<Geometry>;
-    fn project<'b, G: Geom>(&self, p: &G) -> GResult<f64>;
-    fn project_normalized<'b, G: Geom>(&self, p: &G) -> GResult<f64>;
+    fn project<G: Geom>(&self, p: &G) -> GResult<f64>;
+    fn project_normalized<G: Geom>(&self, p: &G) -> GResult<f64>;
     fn node(&self) -> GResult<Geometry>;
     ///  Return an offset line at a given distance and side from an input line. All points of the
     /// returned geometries are not further than the given distance from the input geometry.
@@ -1307,7 +1302,7 @@ pub trait Geom:
         Option<Geometry>,
         Option<Geometry>,
     )>;
-    fn shared_paths<'b, G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    fn shared_paths<G: Geom>(&self, other: &G) -> GResult<Geometry>;
     /// Converts a [`Geometry`] to the HEX format. For more control over the generated output,
     /// use the [`WKBWriter`](crate::WKBWriter) type.
     ///
@@ -1366,7 +1361,7 @@ pub trait Geom:
     ///     "POINT (3.0000000000000000 3.0000000000000000)",
     /// );
     /// ```
-    fn get_geometry_n<'c>(&'c self, n: usize) -> GResult<ConstGeometry<'c>>;
+    fn get_geometry_n(&self, n: usize) -> GResult<ConstGeometry>;
     /// Returns the nth interior ring.
     ///
     /// # Example
@@ -1388,7 +1383,7 @@ pub trait Geom:
     ///                         1.0000000000000000 5.0000000000000000, \
     ///                         1.0000000000000000 1.0000000000000000)");
     /// ```
-    fn get_interior_ring_n<'c>(&'c self, n: u32) -> GResult<ConstGeometry<'c>>;
+    fn get_interior_ring_n(&self, n: u32) -> GResult<ConstGeometry>;
     /// Returns the exterior ring.
     ///
     /// # Example
@@ -1410,7 +1405,7 @@ pub trait Geom:
     ///                         0.0000000000000000 6.0000000000000000, \
     ///                         0.0000000000000000 0.0000000000000000)");
     /// ```
-    fn get_exterior_ring<'c>(&'c self) -> GResult<ConstGeometry<'c>>;
+    fn get_exterior_ring(& self) -> GResult<ConstGeometry>;
 }
 
 macro_rules! impl_geom {
@@ -1503,77 +1498,77 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         check_geos_predicate(rv as _, PredicateType::IsRing)
     }
 
-    fn intersects<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn intersects<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSIntersects_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Intersects)
     }
 
-    fn crosses<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn crosses<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSCrosses_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Crosses)
     }
 
-    fn disjoint<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSDisjoint_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Disjoint)
     }
 
-    fn touches<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn touches<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSTouches_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Touches)
     }
 
-    fn overlaps<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSOverlaps_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Overlaps)
     }
 
-    fn within<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn within<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSWithin_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Within)
     }
 
-    fn equals<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn equals<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSEquals_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Equals)
     }
 
-    fn equals_exact<'b, G: Geom>(&self, other: &G, precision: f64) -> GResult<bool> {
+    fn equals_exact<G: Geom>(&self, other: &G, precision: f64) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSEqualsExact_r(self.get_raw_context(), self.as_raw(), other.as_raw(), precision)
         };
         check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
-    fn covers<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSCovers_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::Covers)
     }
 
-    fn covered_by<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSCoveredBy_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
         check_geos_predicate(ret_val as _, PredicateType::CoveredBy)
     }
 
-    fn contains<'b, G: Geom>(&self, other: &G) -> GResult<bool> {
+    fn contains<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = unsafe {
             GEOSContains_r(self.get_raw_context(), self.as_raw(), other.as_raw())
         };
@@ -1630,7 +1625,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
-    fn difference<'b, G: Geom>(&self, other: &G) -> GResult<Geometry> {
+    fn difference<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "difference")
@@ -1644,14 +1639,14 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn sym_difference<'b, G: Geom>(&self, other: &G) -> GResult<Geometry> {
+    fn sym_difference<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSSymDifference_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "sym_difference")
         }
     }
 
-    fn union<'b, G: Geom>(&self, other: &G) -> GResult<Geometry> {
+    fn union<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSUnion_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "union")
@@ -1672,7 +1667,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn voronoi<'b, G: Geom>(
+    fn voronoi<G: Geom>(
         &self,
         envelope: Option<&G>,
         tolerance: f64,
@@ -1692,7 +1687,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn intersection<'b, G: Geom>(&self, other: &G) -> GResult<Geometry> {
+    fn intersection<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSIntersection_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "intersection")
@@ -1735,7 +1730,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn distance<'b, G: Geom>(&self, other: &G) -> GResult<f64> {
+    fn distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSDistance_r(
@@ -1748,7 +1743,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn distance_indexed<'b, G: Geom>(&self, other: &G) -> GResult<f64> {
+    fn distance_indexed<G: Geom>(&self, other: &G) -> GResult<f64> {
         unsafe {
             let mut distance = 0.;
             if GEOSDistanceIndexed_r(self.get_raw_context(),
@@ -1762,7 +1757,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn hausdorff_distance<'b, G: Geom>(&self, other: &G) -> GResult<f64> {
+    fn hausdorff_distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSHausdorffDistance_r(
@@ -1774,7 +1769,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn hausdorff_distance_densify<'b, G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
+    fn hausdorff_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSHausdorffDistanceDensify_r(
@@ -1788,7 +1783,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn frechet_distance<'b, G: Geom>(&self, other: &G) -> GResult<f64> {
+    fn frechet_distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSFrechetDistance_r(
@@ -1801,7 +1796,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
-    fn frechet_distance_densify<'b, G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
+    fn frechet_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64> {
         let mut distance = 0.;
         unsafe {
             let ret = GEOSFrechetDistanceDensify_r(
@@ -1822,7 +1817,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn snap<'b, G: Geom>(&self, other: &G, tolerance: f64) -> GResult<Geometry> {
+    fn snap<G: Geom>(&self, other: &G, tolerance: f64) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSSnap_r(self.get_raw_context(), self.as_raw(), other.as_raw(), tolerance);
             Geometry::new_from_raw(ptr, self.clone_context(), "snap")
@@ -1836,7 +1831,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn nearest_points<'b, G: Geom>(&self, other: &G) -> GResult<CoordSeq> {
+    fn nearest_points<G: Geom>(&self, other: &G) -> GResult<CoordSeq> {
         unsafe {
             let ptr = GEOSNearestPoints_r(
                 self.get_raw_context(),
@@ -2156,7 +2151,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn project<'b, G: Geom>(&self, p: &G) -> GResult<f64> {
+    fn project<G: Geom>(&self, p: &G) -> GResult<f64> {
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
@@ -2170,7 +2165,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn project_normalized<'b, G: Geom>(&self, p: &G) -> GResult<f64> {
+    fn project_normalized<G: Geom>(&self, p: &G) -> GResult<f64> {
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
@@ -2250,7 +2245,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn shared_paths<'b, G: Geom>(&self, other: &G) -> GResult<Geometry> {
+    fn shared_paths<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         unsafe {
             let ptr = GEOSSharedPaths_r(self.get_raw_context(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, self.clone_context(), "shared_paths")
@@ -2302,21 +2297,21 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         }
     }
 
-    fn get_geometry_n<'c>(&'c self, n: usize) -> GResult<ConstGeometry<'c>> {
+    fn get_geometry_n(&self, n: usize) -> GResult<ConstGeometry> {
         unsafe {
             let ptr = GEOSGetGeometryN_r(self.get_raw_context(), self.as_raw(), n as _);
             ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_geometry_n")
         }
     }
 
-    fn get_interior_ring_n<'c>(&'c self, n: u32) -> GResult<ConstGeometry<'c>> {
+    fn get_interior_ring_n(&self, n: u32) -> GResult<ConstGeometry> {
         unsafe {
             let ptr = GEOSGetInteriorRingN_r(self.get_raw_context(), self.as_raw(), n as _);
             ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_interior_ring_n")
         }
     }
 
-    fn get_exterior_ring<'c>(&'c self) -> GResult<ConstGeometry<'c>> {
+    fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
         unsafe {
             let ptr = GEOSGetExteriorRing_r(self.get_raw_context(), self.as_raw());
             ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_exterior_ring")
@@ -2338,7 +2333,6 @@ unsafe impl$(<$lt>)? Sync for $ty_name$(<$lt>)? {}
 
 impl_geom!(Geometry);
 impl_geom!(ConstGeometry, 'd);
-
 
 impl Geometry {
     /// Creates a `Geometry` from the WKT format.
@@ -2781,7 +2775,7 @@ impl Geometry {
     ///     "POLYGON ((75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5))",
     /// );
     /// ```
-    pub fn create_polygon<'b>(
+    pub fn create_polygon(
         mut exterior: Geometry,
         mut interiors: Vec<Geometry>,
     ) -> GResult<Geometry> {
