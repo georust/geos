@@ -1,8 +1,6 @@
 use crate::error::Error;
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
-use geo_types::{
-    Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
-};
+use geo_types::{Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon};
 
 use std;
 use std::borrow::Borrow;
@@ -206,9 +204,7 @@ impl TryFrom<MultiPolygon<f64>> for GGeometry {
 mod test {
     use super::LineRing;
     use crate::{Geom, Geometry as GGeometry};
-    use geo_types::{
-        Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon,
-    };
+    use geo_types::{Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon};
     use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coord<f64>> {

@@ -823,11 +823,7 @@ pub trait Geom:
     /// assert_eq!(geom1.hausdorff_distance_densify(&geom2, 1.).map(|x| format!("{:.2}", x))
     ///                                                        .unwrap(), "1.00");
     /// ```
-    fn hausdorff_distance_densify<G: Geom>(
-        &self,
-        other: &G,
-        distance_frac: f64,
-    ) -> GResult<f64>;
+    fn hausdorff_distance_densify<G: Geom>(&self, other: &G, distance_frac: f64) -> GResult<f64>;
     /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// Available using the `v3_7_0` feature.
@@ -1405,7 +1401,7 @@ pub trait Geom:
     ///                         0.0000000000000000 6.0000000000000000, \
     ///                         0.0000000000000000 0.0000000000000000)");
     /// ```
-    fn get_exterior_ring(& self) -> GResult<ConstGeometry>;
+    fn get_exterior_ring(&self) -> GResult<ConstGeometry>;
 }
 
 macro_rules! impl_geom {

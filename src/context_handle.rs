@@ -15,10 +15,7 @@ macro_rules! set_callbacks {
         #[allow(clippy::needless_lifetimes)]
         fn $kind(ptr: GEOSContextHandle_t, nf: *mut InnerContext) {
             #[allow(clippy::extra_unused_lifetimes)]
-            unsafe extern "C" fn message_handler_func(
-                message: *const c_char,
-                data: *mut c_void,
-            ) {
+            unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
                 let inner_context: &InnerContext = &*(data as *mut _);
 
                 if let Ok(callback) = inner_context.$callback_name.lock() {
