@@ -8,18 +8,15 @@ use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
 
-pub type HandlerCallback<'a> = Box<dyn Fn(&str) + Send + Sync + 'a>;
+pub type HandlerCallback = Box<dyn Fn(&str) + Send + Sync>;
 
 macro_rules! set_callbacks {
     ($c_func:ident, $kind:ident, $callback_name:ident, $last:ident) => {
         #[allow(clippy::needless_lifetimes)]
-        fn $kind<'a>(ptr: GEOSContextHandle_t, nf: *mut InnerContext<'a>) {
+        fn $kind(ptr: GEOSContextHandle_t, nf: *mut InnerContext) {
             #[allow(clippy::extra_unused_lifetimes)]
-            unsafe extern "C" fn message_handler_func<'a>(
-                message: *const c_char,
-                data: *mut c_void,
-            ) {
-                let inner_context: &InnerContext<'a> = &*(data as *mut _);
+            unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
+                let inner_context: &InnerContext = &*(data as *mut _);
 
                 if let Ok(callback) = inner_context.$callback_name.lock() {
                     let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
@@ -65,19 +62,19 @@ impl<T> Deref for PtrWrap<T> {
 unsafe impl<T> Send for PtrWrap<T> {}
 unsafe impl<T> Sync for PtrWrap<T> {}
 
-pub(crate) struct InnerContext<'a> {
+pub(crate) struct InnerContext {
     last_notification: Mutex<Option<String>>,
     last_error: Mutex<Option<String>>,
-    notif_callback: Mutex<HandlerCallback<'a>>,
-    error_callback: Mutex<HandlerCallback<'a>>,
+    notif_callback: Mutex<HandlerCallback>,
+    error_callback: Mutex<HandlerCallback>,
 }
 
-pub struct ContextHandle<'a> {
+pub struct ContextHandle {
     ptr: PtrWrap<GEOSContextHandle_t>,
-    pub(crate) inner: PtrWrap<*mut InnerContext<'a>>,
+    pub(crate) inner: PtrWrap<*mut InnerContext>,
 }
 
-impl<'a> ContextHandle<'a> {
+impl ContextHandle {
     /// Creates a new `ContextHandle`.
     ///
     /// # Example
@@ -105,8 +102,8 @@ impl<'a> ContextHandle<'a> {
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);
 
-        let notif_callback: Mutex<HandlerCallback<'a>> = Mutex::new(Box::new(|_| {}));
-        let error_callback: Mutex<HandlerCallback<'a>> = Mutex::new(Box::new(|_| {}));
+        let notif_callback: Mutex<HandlerCallback> = Mutex::new(Box::new(|_| {}));
+        let error_callback: Mutex<HandlerCallback> = Mutex::new(Box::new(|_| {}));
 
         let inner = Box::into_raw(Box::new(InnerContext {
             last_notification,
@@ -128,7 +125,7 @@ impl<'a> ContextHandle<'a> {
         *self.ptr
     }
 
-    pub(crate) fn get_inner(&self) -> &InnerContext<'a> {
+    pub(crate) fn get_inner(&self) -> &InnerContext {
         unsafe { &*self.inner.0 }
     }
 
@@ -145,7 +142,7 @@ impl<'a> ContextHandle<'a> {
     ///
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    pub fn set_notice_message_handler(&self, nf: Option<HandlerCallback<'a>>) {
+    pub fn set_notice_message_handler(&self, nf: Option<HandlerCallback>) {
         let inner_context = self.get_inner();
         if let Ok(mut callback) = inner_context.notif_callback.lock() {
             if let Some(nf) = nf {
@@ -169,7 +166,7 @@ impl<'a> ContextHandle<'a> {
     ///
     /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    pub fn set_error_message_handler(&self, ef: Option<HandlerCallback<'a>>) {
+    pub fn set_error_message_handler(&self, ef: Option<HandlerCallback>) {
         let inner_context = self.get_inner();
         if let Ok(mut callback) = inner_context.error_callback.lock() {
             if let Some(ef) = ef {
@@ -304,14 +301,14 @@ impl<'a> ContextHandle<'a> {
     }
 }
 
-impl<'a> Drop for ContextHandle<'a> {
+impl Drop for ContextHandle {
     fn drop(&mut self) {
         unsafe {
             if !self.ptr.is_null() {
                 GEOS_finish_r(self.as_raw());
             }
             // Now we just have to clear stuff!
-            let _inner: Box<InnerContext<'a>> = Box::from_raw(self.inner.0);
+            let _inner: Box<InnerContext> = Box::from_raw(self.inner.0);
         }
     }
 }

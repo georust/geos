@@ -9,20 +9,20 @@ use crate::ContextHandling;
 use crate::{AsRaw, AsRawMut, GResult};
 use crate::{ContextHandle, Geom};
 
-pub trait SpatialIndex<'a, I> {
-    fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I);
+pub trait SpatialIndex<I> {
+    fn insert<G: Geom>(&mut self, geometry: &G, item: I);
 
-    fn query<'b, G: Geom<'b>, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
+    fn query<G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
 }
 
-pub struct STRtree<'a, I> {
+pub struct STRtree<I> {
     pub(crate) ptr: PtrWrap<*mut GEOSSTRtree>,
-    context: Arc<ContextHandle<'a>>,
+    context: Arc<ContextHandle>,
     item_type: PhantomData<I>,
 }
 
-impl<'a, I> STRtree<'a, I> {
-    pub fn with_capacity(node_capacity: usize) -> GResult<STRtree<'a, I>> {
+impl<I> STRtree<I> {
+    pub fn with_capacity(node_capacity: usize) -> GResult<STRtree<I>> {
         match ContextHandle::init_e(Some("STRtree::with_capacity")) {
             Ok(context_handle) => unsafe {
                 let ptr = GEOSSTRtree_create_r(context_handle.as_raw(), node_capacity);
@@ -47,8 +47,8 @@ impl<'a, I> STRtree<'a, I> {
     }
 }
 
-impl<'a, I> SpatialIndex<'a, I> for STRtree<'a, I> {
-    fn insert<'b, G: Geom<'b>>(&mut self, geometry: &G, item: I) {
+impl<I> SpatialIndex<I> for STRtree<I> {
+    fn insert<G: Geom>(&mut self, geometry: &G, item: I) {
         unsafe {
             GEOSSTRtree_insert_r(
                 self.get_raw_context(),
@@ -59,7 +59,7 @@ impl<'a, I> SpatialIndex<'a, I> for STRtree<'a, I> {
         }
     }
 
-    fn query<'b, G: Geom<'b>, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
+    fn query<'b, G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
         unsafe {
             let (closure, callback) = unpack_closure(&visitor);
             GEOSSTRtree_query_r(
@@ -73,7 +73,7 @@ impl<'a, I> SpatialIndex<'a, I> for STRtree<'a, I> {
     }
 }
 
-impl<'a, I> AsRaw for STRtree<'a, I> {
+impl<I> AsRaw for STRtree<I> {
     type RawType = GEOSSTRtree;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -81,7 +81,7 @@ impl<'a, I> AsRaw for STRtree<'a, I> {
     }
 }
 
-impl<'a, I> AsRawMut for STRtree<'a, I> {
+impl<I> AsRawMut for STRtree<I> {
     type RawType = GEOSSTRtree;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -89,19 +89,19 @@ impl<'a, I> AsRawMut for STRtree<'a, I> {
     }
 }
 
-impl<'a, I> ContextHandling for STRtree<'a, I> {
-    type Context = Arc<ContextHandle<'a>>;
+impl<I> ContextHandling for STRtree<I> {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }
 
-impl<I> Drop for STRtree<'_, I> {
+impl<I> Drop for STRtree<I> {
     fn drop(&mut self) {
         unsafe extern "C" fn callback<I>(item: *mut c_void, _data: *mut c_void) {
             drop(Box::from_raw(item as *mut I));

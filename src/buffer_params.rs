@@ -8,9 +8,9 @@ use geos_sys::*;
 use std::sync::Arc;
 
 /// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [buffer_with_params](crate::Geom::buffer_with_params)
-pub struct BufferParams<'a> {
+pub struct BufferParams {
     ptr: PtrWrap<*mut GEOSBufferParams>,
-    context: Arc<ContextHandle<'a>>,
+    context: Arc<ContextHandle>,
 }
 
 /// Build options for a [`BufferParams`] object
@@ -23,8 +23,8 @@ pub struct BufferParamsBuilder {
     single_sided: Option<bool>,
 }
 
-impl<'a> BufferParams<'a> {
-    pub fn new() -> GResult<BufferParams<'a>> {
+impl BufferParams {
+    pub fn new() -> GResult<BufferParams> {
         match ContextHandle::init_e(Some("BufferParams::new")) {
             Ok(context) => unsafe {
                 let ptr = GEOSBufferParams_create_r(context.as_raw());
@@ -164,10 +164,10 @@ impl<'a> BufferParams<'a> {
     }
 }
 
-unsafe impl<'a> Send for BufferParams<'a> {}
-unsafe impl<'a> Sync for BufferParams<'a> {}
+unsafe impl Send for BufferParams {}
+unsafe impl Sync for BufferParams {}
 
-impl<'a> Drop for BufferParams<'a> {
+impl Drop for BufferParams {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
             unsafe { GEOSBufferParams_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
@@ -175,7 +175,7 @@ impl<'a> Drop for BufferParams<'a> {
     }
 }
 
-impl<'a> AsRaw for BufferParams<'a> {
+impl AsRaw for BufferParams {
     type RawType = GEOSBufferParams;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -183,7 +183,7 @@ impl<'a> AsRaw for BufferParams<'a> {
     }
 }
 
-impl<'a> AsRawMut for BufferParams<'a> {
+impl AsRawMut for BufferParams {
     type RawType = GEOSBufferParams;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -191,24 +191,24 @@ impl<'a> AsRawMut for BufferParams<'a> {
     }
 }
 
-impl<'a> ContextInteractions<'a> for BufferParams<'a> {
-    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
+impl ContextInteractions for BufferParams {
+    fn set_context_handle(&mut self, context: ContextHandle) {
         self.context = Arc::new(context);
     }
 
-    fn get_context_handle(&self) -> &ContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle {
         &self.context
     }
 }
 
-impl<'a> ContextHandling for BufferParams<'a> {
-    type Context = Arc<ContextHandle<'a>>;
+impl ContextHandling for BufferParams {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }
@@ -234,7 +234,7 @@ impl BufferParamsBuilder {
         self.single_sided = Some(is_single_sided);
         self
     }
-    pub fn build(self) -> GResult<BufferParams<'static>> {
+    pub fn build(self) -> GResult<BufferParams> {
         let mut params = BufferParams::new()?;
         if let Some(style) = self.end_cap_style {
             params.set_end_cap_style(style)?;

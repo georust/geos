@@ -28,12 +28,12 @@ use std::sync::Arc;
 /// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt_precision(1).unwrap(),
 ///            "POINT (2.5 2.5)");
 /// ```
-pub struct WKBWriter<'a> {
+pub struct WKBWriter {
     ptr: PtrWrap<*mut GEOSWKBWriter>,
-    context: Arc<ContextHandle<'a>>,
+    context: Arc<ContextHandle>,
 }
 
-impl<'a> WKBWriter<'a> {
+impl WKBWriter {
     /// Creates a new `WKBWriter` instance.
     ///
     /// # Example
@@ -48,7 +48,7 @@ impl<'a> WKBWriter<'a> {
     /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
     ///            "POINT (2.5 2.5)");
     /// ```
-    pub fn new() -> GResult<WKBWriter<'a>> {
+    pub fn new() -> GResult<WKBWriter> {
         match ContextHandle::init_e(Some("WKBWriter::new")) {
             Ok(context_handle) => Self::new_with_context(Arc::new(context_handle)),
             Err(e) => Err(e),
@@ -70,7 +70,7 @@ impl<'a> WKBWriter<'a> {
     /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
     ///            "POINT (2.5 2.5)");
     /// ```
-    pub fn new_with_context(context: Arc<ContextHandle<'a>>) -> GResult<WKBWriter<'a>> {
+    pub fn new_with_context(context: Arc<ContextHandle>) -> GResult<WKBWriter> {
         unsafe {
             let ptr = GEOSWKBWriter_create_r(context.as_raw());
             WKBWriter::new_from_raw(ptr, context, "new_with_context")
@@ -79,9 +79,9 @@ impl<'a> WKBWriter<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *mut GEOSWKBWriter,
-        context: Arc<ContextHandle<'a>>,
+        context: Arc<ContextHandle>,
         caller: &str,
-    ) -> GResult<WKBWriter<'a>> {
+    ) -> GResult<WKBWriter> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -112,7 +112,7 @@ impl<'a> WKBWriter<'a> {
     /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_wkb<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSWKBWriter_write_r(
@@ -147,7 +147,7 @@ impl<'a> WKBWriter<'a> {
     ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_hex<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         unsafe {
             let ptr = GEOSWKBWriter_writeHEX_r(
@@ -313,16 +313,16 @@ impl<'a> WKBWriter<'a> {
     }
 }
 
-unsafe impl<'a> Send for WKBWriter<'a> {}
-unsafe impl<'a> Sync for WKBWriter<'a> {}
+unsafe impl Send for WKBWriter {}
+unsafe impl Sync for WKBWriter {}
 
-impl<'a> Drop for WKBWriter<'a> {
+impl Drop for WKBWriter {
     fn drop(&mut self) {
         unsafe { GEOSWKBWriter_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
     }
 }
 
-impl<'a> ContextInteractions<'a> for WKBWriter<'a> {
+impl ContextInteractions for WKBWriter {
     /// Set the context handle to the `WKBWriter`.
     ///
     /// ```
@@ -333,7 +333,7 @@ impl<'a> ContextInteractions<'a> for WKBWriter<'a> {
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// writer.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle) {
         self.context = Arc::new(context);
     }
 
@@ -346,12 +346,12 @@ impl<'a> ContextInteractions<'a> for WKBWriter<'a> {
     /// let context = writer.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &ContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle {
         &self.context
     }
 }
 
-impl<'a> AsRaw for WKBWriter<'a> {
+impl AsRaw for WKBWriter {
     type RawType = GEOSWKBWriter;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -359,7 +359,7 @@ impl<'a> AsRaw for WKBWriter<'a> {
     }
 }
 
-impl<'a> AsRawMut for WKBWriter<'a> {
+impl AsRawMut for WKBWriter {
     type RawType = GEOSWKBWriter;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -367,14 +367,14 @@ impl<'a> AsRawMut for WKBWriter<'a> {
     }
 }
 
-impl<'a> ContextHandling for WKBWriter<'a> {
-    type Context = Arc<ContextHandle<'a>>;
+impl ContextHandling for WKBWriter {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }

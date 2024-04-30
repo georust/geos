@@ -15,10 +15,10 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
 
 macro_rules! impl_try_from_geojson {
     ($ty_name:ident $(,$lt:lifetime)?) => (
-impl<'a$(,$lt)?> TryFrom<$ty_name<'a$(,$lt)?>> for Geometry {
+impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry {
     type Error = Error;
 
-    fn try_from(other: $ty_name<'a$(,$lt)?>) -> Result<Geometry, Self::Error> {
+    fn try_from(other: $ty_name$(<$lt>)?) -> Result<Geometry, Self::Error> {
         let _type = other.geometry_type();
         match _type {
             GeometryTypes::Point => {
