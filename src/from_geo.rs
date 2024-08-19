@@ -1,6 +1,9 @@
 use crate::error::Error;
 use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
-use geo_types::{Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon};
+use geo_types::{
+    Coord, Geometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon,
+    Point, Polygon,
+};
 
 use std;
 use std::borrow::Borrow;
@@ -200,11 +203,64 @@ impl TryFrom<MultiPolygon<f64>> for GGeometry {
     }
 }
 
+impl<'a, 'b> TryFrom<&'a GeometryCollection<f64>> for GGeometry {
+    type Error = Error;
+
+    fn try_from(other: &'a GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
+        let geoms: Vec<_> = other
+            .0
+            .iter()
+            .map(|p| p.try_into())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        GGeometry::create_geometry_collection(geoms)
+    }
+}
+
+impl TryFrom<GeometryCollection<f64>> for GGeometry {
+    type Error = Error;
+
+    fn try_from(other: GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
+        GGeometry::try_from(&other)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'a Geometry<f64>> for GGeometry {
+    type Error = Error;
+
+    fn try_from(other: &'a Geometry<f64>) -> Result<GGeometry, Self::Error> {
+        match other {
+            Geometry::Point(inner) => GGeometry::try_from(inner),
+            Geometry::MultiPoint(inner) => GGeometry::try_from(inner),
+            Geometry::LineString(inner) => GGeometry::try_from(inner),
+            Geometry::MultiLineString(inner) => GGeometry::try_from(inner),
+            Geometry::Polygon(inner) => GGeometry::try_from(inner),
+            Geometry::MultiPolygon(inner) => GGeometry::try_from(inner),
+            Geometry::GeometryCollection(inner) => GGeometry::try_from(inner),
+            // GEOS has equivalents of the types below, but they aren't subclasses of geos::Geometry
+            Geometry::Triangle(_) => unimplemented!("Cannot convert Triange to GEOS Geometry"),
+            Geometry::Rect(_) => unimplemented!("Cannot convert Rect to GEOS Geometry"),
+            Geometry::Line(_) => unimplemented!("Cannot convert Line to GEOS Geometry"),
+        }
+    }
+}
+
+impl TryFrom<Geometry<f64>> for GGeometry {
+    type Error = Error;
+
+    fn try_from(other: Geometry<f64>) -> Result<GGeometry, Self::Error> {
+        GGeometry::try_from(&other)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::LineRing;
     use crate::{Geom, Geometry as GGeometry};
-    use geo_types::{Coord, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon};
+    use geo_types::{
+        Coord, Geometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon,
+        Point, Polygon,
+    };
     use std::convert::TryInto;
 
     fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coord<f64>> {
@@ -280,6 +336,42 @@ mod test {
         let geom: Result<GGeometry, _> = mp.try_into();
 
         assert!(geom.is_err());
+    }
+
+    #[test]
+    fn geometry_collection_test() {
+        let a = Polygon::new(
+            LineString(coords(vec![
+                (0., 0.),
+                (0., 1.),
+                (1., 1.),
+                (1., 0.),
+                (0., 0.),
+            ])),
+            vec![],
+        );
+        let b = Polygon::new(
+            LineString(coords(vec![
+                (2., 1.),
+                (2., 2.),
+                (5., 2.),
+                (5., 1.),
+                (2., 1.),
+            ])),
+            vec![],
+        );
+
+        let collection = GeometryCollection::new_from(vec![
+            Geometry::Polygon(a.clone()),
+            Geometry::Polygon(b.clone()),
+        ]);
+
+        let geos_collection: GGeometry = collection.try_into().unwrap();
+        let geos_polygon_a: GGeometry = a.try_into().unwrap();
+        let geos_polygon_b: GGeometry = b.try_into().unwrap();
+
+        assert!(geos_collection.contains(&geos_polygon_a).unwrap());
+        assert!(geos_collection.contains(&geos_polygon_b).unwrap());
     }
 
     #[test]
