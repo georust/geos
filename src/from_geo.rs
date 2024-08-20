@@ -238,9 +238,15 @@ impl<'a, 'b> TryFrom<&'a Geometry<f64>> for GGeometry {
             Geometry::MultiPolygon(inner) => GGeometry::try_from(inner),
             Geometry::GeometryCollection(inner) => GGeometry::try_from(inner),
             // GEOS has equivalents of the types below, but they aren't subclasses of geos::Geometry
-            Geometry::Triangle(_) => unimplemented!("Cannot convert Triange to GEOS Geometry"),
-            Geometry::Rect(_) => unimplemented!("Cannot convert Rect to GEOS Geometry"),
-            Geometry::Line(_) => unimplemented!("Cannot convert Line to GEOS Geometry"),
+            Geometry::Triangle(_) => Err(Error::ConversionError(
+                "Cannot convert Triange to GEOS Geometry".to_string(),
+            )),
+            Geometry::Rect(_) => Err(Error::ConversionError(
+                "Cannot convert Rect to GEOS Geometry".to_string(),
+            )),
+            Geometry::Line(_) => Err(Error::ConversionError(
+                "Cannot convert Line to GEOS Geometry".to_string(),
+            )),
         }
     }
 }
@@ -259,7 +265,7 @@ mod test {
     use crate::{Geom, Geometry as GGeometry};
     use geo_types::{
         Coord, Geometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon,
-        Point, Polygon,
+        Point, Polygon, Triangle,
     };
     use std::convert::TryInto;
 
@@ -372,6 +378,16 @@ mod test {
 
         assert!(geos_collection.contains(&geos_polygon_a).unwrap());
         assert!(geos_collection.contains(&geos_polygon_b).unwrap());
+    }
+
+    #[test]
+    fn unsupported_geometry_type_test() {
+        let tri = Triangle::new(
+            Coord::from((0., 0.)),
+            Coord::from((3., 5.)),
+            Coord::from((3., 0.)),
+        );
+        assert!(GGeometry::try_from(Geometry::Triangle(tri)).is_err());
     }
 
     #[test]
