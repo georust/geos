@@ -2010,11 +2010,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     fn get_srid(&self) -> GResult<i32> {
         with_context(|ctx| unsafe {
             let ret = GEOSGetSRID_r(ctx.as_raw(), self.as_raw());
-            if ret < 1 {
-                Err(Error::GenericError("GEOSGetSRID_r failed".to_owned()))
-            } else {
-                Ok(ret as _)
-            }
+            Ok(ret as _)
         })
     }
 
