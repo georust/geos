@@ -24,6 +24,8 @@ pub use enums::{
 #[cfg(any(feature = "v3_7_0", feature = "dox"))]
 pub use functions::segment_intersection;
 pub use functions::{orientation_index, version};
+#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+pub use geojson_writer::GeoJSONWriter;
 pub use geometry::{ConstGeometry, Geom, Geometry};
 pub use prepared_geometry::PreparedGeometry;
 pub use spatial_index::{STRtree, SpatialIndex};
@@ -51,6 +53,8 @@ mod voronoi;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub use voronoi::compute_voronoi;
 mod enums;
+#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+mod geojson_writer;
 mod traits;
 mod wkb_writer;
 mod wkt_writer;
