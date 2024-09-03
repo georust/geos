@@ -1402,6 +1402,26 @@ pub trait Geom:
     ///                         0.0000000000000000 0.0000000000000000)");
     /// ```
     fn get_exterior_ring(&self) -> GResult<ConstGeometry>;
+    /// Apply XY coordinate transform callback to all coordinates in a copy of input geometry.
+    /// If the callback returns an error, the function will return an Err.
+    /// Z values, if present, are not modified by this function.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT (1.5 2.5)").expect("Invalid geometry");
+    /// let transformed = geom.transform_xy(|x, y| {
+    ///     Some((x + 1.0, y + 2.0))
+    /// }).expect("transform failed");
+    /// assert_eq!(transformed.to_wkt().unwrap(), "POINT (2.5 4.5)");
+    /// ```
+    #[cfg(feature = "v3_11_0")]
+    fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(
+        &self,
+        transformer: F,
+    ) -> GResult<Geometry>;
 }
 
 macro_rules! impl_geom {
@@ -2313,6 +2333,20 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             ConstGeometry::new_from_raw(ptr, self$(.$field)?, "get_exterior_ring")
         }
     }
+
+    #[cfg(feature = "v3_11_0")]
+    fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(&self, on_transform_point: F) -> GResult<Geometry> {
+        unsafe {
+            let mut closure = on_transform_point;
+            let cb = get_transform_trampoline(&closure);
+
+            let ptr = GEOSGeom_transformXY_r(self.get_raw_context(), self.as_raw(), cb, &mut closure as *mut _ as *mut libc::c_void);
+            match ptr.is_null() {
+                true => Err(Error::GenericError("Geometry::transform_xy failed due to closure error".to_owned())),
+                false => Geometry::new_from_raw(ptr, self.clone_context(), "transform_xy")
+            }
+        }
+    }
 }
 
 impl<$($lt,)? G: Geom> PartialEq<G> for $ty_name$(<$lt>)? {
@@ -2329,6 +2363,37 @@ unsafe impl$(<$lt>)? Sync for $ty_name$(<$lt>)? {}
 
 impl_geom!(Geometry);
 impl_geom!(ConstGeometry, 'd);
+
+/// Trampoline function implementation to call the closure from the C API.
+/// The rust closure object is passed as a user_data void* pointer.
+#[cfg(feature = "v3_11_0")]
+unsafe extern "C" fn transform_trampoline<F>(
+    x: *mut libc::c_double,
+    y: *mut libc::c_double,
+    user_data: *mut libc::c_void,
+) -> libc::c_int
+where
+    F: FnMut(f64, f64) -> Option<(f64, f64)>,
+{
+    let user_data = &mut *(user_data as *mut F);
+    match user_data(*x, *y) {
+        Some((new_x, new_y)) => {
+            *x = new_x;
+            *y = new_y;
+            1
+        }
+        None => 0,
+    }
+}
+
+/// Trampoline function helper function to get the trampoline function from the closure.
+#[cfg(feature = "v3_11_0")]
+fn get_transform_trampoline<F>(_closure: &F) -> GEOSTransformXYCallback
+where
+    F: FnMut(f64, f64) -> Option<(f64, f64)>,
+{
+    Some(transform_trampoline::<F>)
+}
 
 impl Geometry {
     /// Creates a `Geometry` from the WKT format.
@@ -3103,5 +3168,54 @@ impl<'a> ContextHandling for ConstGeometry<'a> {
 
     fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.original.context)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "v3_11_0")]
+    fn transform_point_geometry() {
+        let geom = Geometry::new_from_wkt("POINT (1.5 2.5)").expect("Invalid geometry");
+        let transformed = geom
+            .transform_xy(|x, y| {
+                assert_eq!(x, 1.5);
+                assert_eq!(y, 2.5);
+
+                Some((3.5, 4.5))
+            })
+            .expect("transform failed");
+
+        let expected_geom = Geometry::new_from_wkt("POINT (3.5 4.5)").expect("Invalid geometry");
+        assert_eq!(expected_geom.equals(&transformed), Ok(true));
+    }
+
+    #[test]
+    #[cfg(feature = "v3_11_0")]
+    fn transform_point_geometry_closure_error() {
+        let geom = Geometry::new_from_wkt("POINT (1.5 2.5)").expect("Invalid geometry");
+        match geom.transform_xy(|_x, _y| None) {
+            Ok(_) => panic!("transform_xy should have failed"),
+            Err(e) => assert_eq!(
+                e.to_string(),
+                "generic error: Geometry::transform_xy failed due to closure error",
+            ),
+        };
+    }
+
+    #[test]
+    #[cfg(feature = "v3_11_0")]
+    fn transform_polygon_geometry() {
+        let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
+            .expect("Invalid geometry");
+        let transformed = geom
+            .transform_xy(|x, y| Some((x + 1.0, y + 2.0)))
+            .expect("transform failed");
+
+        let expected_geom = Geometry::new_from_wkt("POLYGON((1 2, 11 2, 11 8, 1 8, 1 2))")
+            .expect("Invalid geometry");
+        assert_eq!(expected_geom.equals(&transformed), Ok(true));
     }
 }
