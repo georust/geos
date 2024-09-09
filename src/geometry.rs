@@ -1043,7 +1043,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     ///
     /// assert_eq!(geom.get_num_dimensions(), Ok(2));
     /// ```
-    fn get_num_dimensions(&self) -> GResult<usize>;
+    fn get_num_dimensions(&self) -> GResult<i32>;
     /// Return in which coordinate dimension the geometry is.
     ///
     /// # Example
@@ -1990,14 +1990,10 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
-    fn get_num_dimensions(&self) -> GResult<usize> {
+    fn get_num_dimensions(&self) -> GResult<i32> {
         with_context(|ctx| unsafe {
             let ret = GEOSGeom_getDimensions_r(ctx.as_raw(), self.as_raw());
-            if ret == -1 {
-                Err(Error::GenericError("GEOSGeom_getDimensions_r failed".to_owned()))
-            } else {
-                Ok(ret as _)
-            }
+            Ok(ret as _)
         })
     }
 
