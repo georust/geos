@@ -3173,7 +3173,6 @@ impl ContextHandling for ConstGeometry<'_> {
 
 #[cfg(test)]
 mod test {
-    
 
     #[test]
     #[cfg(feature = "v3_11_0")]
