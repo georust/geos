@@ -3151,7 +3151,7 @@ impl ContextHandling for Geometry {
     }
 }
 
-impl<'a> AsRaw for ConstGeometry<'a> {
+impl AsRaw for ConstGeometry<'_> {
     type RawType = GEOSGeometry;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -3159,7 +3159,7 @@ impl<'a> AsRaw for ConstGeometry<'a> {
     }
 }
 
-impl<'a> ContextHandling for ConstGeometry<'a> {
+impl ContextHandling for ConstGeometry<'_> {
     type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
@@ -3173,7 +3173,7 @@ impl<'a> ContextHandling for ConstGeometry<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    
 
     #[test]
     #[cfg(feature = "v3_11_0")]
