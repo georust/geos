@@ -1,6 +1,6 @@
 use crate::context_handle::{with_context, PtrWrap};
 use crate::error::{Error, PredicateType};
-use crate::functions::*;
+use crate::{functions::*, Geometry};
 use crate::{AsRaw, ContextHandle, GResult, Geom};
 use geos_sys::*;
 
@@ -23,6 +23,10 @@ use geos_sys::*;
 /// ```
 pub struct PreparedGeometry {
     ptr: PtrWrap<*const GEOSPreparedGeometry>,
+
+    // `geom` is holding geometry instance referenced by GEOSPreparedGeometry
+    #[allow(dead_code)]
+    geom: Geometry,
 }
 
 impl PreparedGeometry {
@@ -35,18 +39,19 @@ impl PreparedGeometry {
     ///
     /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                      .expect("Invalid geometry");
-    /// let prepared_geom = PreparedGeometry::new(&geom1);
+    /// let prepared_geom = PreparedGeometry::new(geom1);
     /// ```
-    pub fn new<G: Geom>(g: &G) -> GResult<PreparedGeometry> {
+    pub fn new(g: Geometry) -> GResult<PreparedGeometry> {
         with_context(|ctx| unsafe {
             let ptr = GEOSPrepare_r(ctx.as_raw(), g.as_raw());
-            PreparedGeometry::new_from_raw(ptr, ctx, "new")
+            PreparedGeometry::new_from_raw(ptr, ctx, g, "new")
         })
     }
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *const GEOSPreparedGeometry,
         context: &ContextHandle,
+        geom: Geometry,
         caller: &str,
     ) -> GResult<PreparedGeometry> {
         if ptr.is_null() {
@@ -59,7 +64,10 @@ impl PreparedGeometry {
                 "PreparedGeometry::{caller}{extra}",
             )));
         }
-        Ok(PreparedGeometry { ptr: PtrWrap(ptr) })
+        Ok(PreparedGeometry {
+            ptr: PtrWrap(ptr),
+            geom,
+        })
     }
 
     /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
@@ -365,46 +373,22 @@ impl AsRaw for PreparedGeometry {
 
 /// Tests to ensure that the lifetime is correctly set.
 ///
-/// ```compile_fail
+/// ```
 /// use geos::{Geom, Geometry, PreparedGeometry};
 ///
-/// pub struct Boo {
-///     #[allow(dead_code)]
-///     geom: Geometry<'static>,
-///     pub prep: PreparedGeometry<'static>,
-/// }
-/// let boo = {
+/// let prep = {
 ///     let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
 ///         .expect("Invalid geometry");
 ///     let prep = geom
 ///         .to_prepared_geom()
 ///         .expect("failed to create prepared geom");
-///      Boo { geom, prep }
-/// };
-/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-/// assert!(boo.prep.contains(&pt).unwrap());
-/// ```
 ///
-/// ```compile_fail
-/// use geos::{Geom, Geometry, PreparedGeometry};
-///
-/// pub struct Boo {
-///     pub prep: PreparedGeometry<'static>,
-/// }
-///
-/// let boo = {
-///     let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-///         .expect("Invalid geometry");
-///     let prep = geom1
-///         .to_prepared_geom()
-///         .expect("failed to create prepared geom");
-///
-///     Boo { prep }
+///     prep
 /// };
 ///
 /// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
 ///
-/// assert!(boo.prep.contains(&pt).unwrap());
+/// assert!(prep.contains(&pt).unwrap());
 /// ```
 #[cfg(doctest)]
 pub mod lifetime_checks {}

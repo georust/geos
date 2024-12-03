@@ -61,7 +61,7 @@ fn test_geom_creation_from_geoms() {
 fn test_prepared_geoms() {
     let g1 = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();
     let g2 = Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))").unwrap();
-    let pg1 = PreparedGeometry::new(&g1).expect("failed to create prepared geom");
+    let pg1 = PreparedGeometry::new(g1).expect("failed to create prepared geom");
     assert!(pg1.intersects(&g2).unwrap());
     assert!(pg1.contains(&g2.get_centroid().unwrap()).unwrap());
     let vec_geoms = vec![
