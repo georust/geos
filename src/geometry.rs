@@ -2286,8 +2286,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
-    #[allow(clippy::needless_lifetimes)]
-    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry> {
+    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>> {
         PreparedGeometry::new(self)
     }
 
@@ -2613,6 +2612,10 @@ impl Geometry {
             let ptr = GEOSTopologyPreserveSimplify_r(ctx.as_raw(), self.as_raw(), tolerance);
             Geometry::new_from_raw(ptr, ctx, "topology_preserve_simplify")
         })
+    }
+
+    pub fn to_prepared_geom_owning(self) -> GResult<PreparedGeometry<'static>> {
+        PreparedGeometry::new_owning(self)
     }
 
     pub(crate) unsafe fn new_from_raw(
