@@ -8,6 +8,26 @@ use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
 
+thread_local!(
+    static CONTEXT: ContextHandle = ContextHandle::init().unwrap();
+);
+
+/// Provides thread-local geos context to the function `f`.
+///
+/// It is an efficient and thread-safe way of providing geos context to be used in reentrant c api.
+///
+/// # Example
+///
+/// ```ignore
+/// with_context(|ctx| unsafe {
+///     let ptr = GEOSGeom_createEmptyPolygon_r(ctx.as_raw());
+///     GEOSGeom_destroy_r(ctx.as_raw, ptr);
+/// })
+/// ```
+pub(crate) fn with_context<R>(f: impl FnOnce(&ContextHandle) -> R) -> R {
+    CONTEXT.with(f)
+}
+
 pub type HandlerCallback = Box<dyn Fn(&str) + Send + Sync>;
 
 macro_rules! set_callbacks {
@@ -85,20 +105,11 @@ impl ContextHandle {
     /// let context_handle = ContextHandle::init().expect("invalid init");
     /// ```
     pub fn init() -> GResult<Self> {
-        Self::init_e(None)
-    }
-
-    pub(crate) fn init_e(caller: Option<&str>) -> GResult<Self> {
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
-            return if let Some(ref caller) = caller {
-                Err(Error::GenericError(format!(
-                    "GEOS_init_r failed from \"{caller}\"",
-                )))
-            } else {
-                Err(Error::GenericError("GEOS_init_r failed".to_owned()))
-            };
+            return Err(Error::GenericError("GEOS_init_r failed".to_owned()));
         }
+
         let last_notification = Mutex::new(None);
         let last_error = Mutex::new(None);
 

@@ -1,16 +1,12 @@
-use crate::context_handle::PtrWrap;
+use crate::context_handle::{with_context, PtrWrap};
 use crate::enums::CapStyle;
-use crate::{
-    AsRaw, AsRawMut, ContextHandle, ContextHandling, ContextInteractions, Error, GResult, JoinStyle,
-};
+use crate::{AsRaw, AsRawMut, Error, GResult, JoinStyle};
 
 use geos_sys::*;
-use std::sync::Arc;
 
 /// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [buffer_with_params](crate::Geom::buffer_with_params)
 pub struct BufferParams {
     ptr: PtrWrap<*mut GEOSBufferParams>,
-    context: Arc<ContextHandle>,
 }
 
 /// Build options for a [`BufferParams`] object
@@ -25,16 +21,10 @@ pub struct BufferParamsBuilder {
 
 impl BufferParams {
     pub fn new() -> GResult<BufferParams> {
-        match ContextHandle::init_e(Some("BufferParams::new")) {
-            Ok(context) => unsafe {
-                let ptr = GEOSBufferParams_create_r(context.as_raw());
-                Ok(BufferParams {
-                    ptr: PtrWrap(ptr),
-                    context: Arc::new(context),
-                })
-            },
-            Err(e) => Err(e),
-        }
+        with_context(|ctx| unsafe {
+            let ptr = GEOSBufferParams_create_r(ctx.as_raw());
+            Ok(BufferParams { ptr: PtrWrap(ptr) })
+        })
     }
 
     pub fn builder() -> BufferParamsBuilder {
@@ -43,9 +33,9 @@ impl BufferParams {
 
     /// Specifies the end cap style of the generated buffer.
     pub fn set_end_cap_style(&mut self, style: CapStyle) -> GResult<()> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSBufferParams_setEndCapStyle_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw_mut_override(),
                 style.into(),
             );
@@ -54,14 +44,14 @@ impl BufferParams {
             } else {
                 Ok(())
             }
-        }
+        })
     }
 
     /// Sets the join style for outside (reflex) corners between line segments.
     pub fn set_join_style(&mut self, style: JoinStyle) -> GResult<()> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSBufferParams_setJoinStyle_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw_mut_override(),
                 style.into(),
             );
@@ -70,7 +60,7 @@ impl BufferParams {
             } else {
                 Ok(())
             }
-        }
+        })
     }
 
     /// Sets the limit on the mitre ratio used for very sharp corners.
@@ -84,18 +74,15 @@ impl BufferParams {
     /// allows controlling the maximum length of the join corner.
     /// Corners with a ratio which exceed the limit will be beveled.
     pub fn set_mitre_limit(&mut self, limit: f64) -> GResult<()> {
-        unsafe {
-            let ret = GEOSBufferParams_setMitreLimit_r(
-                self.get_raw_context(),
-                self.as_raw_mut_override(),
-                limit,
-            );
+        with_context(|ctx| unsafe {
+            let ret =
+                GEOSBufferParams_setMitreLimit_r(ctx.as_raw(), self.as_raw_mut_override(), limit);
             if ret == 0 {
                 Err(Error::GeosError("GEOSBufferParams_setMitreLimit_r".into()))
             } else {
                 Ok(())
             }
-        }
+        })
     }
 
     /// Sets the number of line segments used to approximate
@@ -119,9 +106,9 @@ impl BufferParams {
     /// (in other words, the computed buffer curve is always inside
     ///  the true curve).
     pub fn set_quadrant_segments(&mut self, quadsegs: i32) -> GResult<()> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let ret = GEOSBufferParams_setQuadrantSegments_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw_mut_override(),
                 quadsegs as _,
             );
@@ -132,7 +119,7 @@ impl BufferParams {
             } else {
                 Ok(())
             }
-        }
+        })
     }
 
     /// Sets whether the computed buffer should be single-sided.
@@ -148,10 +135,10 @@ impl BufferParams {
     /// The End Cap Style for single-sided buffers is always ignored, and forced to the
     /// equivalent of [`CapStyle::Flat`].
     pub fn set_single_sided(&mut self, is_single_sided: bool) -> GResult<()> {
-        unsafe {
+        with_context(|ctx| unsafe {
             let single_sided = if is_single_sided { 1 } else { 0 };
             let ret = GEOSBufferParams_setSingleSided_r(
-                self.get_raw_context(),
+                ctx.as_raw(),
                 self.as_raw_mut_override(),
                 single_sided,
             );
@@ -160,7 +147,7 @@ impl BufferParams {
             } else {
                 Ok(())
             }
-        }
+        })
     }
 }
 
@@ -170,7 +157,9 @@ unsafe impl Sync for BufferParams {}
 impl Drop for BufferParams {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
-            unsafe { GEOSBufferParams_destroy_r(self.get_raw_context(), self.as_raw_mut()) };
+            with_context(|ctx| unsafe {
+                GEOSBufferParams_destroy_r(ctx.as_raw(), self.as_raw_mut())
+            });
         }
     }
 }
@@ -188,28 +177,6 @@ impl AsRawMut for BufferParams {
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
         *self.ptr
-    }
-}
-
-impl ContextInteractions for BufferParams {
-    fn set_context_handle(&mut self, context: ContextHandle) {
-        self.context = Arc::new(context);
-    }
-
-    fn get_context_handle(&self) -> &ContextHandle {
-        &self.context
-    }
-}
-
-impl ContextHandling for BufferParams {
-    type Context = Arc<ContextHandle>;
-
-    fn get_raw_context(&self) -> GEOSContextHandle_t {
-        self.context.as_raw()
-    }
-
-    fn clone_context(&self) -> Arc<ContextHandle> {
-        Arc::clone(&self.context)
     }
 }
 
