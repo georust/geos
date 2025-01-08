@@ -239,7 +239,7 @@ impl<'a, 'b> TryFrom<&'a Geometry<f64>> for GGeometry {
             Geometry::GeometryCollection(inner) => GGeometry::try_from(inner),
             // GEOS has equivalents of the types below, but they aren't subclasses of geos::Geometry
             Geometry::Triangle(_) => Err(Error::ConversionError(
-                "Cannot convert Triange to GEOS Geometry".to_string(),
+                "Cannot convert Triangle to GEOS Geometry".to_string(),
             )),
             Geometry::Rect(_) => Err(Error::ConversionError(
                 "Cannot convert Rect to GEOS Geometry".to_string(),
