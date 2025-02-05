@@ -1330,7 +1330,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
     #[allow(clippy::needless_lifetimes)]
-    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry>;
+    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>>;
     fn clone(&self) -> Geometry;
     /// Returns the 1-based nth geometry.
     ///
@@ -2287,7 +2287,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     #[allow(clippy::needless_lifetimes)]
-    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry> {
+    fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>> {
         PreparedGeometry::new(self)
     }
 
@@ -3056,6 +3056,7 @@ impl AsRaw for ConstGeometry<'_> {
 
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "v3_11_0")]
     use super::*;
 
     #[test]

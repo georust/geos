@@ -3,6 +3,7 @@ use crate::error::{Error, PredicateType};
 use crate::functions::*;
 use crate::{AsRaw, ContextHandle, GResult, Geom};
 use geos_sys::*;
+use std::marker::PhantomData;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`](crate::Geometry) for greater performance
 /// on repeated calls.
@@ -21,11 +22,12 @@ use geos_sys::*;
 ///
 /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
 /// ```
-pub struct PreparedGeometry {
+pub struct PreparedGeometry<'a> {
     ptr: PtrWrap<*const GEOSPreparedGeometry>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl PreparedGeometry {
+impl<'a> PreparedGeometry<'a> {
     /// Creates a new `PreparedGeometry` from a [`Geometry`](crate::Geometry).
     ///
     /// # Example
@@ -37,18 +39,20 @@ impl PreparedGeometry {
     ///                      .expect("Invalid geometry");
     /// let prepared_geom = PreparedGeometry::new(&geom1);
     /// ```
-    pub fn new<G: Geom>(g: &G) -> GResult<PreparedGeometry> {
+    pub fn new<G: Geom>(g: &'a G) -> GResult<PreparedGeometry<'a>> {
         with_context(|ctx| unsafe {
             let ptr = GEOSPrepare_r(ctx.as_raw(), g.as_raw());
-            PreparedGeometry::new_from_raw(ptr, ctx, "new")
+            PreparedGeometry::new_from_raw(ptr, ctx, "new", g)
         })
     }
 
-    pub(crate) unsafe fn new_from_raw(
+    pub(crate) unsafe fn new_from_raw<G: Geom>(
         ptr: *const GEOSPreparedGeometry,
         context: &ContextHandle,
         caller: &str,
-    ) -> GResult<PreparedGeometry> {
+        // This argument is only used to provide the lifetime.
+        _: &'a G,
+    ) -> GResult<PreparedGeometry<'a>> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -59,7 +63,10 @@ impl PreparedGeometry {
                 "PreparedGeometry::{caller}{extra}",
             )));
         }
-        Ok(PreparedGeometry { ptr: PtrWrap(ptr) })
+        Ok(PreparedGeometry {
+            ptr: PtrWrap(ptr),
+            phantom: PhantomData,
+        })
     }
 
     /// Returns `true` if no points of the other geometry is outside the exterior of `self`.
@@ -346,16 +353,16 @@ impl PreparedGeometry {
     }
 }
 
-unsafe impl Send for PreparedGeometry {}
-unsafe impl Sync for PreparedGeometry {}
+unsafe impl Send for PreparedGeometry<'_> {}
+unsafe impl Sync for PreparedGeometry<'_> {}
 
-impl Drop for PreparedGeometry {
+impl Drop for PreparedGeometry<'_> {
     fn drop(&mut self) {
         with_context(|ctx| unsafe { GEOSPreparedGeom_destroy_r(ctx.as_raw(), self.as_raw()) });
     }
 }
 
-impl AsRaw for PreparedGeometry {
+impl AsRaw for PreparedGeometry<'_> {
     type RawType = GEOSPreparedGeometry;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -408,3 +415,18 @@ impl AsRaw for PreparedGeometry {
 /// ```
 #[cfg(doctest)]
 pub mod lifetime_checks {}
+
+/// This code is not supposed to compile since `PreparedGeometry` is not supposed to outlive
+/// `Geometry`!
+///
+/// ```compile_fail
+/// let prep_geom = {
+///     let geom = crate::Geometry::new_from_wkt("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))").unwrap();
+///     geom.to_prepared_geom().unwrap()
+/// };
+///
+/// let pt = crate::Geometry::new_from_wkt("POINT(2 2)").unwrap();
+/// _ = prep_geom.contains(&pt);
+/// ```
+#[cfg(doctest)]
+mod lifetime_prepared_geom_sigsegv {}
