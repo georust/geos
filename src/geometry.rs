@@ -3056,6 +3056,7 @@ impl AsRaw for ConstGeometry<'_> {
 
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "v3_11_0")]
     use super::*;
 
     #[test]
