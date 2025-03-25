@@ -71,13 +71,13 @@ pub enum OutputDimension {
 }
 
 impl TryFrom<c_int> for OutputDimension {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
         match dimensions {
             2 => Ok(OutputDimension::TwoD),
             3 => Ok(OutputDimension::ThreeD),
-            _ => Err("dimension must be 2 or 3"),
+            _ => Err(Self::Error::GenericError("dimension must be 2 or 3".into())),
         }
     }
 }
@@ -99,7 +99,7 @@ pub enum ByteOrder {
 }
 
 impl TryFrom<c_int> for ByteOrder {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(order: c_int) -> Result<Self, Self::Error> {
         match order {
@@ -135,10 +135,10 @@ pub enum GeometryTypes {
 }
 
 impl TryFrom<c_int> for GeometryTypes {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
-    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
-        match dimensions {
+    fn try_from(type_id: c_int) -> Result<Self, Self::Error> {
+        match type_id {
             0 => Ok(GeometryTypes::Point),
             1 => Ok(GeometryTypes::LineString),
             2 => Ok(GeometryTypes::LinearRing),
@@ -180,14 +180,14 @@ pub enum Orientation {
 }
 
 impl TryFrom<c_int> for Orientation {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(orientation: c_int) -> Result<Self, Self::Error> {
         match orientation {
             -1 => Ok(Orientation::CounterClockwise),
             0 => Ok(Orientation::Clockwise),
             1 => Ok(Orientation::Colinear),
-            _ => Err("value must be -1, 0 or 1"),
+            _ => Err(Self::Error::GenericError("value must be -1, 0 or 1".into())),
         }
     }
 }
@@ -211,14 +211,16 @@ pub enum Ordinate {
 }
 
 impl TryFrom<size_t> for Ordinate {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(ordinate: size_t) -> Result<Self, Self::Error> {
         match ordinate {
             0 => Ok(Ordinate::X),
             1 => Ok(Ordinate::Y),
             2 => Ok(Ordinate::Z),
-            _ => Err("ordinate value must be >= 0 and <= 2"),
+            _ => Err(Self::Error::GenericError(
+                "ordinate value must be >= 0 and <= 2".into(),
+            )),
         }
     }
 }
@@ -243,13 +245,13 @@ pub enum Precision {
 
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 impl TryFrom<c_int> for Precision {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(order: c_int) -> Result<Self, Self::Error> {
         match order {
             1 => Ok(Precision::NoTopo),
             2 => Ok(Precision::KeepCollapsed),
-            _ => Err("Unknown precision type"),
+            _ => Err(Self::Error::GenericError("Unknown precision type".into())),
         }
     }
 }
@@ -278,14 +280,14 @@ pub enum JoinStyle {
 }
 
 impl TryFrom<c_int> for JoinStyle {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(join_style: c_int) -> Result<Self, Self::Error> {
         match join_style {
             1 => Ok(JoinStyle::Round),
             2 => Ok(JoinStyle::Mitre),
             3 => Ok(JoinStyle::Bevel),
-            _ => Err("Unknown join style"),
+            _ => Err(Self::Error::GenericError("Unknown join style".into())),
         }
     }
 }
@@ -314,14 +316,14 @@ pub enum CapStyle {
 }
 
 impl TryFrom<c_int> for CapStyle {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(cap_style: c_int) -> Result<Self, Self::Error> {
         match cap_style {
             1 => Ok(CapStyle::Round),
             2 => Ok(CapStyle::Flat),
             3 => Ok(CapStyle::Square),
-            _ => Err("Unknown cap style"),
+            _ => Err(Self::Error::GenericError("Unknown cap style".into())),
         }
     }
 }

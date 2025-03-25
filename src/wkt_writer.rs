@@ -141,7 +141,7 @@ impl WKTWriter {
     pub fn get_out_dimension(&self) -> GResult<OutputDimension> {
         with_context(|ctx| unsafe {
             let out = GEOSWKTWriter_getOutputDimension_r(ctx.as_raw(), self.as_raw_mut_override());
-            OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
+            OutputDimension::try_from(out)
         })
     }
 
