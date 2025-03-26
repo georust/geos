@@ -40,5 +40,11 @@ include!("../prebuilt-bindings/geos_3.9.rs");
 #[cfg(all(feature = "v3_10_0", not(any(feature = "v3_11_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.10.rs");
 
-#[cfg(any(feature = "v3_11_0", feature = "dox"))]
+#[cfg(all(feature = "v3_11_0", not(any(feature = "v3_10_0", feature = "dox"))))]
 include!("../prebuilt-bindings/geos_3.11.rs");
+
+#[cfg(all(feature = "v3_12_0", not(any(feature = "v3_11_0", feature = "dox"))))]
+include!("../prebuilt-bindings/geos_3.12.rs");
+
+#[cfg(any(feature = "v3_13_0", feature = "dox"))]
+include!("../prebuilt-bindings/geos_3.13.rs");

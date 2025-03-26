@@ -43,20 +43,6 @@ pub(crate) unsafe fn managed_string(
     s
 }
 
-#[allow(dead_code)]
-pub fn clip_by_rect<G: Geom>(
-    g: &G,
-    xmin: f64,
-    ymin: f64,
-    xmax: f64,
-    ymax: f64,
-) -> GResult<Geometry> {
-    with_context(|ctx| unsafe {
-        let ptr = GEOSClipByRect_r(ctx.as_raw(), g.as_raw(), xmin, ymin, xmax, ymax);
-        Geometry::new_from_raw(ptr, ctx, "clip_by_rect")
-    })
-}
-
 pub fn version() -> GResult<String> {
     unsafe { unmanaged_string(GEOSversion(), "version") }
 }

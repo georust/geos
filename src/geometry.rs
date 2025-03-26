@@ -335,6 +335,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// assert_eq!(geom1.equals_exact(&geom3, 0.1), Ok(true));
     /// ```
     fn equals_exact<G: Geom>(&self, other: &G, precision: f64) -> GResult<bool>;
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn equals_identical<G: Geom>(&self, other: &G) -> GResult<bool>;
     /// Returns `true` if no point of `other` is outside of `self`.
     ///
     /// # Example
@@ -378,6 +380,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// assert_eq!(geom1.contains(&geom2), Ok(true));
     /// ```
     fn contains<G: Geom>(&self, other: &G) -> GResult<bool>;
+    fn relate<G: Geom>(&self, other: &G) -> GResult<String>;
+    fn relate_pattern<G: Geom>(&self, other: &G, pattern: &str) -> GResult<bool>;
     /// Returns a geometry which represents all points whose distance from `self` is less than or
     /// equal to distance.
     ///
@@ -516,6 +520,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     ///            "LINESTRING (50.0 150.0, 50.0 200.0)");
     /// ```
     fn difference<G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn difference_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry>;
     /// Returns the minimum bouding box of the given geometry.
     ///
     /// # Example
@@ -553,6 +559,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// );
     /// ```
     fn sym_difference<G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn sym_difference_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry>;
     /// Aggregates the given geometry with another one.
     ///
     /// # Example
@@ -568,6 +576,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// assert_eq!(union_geom.to_wkt_precision(1).unwrap(), "MULTIPOINT (1.0 2.0, 3.0 4.0)");
     /// ```
     fn union<G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn union_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry>;
     /// Returns the geometric center or (equivalently) the center of mass of the given geometry as
     /// a point.
     ///
@@ -616,6 +626,12 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// );
     /// ```
     fn unary_union(&self) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn unary_union_prec(&self, grid_size: f64) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_8_0", feature = "dox"))]
+    fn coverage_union(&self) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn disjoint_subset_union(&self) -> GResult<Geometry>;
     /// Create a voronoi diagram.
     ///
     /// # Example
@@ -667,6 +683,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// assert_eq!(intersection_geom.to_wkt_precision(1).unwrap(), "POINT (0.0 0.0)");
     /// ```
     fn intersection<G: Geom>(&self, other: &G) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn intersection_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry>;
     /// Documentation from [postgis](https://postgis.net/docs/ST_ConvexHull.html):
     ///
     /// > The convex hull of a geometry represents the minimum convex geometry that encloses all
@@ -727,9 +745,24 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// assert_eq!(geom.has_z(), Ok(false));
     /// ```
     fn has_z(&self) -> GResult<bool>;
+    /// Returns `true` if `self` has a M coordinate.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 2 3 4)").expect("Invalid geometry");
+    /// assert_eq!(geom.has_m(), Ok(true));
+    ///
+    /// let geom = Geometry::new_from_wkt("POINT(1 2 3)").expect("Invalid geometry");
+    /// assert_eq!(geom.has_m(), Ok(false));
+    /// ```
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn has_m(&self) -> GResult<bool>;
     /// Returns `true` if start and end point are coincident.
     ///
-    /// Only works on `LineString` and `MultiLineString`.
+    /// Only works on `LineString`, `LinearRing`, `CircularString`, `MultiLineString` and `MultiCurve`.
     ///
     /// # Example
     ///
@@ -940,9 +973,23 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// ```
     #[cfg(any(feature = "v3_7_0", feature = "dox"))]
     fn get_z(&self) -> GResult<f64>;
+    /// Returns the M position. The given `Geometry` must be a `Point`, otherwise it'll fail.
+    ///
+    /// Available using the `v3_12_0` feature.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0 5.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_m() == Ok(5.0));
+    /// ```
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn get_m(&self) -> GResult<f64>;
     /// Returns the nth point of the given geometry.
     ///
-    /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    /// The given `Geometry` must be a `LineString`, `LinearRing` or `CircularString` otherwise it'll fail.
     ///
     /// # Example
     ///
@@ -958,7 +1005,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     fn get_point_n(&self, n: usize) -> GResult<Geometry>;
     /// Returns the start point of `self`.
     ///
-    /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    /// The given `Geometry` must be a `LineString`, `LinearRing` or `CircularString` otherwise it'll fail.
     ///
     /// # Example
     ///
@@ -974,7 +1021,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     fn get_start_point(&self) -> GResult<Geometry>;
     /// Returns the end point of `self`.
     ///
-    /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    /// The given `Geometry` must be a `LineString`, `LinearRing` or `CircularString` otherwise it'll fail.
     ///
     /// # Example
     ///
@@ -990,7 +1037,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     fn get_end_point(&self) -> GResult<Geometry>;
     /// Returns the number of points of `self`.
     ///
-    /// The given `Geometry` must be a `LineString`, otherwise it'll fail.
+    /// The given `Geometry` must be a `LineString`, `LinearRing` or `CircularString` otherwise it'll fail.
     ///
     /// # Example
     ///
@@ -1417,7 +1464,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     fn get_exterior_ring(&self) -> GResult<ConstGeometry>;
     /// Apply XY coordinate transform callback to all coordinates in a copy of input geometry.
     /// If the callback returns an error, the function will return an Err.
-    /// Z values, if present, are not modified by this function.
+    /// Z and M values, if present, are not modified by this function.
     ///
     /// # Example
     ///
@@ -1430,11 +1477,22 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// }).expect("transform failed");
     /// assert_eq!(transformed.to_wkt_precision(1).unwrap(), "POINT (2.5 4.5)");
     /// ```
-    #[cfg(feature = "v3_11_0")]
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
     fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(
         &self,
         transformer: F,
     ) -> GResult<Geometry>;
+    fn clip_by_rect(&self, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn densify(&self, tolerance: f64) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn remove_repeated_points(&self, tolerance: f64) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn concave_hull(&self, ratio: f64, allow_holes: bool) -> GResult<Geometry>;
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn get_extent(&self) -> GResult<Vec<f64>>;
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn line_substring(&self, start_fraction: f64, end_fraction: f64) -> GResult<Geometry>;
 }
 
 macro_rules! impl_geom {
@@ -1474,7 +1532,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     fn get_coord_seq(&self) -> GResult<CoordSeq> {
         let type_geom = self.geometry_type();
         match type_geom {
-            GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing => with_context(|ctx| unsafe {
+            GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString => with_context(|ctx| unsafe {
                 let coord = GEOSGeom_getCoordSeq_r(ctx.as_raw(), self.as_raw());
                 let t = GEOSCoordSeq_clone_r(ctx.as_raw(), coord);
                 let mut size = 0;
@@ -1489,7 +1547,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
                 CoordSeq::new_from_raw(t, ctx, size, dims, "get_coord_seq")
             }),
             _ => Err(Error::ImpossibleOperation(
-                "Geometry must be a Point, LineString or LinearRing to extract its coordinates"
+                "Geometry must be a Point, LineString, LinearRing or CircularString to extract its coordinates"
                     .into(),
             )),
         }
@@ -1581,6 +1639,14 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         check_geos_predicate(ret_val as _, PredicateType::EqualsExact)
     }
 
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn equals_identical<G: Geom>(&self, other: &G) -> GResult<bool> {
+        let ret_val = with_context(|ctx| unsafe {
+            GEOSEqualsIdentical_r(ctx.as_raw(), self.as_raw(), other.as_raw())
+        });
+        check_geos_predicate(ret_val as _, PredicateType::EqualsIdentical)
+    }
+
     fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
         let ret_val = with_context(|ctx| unsafe {
             GEOSCovers_r(ctx.as_raw(), self.as_raw(), other.as_raw())
@@ -1600,6 +1666,22 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
             GEOSContains_r(ctx.as_raw(), self.as_raw(), other.as_raw())
         });
         check_geos_predicate(ret_val as _, PredicateType::Contains)
+    }
+
+    fn relate<G: Geom>(&self, other: &G) -> GResult<String> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSRelate_r(ctx.as_raw(), self.as_raw(), other.as_raw());
+            managed_string(ptr, ctx, "GGeom::relate")
+        })
+    }
+
+    fn relate_pattern<G: Geom>(&self, other: &G, pattern: &str) -> GResult<bool> {
+        let ret_val = with_context(|ctx| unsafe {
+            CString::new(pattern)
+                .map_err(|e| Error::GenericError(format!("Conversion to CString failed: {e}")))
+                .map(|pattern| GEOSRelatePattern_r(ctx.as_raw(), self.as_raw(), other.as_raw(), pattern.as_ptr()))
+        });
+        check_geos_predicate(ret_val? as _, PredicateType::RelatePattern)
     }
 
     fn buffer(&self, width: f64, quadsegs: i32) -> GResult<Geometry> {
@@ -1659,6 +1741,14 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn difference_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSDifferencePrec_r(ctx.as_raw(), self.as_raw(), other.as_raw(), grid_size);
+            Geometry::new_from_raw(ptr, ctx, "difference_prec")
+        })
+    }
+
     fn envelope(&self) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
             let ptr = GEOSEnvelope_r(ctx.as_raw(), self.as_raw());
@@ -1673,10 +1763,42 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn sym_difference_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSSymDifferencePrec_r(ctx.as_raw(), self.as_raw(), other.as_raw(), grid_size);
+            Geometry::new_from_raw(ptr, ctx, "sym_difference_prec")
+        })
+    }
+
     fn union<G: Geom>(&self, other: &G) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
             let ptr = GEOSUnion_r(ctx.as_raw(), self.as_raw(), other.as_raw());
             Geometry::new_from_raw(ptr, ctx, "union")
+        })
+    }
+
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn union_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSUnionPrec_r(ctx.as_raw(), self.as_raw(), other.as_raw(), grid_size);
+            Geometry::new_from_raw(ptr, ctx, "union_prec")
+        })
+    }
+
+    #[cfg(any(feature = "v3_8_0", feature = "dox"))]
+    fn coverage_union(&self) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSCoverageUnion_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "coverage_union")
+        })
+    }
+
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn disjoint_subset_union(&self) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSDisjointSubsetUnion_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "disjoint_subset_union")
         })
     }
 
@@ -1691,6 +1813,14 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         with_context(|ctx| unsafe {
             let ptr = GEOSUnaryUnion_r(ctx.as_raw(), self.as_raw());
             Geometry::new_from_raw(ptr, ctx, "unary_union")
+        })
+    }
+
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn unary_union_prec(&self, grid_size: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSUnaryUnionPrec_r(ctx.as_raw(), self.as_raw(), grid_size);
+            Geometry::new_from_raw(ptr, ctx, "unary_union_prec")
         })
     }
 
@@ -1721,6 +1851,14 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    fn intersection_prec<G: Geom>(&self, other: &G, grid_size: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSIntersectionPrec_r(ctx.as_raw(), self.as_raw(), other.as_raw(), grid_size);
+            Geometry::new_from_raw(ptr, ctx, "intersection_prec")
+        })
+    }
+
     fn convex_hull(&self) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
             let ptr = GEOSConvexHull_r(ctx.as_raw(), self.as_raw());
@@ -1740,10 +1878,15 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
     }
 
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn has_m(&self) -> GResult<bool> {
+        let ret_val = with_context(|ctx| unsafe { GEOSHasM_r(ctx.as_raw(), self.as_raw()) });
+        check_geos_predicate(ret_val as _, PredicateType::IsSimple)
+    }
+
     fn is_closed(&self) -> GResult<bool> {
-        if self.geometry_type() != GeometryTypes::LineString &&
-           self.geometry_type() != GeometryTypes::MultiLineString {
-            return Err(Error::GenericError("Geometry must be a LineString or a MultiLineString".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::MultiLineString | GeometryTypes::CircularString | GeometryTypes::MultiCurve) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing, CircularString, MultiLineString or MultiCurve".to_owned()));
         }
         let ret_val = with_context(|ctx| unsafe { GEOSisClosed_r(ctx.as_raw(), self.as_raw()) });
         check_geos_predicate(ret_val as _, PredicateType::IsSimple)
@@ -1921,9 +2064,24 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn get_m(&self) -> GResult<f64> {
+        if self.geometry_type() != GeometryTypes::Point {
+            return Err(Error::GenericError("Geometry must be a point".to_owned()));
+        }
+        let mut m = 0.;
+        with_context(|ctx| unsafe {
+            if GEOSGeomGetM_r(ctx.as_raw(), self.as_raw(), &mut m) == 1 {
+                Ok(m)
+            } else {
+                Err(Error::GenericError("GEOSGeomGetM_r failed".to_owned()))
+            }
+        })
+    }
+
     fn get_point_n(&self, n: usize) -> GResult<Geometry> {
-        if self.geometry_type() != GeometryTypes::LineString {
-            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ptr = GEOSGeomGetPointN_r(ctx.as_raw(), self.as_raw(), n as _);
@@ -1932,8 +2090,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_start_point(&self) -> GResult<Geometry> {
-        if self.geometry_type() != GeometryTypes::LineString {
-            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ptr = GEOSGeomGetStartPoint_r(ctx.as_raw(), self.as_raw());
@@ -1942,8 +2100,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_end_point(&self) -> GResult<Geometry> {
-        if self.geometry_type() != GeometryTypes::LineString {
-            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ptr = GEOSGeomGetEndPoint_r(ctx.as_raw(), self.as_raw());
@@ -1952,8 +2110,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_num_points(&self) -> GResult<usize> {
-        if self.geometry_type() != GeometryTypes::LineString {
-            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ret = GEOSGeomGetNumPoints_r(ctx.as_raw(), self.as_raw());
@@ -1966,8 +2124,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_num_interior_rings(&self) -> GResult<usize> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
-            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ret = GEOSGetNumInteriorRings_r(ctx.as_raw(), self.as_raw());
@@ -2345,8 +2503,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_interior_ring_n(&self, n: usize) -> GResult<ConstGeometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
-            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ptr = GEOSGetInteriorRingN_r(ctx.as_raw(), self.as_raw(), n as _);
@@ -2355,8 +2513,8 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
-            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
             let ptr = GEOSGetExteriorRing_r(ctx.as_raw(), self.as_raw());
@@ -2364,7 +2522,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
-    #[cfg(feature = "v3_11_0")]
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
     fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(&self, on_transform_point: F) -> GResult<Geometry> {
         let mut closure = on_transform_point;
         let cb = get_transform_trampoline(&closure);
@@ -2375,6 +2533,66 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
                 true => Err(Error::GenericError("Geometry::transform_xy failed due to closure error".to_owned())),
                 false => Geometry::new_from_raw(ptr, ctx, "transform_xy")
             }
+        })
+    }
+
+    fn clip_by_rect(
+        &self,
+        xmin: f64,
+        ymin: f64,
+        xmax: f64,
+        ymax: f64,
+    ) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSClipByRect_r(ctx.as_raw(), self.as_raw(), xmin, ymin, xmax, ymax);
+            Geometry::new_from_raw(ptr, ctx, "clip_by_rect")
+        })
+    }
+
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn densify(&self, tolerance: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSDensify_r(ctx.as_raw(), self.as_raw(), tolerance);
+            Geometry::new_from_raw(ptr, ctx, "densify")
+        })
+    }
+
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn remove_repeated_points(&self, tolerance: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSRemoveRepeatedPoints_r(ctx.as_raw(), self.as_raw(), tolerance);
+            Geometry::new_from_raw(ptr, ctx, "remove_repeated_points")
+        })
+    }
+
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn concave_hull(&self, ratio: f64, allow_holes: bool) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSConcaveHull_r(ctx.as_raw(), self.as_raw(), ratio, allow_holes as _);
+            Geometry::new_from_raw(ptr, ctx, "concave_hull")
+        })
+    }
+
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    fn get_extent(&self) -> GResult<Vec<f64>> {
+        with_context(|ctx| unsafe {
+            let mut xmin: f64 = 0.;
+            let mut ymin: f64 = 0.;
+            let mut xmax: f64 = 0.;
+            let mut ymax: f64 = 0.;
+            if GEOSGeom_getExtent_r(ctx.as_raw(), self.as_raw(), &mut xmin, &mut ymin, &mut xmax, &mut ymax) == 0 {
+                Err(Error::GenericError("GEOSGeom_getExtent_r failed".to_owned()))
+            } else {
+                Ok(vec![xmin, ymin, xmax, ymax])
+            }
+        })
+    }
+
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn line_substring(&self, start_fraction: f64, end_fraction: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSLineSubstring_r(ctx.as_raw(), self.as_raw(), start_fraction, end_fraction as _);
+            Geometry::new_from_raw(ptr, ctx, "line_substring")
         })
     }
 }
@@ -2638,6 +2856,14 @@ impl Geometry {
         })
     }
 
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    pub fn line_merge_directed(&self) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSLineMergeDirected_r(ctx.as_raw(), self.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "line_merge_directed")
+        })
+    }
+
     /// Reverses the order of the vertexes.
     ///
     /// Available using the `v3_7_0` feature.
@@ -2797,6 +3023,63 @@ impl Geometry {
         })
     }
 
+    /// Creates an empty circular string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::create_empty_circular_string().expect("Failed to build empty circular string");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "CIRCULARSTRING EMPTY");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_empty_circular_string() -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyCircularString_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_circular_string")
+        })
+    }
+
+    /// Creates an empty compound curve geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::create_empty_compound_curve().expect("Failed to build empty compound curve");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "COMPOUNDCURVE EMPTY");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_empty_compound_curve() -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyCompoundCurve_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_compound_curve")
+        })
+    }
+
+    /// Creates an empty curve polygon geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::create_empty_curve_polygon().expect("Failed to build empty curve polygon");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(), "CURVEPOLYGON EMPTY");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_empty_curve_polygon() -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createEmptyCurvePolygon_r(ctx.as_raw());
+            Geometry::new_from_raw(ptr, ctx, "create_empty_curve_polygon")
+        })
+    }
+
     /// Creates an empty collection.
     ///
     /// The `type_` must be one of:
@@ -2805,6 +3088,8 @@ impl Geometry {
     /// * [`GeometryTypes::MultiPoint`]
     /// * [`GeometryTypes::MultiLineString`]
     /// * [`GeometryTypes::MultiPolygon`]
+    /// * [`GeometryTypes::MultiCurve`]
+    /// * [`GeometryTypes::MultiSurface`]
     ///
     /// # Example
     ///
@@ -2821,7 +3106,9 @@ impl Geometry {
             GeometryTypes::GeometryCollection
             | GeometryTypes::MultiPoint
             | GeometryTypes::MultiLineString
-            | GeometryTypes::MultiPolygon => {}
+            | GeometryTypes::MultiPolygon
+            | GeometryTypes::MultiCurve
+            | GeometryTypes::MultiSurface => {}
             _ => return Err(Error::GenericError("Invalid geometry type".to_owned())),
         }
 
@@ -2983,6 +3270,34 @@ impl Geometry {
         create_multi_geom(points, GeometryTypes::MultiPoint)
     }
 
+    /// Create a multicurve geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING (1.0 2.0, 3.0 4.0)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("CIRCULARSTRING (5.0 6.0, 7.0 8.0, 9.0 10.0)").expect("invalid geometry");
+    ///
+    /// let geom = Geometry::create_multicurve(vec![geom1, geom2])
+    ///                     .expect("Failed to build multicurve");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "MULTICURVE ((1.0 2.0, 3.0 4.0), CIRCULARSTRING(5.0 6.0, 7.0 8.0, 9.0 10.0))");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_multicurve(curves: Vec<Geometry>) -> GResult<Geometry> {
+        let is_curve = |t| matches!(t, GeometryTypes::LineString | GeometryTypes::CircularString);
+        if !curves.iter().all(|g| is_curve(g.geometry_type())) {
+            return Err(Error::ImpossibleOperation(
+                "all the provided geometry have to be of type LineString or CircularString"
+                    .to_owned(),
+            ));
+        }
+        create_multi_geom(curves, GeometryTypes::MultiCurve)
+    }
+
     /// Creates a point geometry.
     ///
     /// # Example
@@ -3043,7 +3358,7 @@ impl Geometry {
     ///                       .expect("failed to create CoordSeq");
     ///
     /// let geom = Geometry::create_linear_ring(coords)
-    ///                     .expect("Failed to create a linea ring");
+    ///                     .expect("Failed to create a linear ring");
     ///
     /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
     ///            "LINEARRING (75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5)");
@@ -3052,6 +3367,54 @@ impl Geometry {
         with_context(|ctx| unsafe {
             let ptr = GEOSGeom_createLinearRing_r(ctx.as_raw(), s.as_raw_mut());
             let res = Geometry::new_from_raw(ptr, ctx, "create_linear_ring");
+            s.ptr = PtrWrap(::std::ptr::null_mut());
+            res
+        })
+    }
+
+    /// Creates a rectangular polygon geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::create_rectangle(0., 0., 1., 1.).expect("Failed to create a rectangle");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))");
+    /// ```
+    #[cfg(any(feature = "v3_11_0", feature = "dox"))]
+    pub fn create_rectangle(xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createRectangle_r(ctx.as_raw(), xmin, ymin, xmax, ymax);
+            Geometry::new_from_raw(ptr, ctx, "create_rectangle")
+        })
+    }
+
+    /// Creates a circular string geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
+    ///
+    /// let coords = CoordSeq::new_from_vec(&[&[75.15, 29.53],
+    ///                                       &[77., 29.],
+    ///                                       &[77.6, 29.5],
+    ///                                       &[75.15, 29.53]])
+    ///                       .expect("failed to create CoordSeq");
+    ///
+    /// let geom = Geometry::create_circular_string(coords)
+    ///                     .expect("Failed to create a circular string");
+    ///
+    /// assert_eq!(geom.to_wkt_precision(1).unwrap(),
+    ///            "CIRCULARSTRING (75.2 29.5, 77.0 29.0, 77.6 29.5, 75.2 29.5)");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_circular_string(mut s: CoordSeq) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_createCircularString_r(ctx.as_raw(), s.as_raw_mut());
+            let res = Geometry::new_from_raw(ptr, ctx, "create_circular_string");
             s.ptr = PtrWrap(::std::ptr::null_mut());
             res
         })

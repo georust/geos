@@ -65,7 +65,11 @@ pub enum PredicateType {
     PreparedOverlaps,
     PreparedTouches,
     PreparedWithin,
+    PreparedContainsXY,
+    PreparedIntersectsXY,
     Normalize,
+    RelatePattern,
+    EqualsIdentical,
 }
 
 impl std::fmt::Display for PredicateType {
