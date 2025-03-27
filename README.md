@@ -53,19 +53,19 @@ to use all geos algorithms.
 Complete example can be found in `examples/from_geo.rs`
 
 ```rust,ignore
-use geos::geo_types::{LineString, Coordinate, Polygon};
+use geos::geo_types::{LineString, Coord, Polygon};
 
 // first we create a Geo object
 let exterior = LineString(vec![
-    Coordinate::from((0., 0.)),
-    Coordinate::from((0., 1.)),
-    Coordinate::from((1., 1.)),
+    Coord::from((0., 0.)),
+    Coord::from((0., 1.)),
+    Coord::from((1., 1.)),
 ]);
 let interiors = vec![
     LineString(vec![
-        Coordinate::from((0.1, 0.1)),
-        Coordinate::from((0.1, 0.9)),
-        Coordinate::from((0.9, 0.9)),
+        Coord::from((0.1, 0.1)),
+        Coord::from((0.1, 0.9)),
+        Coord::from((0.9, 0.9)),
     ]),
 ];
 let p = Polygon::new(exterior, interiors);
