@@ -1407,7 +1407,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// let transformed = geom.transform_xy(|x, y| {
     ///     Some((x + 1.0, y + 2.0))
     /// }).expect("transform failed");
-    /// assert_eq!(transformed.to_wkt().unwrap(), "POINT (2.5 4.5)");
+    /// assert_eq!(transformed.to_wkt_precision(1).unwrap(), "POINT (2.5 4.5)");
     /// ```
     #[cfg(feature = "v3_11_0")]
     fn transform_xy<F: Fn(f64, f64) -> Option<(f64, f64)>>(
