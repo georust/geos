@@ -71,7 +71,6 @@ jobs:
       LD_LIBRARY_PATH: /usr/local/lib
       GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
       GEOS_VERSION: ${{ matrix.geos }}
-      RUSTFLAGS:  ${{ matrix.toolchain == 'nightly' && '-Zlinker-features=-lld' || '' }}
 
     strategy:
       fail-fast: false
