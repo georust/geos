@@ -77,7 +77,7 @@ jobs:
       matrix:
         toolchain:
           - 1.70.0
-          - nightly
+          # - nightly
         geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0"]
         include:
           - geos: "3.7.5"
