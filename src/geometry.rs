@@ -2179,6 +2179,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn project<G: Geom>(&self, p: &G) -> GResult<f64> {
+        if self.geometry_type() != GeometryTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
@@ -2193,6 +2196,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn project_normalized<G: Geom>(&self, p: &G) -> GResult<f64> {
+        if self.geometry_type() != GeometryTypes::LineString {
+            return Err(Error::GenericError("Geometry must be a LineString".to_owned()));
+        }
         if p.geometry_type() != GeometryTypes::Point {
             return Err(Error::GenericError("Second geometry must be a Point".to_owned()));
         }
