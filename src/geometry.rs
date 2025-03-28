@@ -2,6 +2,8 @@ use crate::context_handle::{with_context, PtrWrap};
 use crate::enums::*;
 use crate::error::{Error, GResult, PredicateType};
 use crate::functions::*;
+#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+use crate::GeoJSONWriter;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{AsRaw, AsRawMut, BufferParams, ContextHandle, CoordSeq, PreparedGeometry, WKTWriter};
@@ -1318,6 +1320,25 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// let wkb_buf = point_geom.to_wkb().expect("conversion to WKB failed");
     /// ```
     fn to_wkb(&self) -> GResult<CVec<u8>>;
+    /// Converts a [`Geometry`] to the GeoJSON format. For more control over the generated output,
+    /// use the [`GeoJSONWriter`](crate::GeoJSONWriter) type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
+    ///                           .expect("Invalid geometry");
+    /// assert_eq!(
+    ///     point_geom.to_geojson().unwrap(),
+    ///     r#"{"type":"Point","coordinates":[2.5,2.5]}"#,
+    /// );
+    /// ```
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn to_geojson(&self) -> GResult<String>;
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn to_geojson_formatted(&self, indent: i32) -> GResult<String>;
     /// Creates a new [`PreparedGeometry`] from the current `Geometry`.
     ///
     /// # Example
@@ -2286,6 +2307,16 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn to_geojson(&self) -> GResult<String> {
+        GeoJSONWriter::new()?.write(self)
+    }
+
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn to_geojson_formatted(&self, indent: i32) -> GResult<String> {
+        GeoJSONWriter::new()?.write_formatted(self, indent)
+    }
+
     #[allow(clippy::needless_lifetimes)]
     fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>> {
         PreparedGeometry::new(self)
@@ -2448,6 +2479,30 @@ impl Geometry {
         with_context(|ctx| unsafe {
             let ptr = GEOSGeomFromWKB_buf_r(ctx.as_raw(), wkb.as_ptr(), wkb.len());
             Geometry::new_from_raw(ptr, ctx, "new_from_wkb")
+        })
+    }
+
+    /// Creates a `Geometry` from the GeoJSON format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::Geometry;
+    ///
+    /// let point_geom = Geometry::new_from_geojson(r#"{"type": "Point", "coordinates": [2.5, 2.5]}"#).expect("Invalid geometry");
+    /// ```
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    pub fn new_from_geojson(wkt: &str) -> GResult<Geometry> {
+        with_context(|ctx| match CString::new(wkt) {
+            Ok(c_str) => unsafe {
+                let reader = GEOSGeoJSONReader_create_r(ctx.as_raw());
+                let ptr = GEOSGeoJSONReader_readGeometry_r(ctx.as_raw(), reader, c_str.as_ptr());
+                GEOSGeoJSONReader_destroy_r(ctx.as_raw(), reader);
+                Geometry::new_from_raw(ptr, ctx, "new_from_geojson")
+            },
+            Err(e) => Err(Error::GenericError(format!(
+                "Conversion to CString failed: {e}",
+            ))),
         })
     }
 
