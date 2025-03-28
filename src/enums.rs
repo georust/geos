@@ -239,6 +239,7 @@ impl Into<u32> for Ordinate {
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Precision {
+    ValidOutput,
     NoTopo,
     KeepCollapsed,
 }
@@ -249,6 +250,7 @@ impl TryFrom<c_int> for Precision {
 
     fn try_from(order: c_int) -> Result<Self, Self::Error> {
         match order {
+            0 => Ok(Precision::ValidOutput),
             1 => Ok(Precision::NoTopo),
             2 => Ok(Precision::KeepCollapsed),
             _ => Err(Self::Error::GenericError("Unknown precision type".into())),
@@ -261,8 +263,9 @@ impl TryFrom<c_int> for Precision {
 impl Into<c_int> for Precision {
     fn into(self) -> c_int {
         match self {
-            Precision::NoTopo => 0,
-            Precision::KeepCollapsed => 1,
+            Precision::ValidOutput => 0,
+            Precision::NoTopo => 1,
+            Precision::KeepCollapsed => 2,
         }
     }
 }
