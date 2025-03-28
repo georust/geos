@@ -1091,7 +1091,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// point_geom.set_srid(4326);
     /// assert_eq!(point_geom.get_srid(), Ok(4326));
     /// ```
-    fn get_srid(&self) -> GResult<i32>;
+    fn get_srid(&self) -> GResult<libc::c_int>;
     /// Returns the precision of `self`.
     ///
     /// Available using the `v3_6_0` feature.
@@ -2007,7 +2007,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
-    fn get_srid(&self) -> GResult<i32> {
+    fn get_srid(&self) -> GResult<libc::c_int> {
         with_context(|ctx| unsafe {
             let ret = GEOSGetSRID_r(ctx.as_raw(), self.as_raw());
             Ok(ret as _)
@@ -2641,8 +2641,8 @@ impl Geometry {
     /// point_geom.set_srid(4326);
     /// assert_eq!(point_geom.get_srid(), Ok(4326));
     /// ```
-    pub fn set_srid(&mut self, srid: i32) {
-        with_context(|ctx| unsafe { GEOSSetSRID_r(ctx.as_raw(), self.as_raw_mut(), srid as _) })
+    pub fn set_srid(&mut self, srid: libc::c_int) {
+        with_context(|ctx| unsafe { GEOSSetSRID_r(ctx.as_raw(), self.as_raw_mut(), srid) })
     }
 
     /// Normalizes `self` in its normalized/canonical form. May reorder vertices in polygon rings,
