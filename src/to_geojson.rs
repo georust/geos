@@ -68,7 +68,7 @@ impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry {
                 // Interior rings to coordinates
                 for ix_interior in 0..nb_interiors {
                     rings.push(coords_seq_to_vec_position(
-                        &(other.get_interior_ring_n(ix_interior as u32)?.get_coord_seq()?))?);
+                        &(other.get_interior_ring_n(ix_interior)?.get_coord_seq()?))?);
                 }
                 Ok(Geometry::new(Value::Polygon(rings)))
             }
@@ -86,7 +86,7 @@ impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry {
                     // Interior rings to coordinates
                     for ix_interior in 0..nb_interiors {
                         rings.push(coords_seq_to_vec_position(
-                            &(polyg.get_interior_ring_n(ix_interior as u32)?.get_coord_seq()?))?);
+                            &(polyg.get_interior_ring_n(ix_interior)?.get_coord_seq()?))?);
                     }
                     result_polygs.push(rings);
                 }
