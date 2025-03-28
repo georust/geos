@@ -251,7 +251,7 @@ impl ContextHandle {
     pub fn get_wkb_output_dimensions(&self) -> GResult<OutputDimension> {
         unsafe {
             let out = GEOS_getWKBOutputDims_r(self.as_raw());
-            OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
+            OutputDimension::try_from(out)
         }
     }
 
@@ -273,7 +273,7 @@ impl ContextHandle {
     ) -> GResult<OutputDimension> {
         unsafe {
             let out = GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into());
-            OutputDimension::try_from(out).map_err(|e| Error::GenericError(e.to_owned()))
+            OutputDimension::try_from(out)
         }
     }
 

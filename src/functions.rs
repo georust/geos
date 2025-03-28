@@ -116,10 +116,7 @@ pub fn orientation_index(
     py: f64,
 ) -> GResult<Orientation> {
     with_context(|ctx| unsafe {
-        match Orientation::try_from(GEOSOrientationIndex_r(ctx.as_raw(), ax, ay, bx, by, px, py)) {
-            Ok(o) => Ok(o),
-            Err(e) => Err(Error::GenericError(e.to_owned())),
-        }
+        Orientation::try_from(GEOSOrientationIndex_r(ctx.as_raw(), ax, ay, bx, by, px, py))
     })
 }
 
