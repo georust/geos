@@ -1966,6 +1966,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_num_interior_rings(&self) -> GResult<usize> {
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        }
         with_context(|ctx| unsafe {
             let ret = GEOSGetNumInteriorRings_r(ctx.as_raw(), self.as_raw());
             if ret == -1 {
@@ -2346,6 +2349,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_interior_ring_n(&self, n: usize) -> GResult<ConstGeometry> {
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        }
         with_context(|ctx| unsafe {
             let ptr = GEOSGetInteriorRingN_r(ctx.as_raw(), self.as_raw(), n as _);
             ConstGeometry::new_from_raw(ptr, ctx, self$(.$field)?, "get_interior_ring_n")
@@ -2353,6 +2359,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
+        if !matches!(self.geometry_type(), GeometryTypes::Polygon) {
+            return Err(Error::GenericError("Geometry must be a Polygon".to_owned()));
+        }
         with_context(|ctx| unsafe {
             let ptr = GEOSGetExteriorRing_r(ctx.as_raw(), self.as_raw());
             ConstGeometry::new_from_raw(ptr, ctx, self$(.$field)?, "get_exterior_ring")
