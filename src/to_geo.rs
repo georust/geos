@@ -36,11 +36,11 @@ impl_try_into!(ConstGeometry, 'c);
 #[cfg(test)]
 mod test {
     use crate::Geometry as GGeometry;
-    use geo_types::{Coordinate, Geometry, LineString, MultiPoint, MultiPolygon, Point, Polygon};
+    use geo_types::{Coord, Geometry, LineString, MultiPoint, MultiPolygon, Point, Polygon};
     use std::convert::TryInto;
 
-    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
-        tuples.into_iter().map(Coordinate::from).collect()
+    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coord<f64>> {
+        tuples.into_iter().map(Coord::from).collect()
     }
 
     #[test]
@@ -72,8 +72,8 @@ mod test {
         let geo_multipoint: Geometry<f64> = (&mp).try_into().unwrap();
 
         let expected_multipoint = MultiPoint(vec![
-            Point(Coordinate::from((0., 0.))),
-            Point(Coordinate::from((1., 1.))),
+            Point(Coord::from((0., 0.))),
+            Point(Coord::from((1., 1.))),
         ]);
         let expected: Geometry<_> = expected_multipoint.into();
         assert_eq!(expected, geo_multipoint);

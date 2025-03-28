@@ -46,7 +46,7 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
 #[cfg(test)]
 mod test {
     use crate::{Geom, Geometry as GGeometry};
-    use geo_types::{Coordinate, LineString, Point, Polygon};
+    use geo_types::{Coord, LineString, Point, Polygon};
     // create a voronoi diagram. Same unit test as
     // https://github.com/libgeos/geos/blob/master/tests/unit/triangulate/VoronoiTest.cpp#L118
     #[test]
@@ -154,8 +154,8 @@ mod test {
     //     points.voronoi(None, 0., false).expect("voronoi failed");
     // }
 
-    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coordinate<f64>> {
-        tuples.into_iter().map(Coordinate::from).collect()
+    fn coords(tuples: Vec<(f64, f64)>) -> Vec<Coord<f64>> {
+        tuples.into_iter().map(Coord::from).collect()
     }
 
     // test the rust-geo voronoi wrapper
