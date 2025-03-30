@@ -65,12 +65,14 @@ jobs:
         run: cargo build --features static
 
   check:
-    name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }} - ${{ matrix.triple.target }}
+    name: Check ${{ matrix.toolchain }} / ${{ matrix.geos }}
     runs-on: ubuntu-20.04
     env:
       LD_LIBRARY_PATH: /usr/local/lib
       GEOS_LIB_DIR: "/usr/lib/x86_64-linux-gnu"
       GEOS_VERSION: ${{ matrix.geos }}
+      RUSTFLAGS: ${{ matrix.toolchain == 'nightly' && '-Zlinker-features=-lld' || '' }}
+      RUSTDOCFLAGS: ${{ matrix.toolchain == 'nightly' && '-Zlinker-features=-lld' || '' }}
 
     strategy:
       fail-fast: false
@@ -80,6 +82,7 @@ jobs:
           - nightly
         geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0"]
         include:
+          - version_feature: ""
           - geos: "3.7.5"
             version_feature: "v3_7_0"
           - geos: "3.8.3"
@@ -141,25 +144,13 @@ jobs:
 
       - name: Build geos crate
         run: |
-          cargo build
-          cargo build --features 'geo,json'
-
-      - name: Build geos crate for GEOS version > 3.6
-        if: ${{ matrix.version_feature }}
-        run: |
-          cargo build --features ${{ matrix.version_feature }}
-          cargo build --features '${{ matrix.version_feature }},geo,json'
+          cargo build --features '${{ matrix.version_feature }}'
+          cargo build --features 'geo,json,${{ matrix.version_feature }}'
 
       - name: Run geos tests
         run: |
-          cargo test
-          cargo test --features 'geo,json'
-
-      - name: Run geos tests for GEOS version > 3.6
-        if: ${{ matrix.version_feature }}
-        run: |
-          cargo test --features ${{ matrix.version_feature }}
-          cargo test --features '${{ matrix.version_feature }},geo,json'
+          cargo test --features '${{ matrix.version_feature }}'
+          cargo test --features 'geo,json,${{ matrix.version_feature }}'
 
       - name: Check doc generation
         run: |
