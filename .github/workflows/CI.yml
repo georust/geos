@@ -80,7 +80,7 @@ jobs:
         toolchain:
           - 1.70.0
           # - nightly
-        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0"]
+        geos: ["3.6.5", "3.7.5", "3.8.3", "3.9.3", "3.10.3", "3.11.0", "3.12.0", "3.13.0"]
         include:
           - version_feature: ""
           - geos: "3.7.5"
@@ -93,6 +93,10 @@ jobs:
             version_feature: "v3_10_0"
           - geos: "3.11.0"
             version_feature: "v3_11_0"
+          - geos: "3.12.0"
+            version_feature: "v3_12_0"
+          - geos: "3.13.0"
+            version_feature: "v3_13_0"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -131,6 +135,11 @@ jobs:
           ccache --zero-stats --set-config cache_dir=~/.ccache
           ccache --max-size=2G --set-config cache_dir=~/.ccache
           ccache --show-stats --set-config cache_dir=~/.ccache
+
+      - name: Install cmake
+        uses: aminya/install-cmake@master
+        with:
+          cmake: 3.31.6
 
       - name: Install GEOS
         run: |
