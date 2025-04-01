@@ -93,9 +93,9 @@ fn test_multipoint_from_vec_single() {
         Geometry::new_from_wkt("POINT (0.4 4.1)").unwrap(),
     ];
     let multi_point = Geometry::create_multipoint(vec_geoms).unwrap();
-    #[cfg(not(feature = "v3_13_0"))]
+    #[cfg(not(feature = "v3_12_0"))]
     let expected = "MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)";
-    #[cfg(feature = "v3_13_0")]
+    #[cfg(feature = "v3_12_0")]
     let expected = "MULTIPOINT ((1.3 2.4), (2.1 0.3), (3.1 4.7), (0.4 4.1))";
     assert_eq!(multi_point.to_wkt_precision(1), Ok(expected.to_owned()),)
 }
