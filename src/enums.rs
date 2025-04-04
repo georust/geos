@@ -18,7 +18,7 @@ impl TryFrom<u32> for CoordDimensions {
             1 => Ok(CoordDimensions::OneD),
             2 => Ok(CoordDimensions::TwoD),
             3 => Ok(CoordDimensions::ThreeD),
-            4 => Ok(CoordDimensions::ThreeD),
+            4 => Ok(CoordDimensions::FourD),
             _ => Err("dimensions must be >= 1 and <= 4"),
         }
     }
