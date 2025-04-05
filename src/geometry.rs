@@ -1965,11 +1965,11 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn is_closed(&self) -> GResult<bool> {
-        #[cfg(not(feature = "v3_12_0"))]
+        #[cfg(not(feature = "v3_13_0"))]
         if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::MultiLineString) {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing or MultiLineString".to_owned()));
         }
-        #[cfg(feature = "v3_12_0")]
+        #[cfg(feature = "v3_13_0")]
         if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::CircularString | GeometryTypes::MultiLineString | GeometryTypes::MultiCurve) {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing, CircularString, MultiLineString or MultiCurve".to_owned()));
         }
