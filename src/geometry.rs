@@ -1609,9 +1609,9 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_coord_seq(&self) -> GResult<CoordSeq> {
-        let type_geom = self.geometry_type();
-        match type_geom {
-            GeometryTypes::Point | GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString => with_context(|ctx| unsafe {
+        let geom_type = self.geometry_type();
+        if geom_type == GeometryTypes::Point || geom_type.is_curve() {
+            with_context(|ctx| unsafe {
                 let coord = GEOSGeom_getCoordSeq_r(ctx.as_raw(), self.as_raw());
                 let t = GEOSCoordSeq_clone_r(ctx.as_raw(), coord);
                 let mut size = 0;
@@ -1624,11 +1624,12 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
                     return Err(Error::GenericError("GEOSCoordSeq_getDimensions_r failed".to_owned()));
                 }
                 CoordSeq::new_from_raw(t, ctx, size, dims, "get_coord_seq")
-            }),
-            _ => Err(Error::ImpossibleOperation(
+            })
+        } else {
+            Err(Error::ImpossibleOperation(
                 "Geometry must be a Point, LineString, LinearRing or CircularString to extract its coordinates"
                     .into(),
-            )),
+            ))
         }
     }
 
@@ -1964,7 +1965,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn is_closed(&self) -> GResult<bool> {
-        if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::MultiLineString | GeometryTypes::CircularString | GeometryTypes::MultiCurve) {
+        if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::CircularString | GeometryTypes::MultiLineString | GeometryTypes::MultiCurve) {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing, CircularString, MultiLineString or MultiCurve".to_owned()));
         }
         let ret_val = with_context(|ctx| unsafe { GEOSisClosed_r(ctx.as_raw(), self.as_raw()) });
@@ -2159,7 +2160,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_point_n(&self, n: usize) -> GResult<Geometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+        if !self.geometry_type().is_curve() {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2169,7 +2170,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_start_point(&self) -> GResult<Geometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+        if !self.geometry_type().is_curve() {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2179,7 +2180,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_end_point(&self) -> GResult<Geometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+        if !self.geometry_type().is_curve() {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2189,7 +2190,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_num_points(&self) -> GResult<usize> {
-        if !matches!(self.geometry_type(), GeometryTypes::LineString | GeometryTypes::LinearRing | GeometryTypes::CircularString) {
+        if !self.geometry_type().is_curve() {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing or CircularString".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2203,7 +2204,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_num_interior_rings(&self) -> GResult<usize> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+        if !self.geometry_type().is_surface() {
             return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2241,7 +2242,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     fn get_coordinate_dimension(&self) -> GResult<Dimensions> {
         with_context(|ctx| unsafe {
             let ret = GEOSGeom_getCoordinateDimension_r(ctx.as_raw(), self.as_raw());
-            if ret != 2 && ret != 3 {
+            if ret == 0 {
                 Err(Error::GenericError("GEOSGeom_getCoordinateDimension_r failed".to_owned()))
             } else {
                 Ok(Dimensions::try_from(ret).expect("Failed to convert to Dimensions"))
@@ -2582,7 +2583,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_interior_ring_n(&self, n: usize) -> GResult<ConstGeometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+        if !self.geometry_type().is_surface() {
             return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -2592,7 +2593,7 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
-        if !matches!(self.geometry_type(), GeometryTypes::Polygon | GeometryTypes::CurvePolygon) {
+        if !self.geometry_type().is_surface() {
             return Err(Error::GenericError("Geometry must be a Polygon or CurvePolygon".to_owned()));
         }
         with_context(|ctx| unsafe {
@@ -3211,14 +3212,8 @@ impl Geometry {
     /// assert_eq!(geom.to_wkt().unwrap(), "MULTIPOLYGON EMPTY");
     /// ```
     pub fn create_empty_collection(type_: GeometryTypes) -> GResult<Geometry> {
-        match type_ {
-            GeometryTypes::GeometryCollection
-            | GeometryTypes::MultiPoint
-            | GeometryTypes::MultiLineString
-            | GeometryTypes::MultiPolygon
-            | GeometryTypes::MultiCurve
-            | GeometryTypes::MultiSurface => {}
-            _ => return Err(Error::GenericError("Invalid geometry type".to_owned())),
+        if !type_.is_collection() {
+            return Err(Error::GenericError("Invalid geometry type".to_owned()));
         }
 
         with_context(|ctx| unsafe {
@@ -3413,8 +3408,7 @@ impl Geometry {
     /// ```
     #[cfg(any(feature = "v3_13_0", feature = "dox"))]
     pub fn create_multicurve(curves: Vec<Geometry>) -> GResult<Geometry> {
-        let is_curve = |t| matches!(t, GeometryTypes::LineString | GeometryTypes::CircularString);
-        if !curves.iter().all(|g| is_curve(g.geometry_type())) {
+        if !curves.iter().all(|g| g.geometry_type().is_curve()) {
             return Err(Error::ImpossibleOperation(
                 "all the provided geometry have to be of type LineString or CircularString"
                     .to_owned(),

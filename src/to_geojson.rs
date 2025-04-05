@@ -102,7 +102,8 @@ impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry {
                 }
                 Ok(Geometry::new(Value::GeometryCollection(result_geoms)))
             }
-            _ => unreachable!(),
+            #[cfg(feature = "v3_13_0")]
+            _ => Err(Self::Error::GenericError("invalid type for GeoJSON".into())),
         }
     }
 }

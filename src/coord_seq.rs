@@ -92,9 +92,7 @@ impl CoordSeq {
 
         if size > 0 {
             let dims = data[0].as_ref().len();
-            if let Err(e) = CoordDimensions::try_from(dims as u32) {
-                return Err(Error::GenericError(e.to_owned()));
-            }
+            let _ = CoordDimensions::try_from(dims as u32)?;
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
                 return Err(Error::GenericError(
                     "All vec entries must have the same size!".into(),
@@ -733,14 +731,14 @@ impl CoordSeq {
     /// assert_eq!(coords.dimensions(), Ok(CoordDimensions::TwoD));
     /// ```
     pub fn dimensions(&self) -> GResult<CoordDimensions> {
-        let mut n = 0;
+        let mut dims = 0;
         let ret_val = with_context(|ctx| unsafe {
-            GEOSCoordSeq_getDimensions_r(ctx.as_raw(), self.as_raw(), &mut n)
+            GEOSCoordSeq_getDimensions_r(ctx.as_raw(), self.as_raw(), &mut dims)
         });
         if ret_val == 0 {
             Err(Error::GeosError("getting dimensions from CoordSeq".into()))
         } else {
-            Ok(CoordDimensions::try_from(n).expect("Failed to convert to CoordDimensions"))
+            Ok(CoordDimensions::try_from(dims).expect("Failed to convert to CoordDimensions"))
         }
     }
 

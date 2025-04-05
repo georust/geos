@@ -4,22 +4,33 @@ use std::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum CoordDimensions {
+    #[cfg(not(feature = "v3_12_0"))]
     OneD,
     TwoD,
     ThreeD,
+    #[cfg(feature = "v3_12_0")]
     FourD,
 }
 
 impl TryFrom<u32> for CoordDimensions {
-    type Error = &'static str;
+    type Error = crate::error::Error;
 
     fn try_from(dimensions: u32) -> Result<Self, Self::Error> {
         match dimensions {
+            #[cfg(not(feature = "v3_12_0"))]
             1 => Ok(CoordDimensions::OneD),
             2 => Ok(CoordDimensions::TwoD),
             3 => Ok(CoordDimensions::ThreeD),
+            #[cfg(feature = "v3_12_0")]
             4 => Ok(CoordDimensions::FourD),
-            _ => Err("dimensions must be >= 1 and <= 4"),
+            #[cfg(not(feature = "v3_12_0"))]
+            _ => Err(Self::Error::GenericError(
+                "dimensions must be >=1 and <= 3".into(),
+            )),
+            #[cfg(feature = "v3_12_0")]
+            _ => Err(Self::Error::GenericError(
+                "dimensions must be >=2 and <= 4".into(),
+            )),
         }
     }
 }
@@ -28,9 +39,11 @@ impl TryFrom<u32> for CoordDimensions {
 impl Into<u32> for CoordDimensions {
     fn into(self) -> u32 {
         match self {
+            #[cfg(not(feature = "v3_12_0"))]
             CoordDimensions::OneD => 1,
             CoordDimensions::TwoD => 2,
             CoordDimensions::ThreeD => 3,
+            #[cfg(feature = "v3_12_0")]
             CoordDimensions::FourD => 4,
         }
     }
@@ -71,6 +84,7 @@ impl Into<c_int> for Dimensions {
 pub enum OutputDimension {
     TwoD,
     ThreeD,
+    #[cfg(feature = "v3_12_0")]
     FourD,
 }
 
@@ -81,7 +95,11 @@ impl TryFrom<c_int> for OutputDimension {
         match dimensions {
             2 => Ok(OutputDimension::TwoD),
             3 => Ok(OutputDimension::ThreeD),
+            #[cfg(feature = "v3_12_0")]
             4 => Ok(OutputDimension::FourD),
+            #[cfg(not(feature = "v3_12_0"))]
+            _ => Err(Self::Error::GenericError("dimension must be 2 or 3".into())),
+            #[cfg(feature = "v3_12_0")]
             _ => Err(Self::Error::GenericError(
                 "dimension must be 2, 3 or 4".into(),
             )),
@@ -95,6 +113,7 @@ impl Into<c_int> for OutputDimension {
         match self {
             OutputDimension::TwoD => 2,
             OutputDimension::ThreeD => 3,
+            #[cfg(feature = "v3_12_0")]
             OutputDimension::FourD => 4,
         }
     }
@@ -138,13 +157,16 @@ pub enum GeometryTypes {
     MultiLineString,
     MultiPolygon,
     GeometryCollection,
+    #[cfg(feature = "v3_13_0")]
     CircularString,
+    #[cfg(feature = "v3_13_0")]
     CompoundCurve,
+    #[cfg(feature = "v3_13_0")]
     CurvePolygon,
+    #[cfg(feature = "v3_13_0")]
     MultiCurve,
+    #[cfg(feature = "v3_13_0")]
     MultiSurface,
-    #[doc(hidden)]
-    __Unknown(u32),
 }
 
 impl TryFrom<c_int> for GeometryTypes {
@@ -160,12 +182,19 @@ impl TryFrom<c_int> for GeometryTypes {
             5 => Ok(GeometryTypes::MultiLineString),
             6 => Ok(GeometryTypes::MultiPolygon),
             7 => Ok(GeometryTypes::GeometryCollection),
+            #[cfg(feature = "v3_13_0")]
             8 => Ok(GeometryTypes::CircularString),
+            #[cfg(feature = "v3_13_0")]
             9 => Ok(GeometryTypes::CompoundCurve),
+            #[cfg(feature = "v3_13_0")]
             10 => Ok(GeometryTypes::CurvePolygon),
+            #[cfg(feature = "v3_13_0")]
             11 => Ok(GeometryTypes::MultiCurve),
+            #[cfg(feature = "v3_13_0")]
             12 => Ok(GeometryTypes::MultiSurface),
-            x => Ok(GeometryTypes::__Unknown(x as _)),
+            _ => Err(crate::Error::GenericError(
+                "invalid geometry type id".into(),
+            )),
         }
     }
 }
@@ -182,13 +211,61 @@ impl Into<c_int> for GeometryTypes {
             GeometryTypes::MultiLineString => 5,
             GeometryTypes::MultiPolygon => 6,
             GeometryTypes::GeometryCollection => 7,
+            #[cfg(feature = "v3_13_0")]
             GeometryTypes::CircularString => 8,
+            #[cfg(feature = "v3_13_0")]
             GeometryTypes::CompoundCurve => 9,
+            #[cfg(feature = "v3_13_0")]
             GeometryTypes::CurvePolygon => 10,
+            #[cfg(feature = "v3_13_0")]
             GeometryTypes::MultiCurve => 11,
+            #[cfg(feature = "v3_13_0")]
             GeometryTypes::MultiSurface => 12,
-            GeometryTypes::__Unknown(x) => x as _,
         }
+    }
+}
+
+impl GeometryTypes {
+    #[cfg(not(feature = "v3_13_0"))]
+    pub fn is_surface(self) -> bool {
+        matches!(self, Self::Polygon)
+    }
+    #[cfg(feature = "v3_13_0")]
+    pub fn is_surface(self) -> bool {
+        matches!(self, Self::Polygon | Self::CurvePolygon)
+    }
+    #[cfg(not(feature = "v3_13_0"))]
+    pub fn is_curve(self) -> bool {
+        matches!(self, Self::LineString | Self::LinearRing)
+    }
+    #[cfg(feature = "v3_13_0")]
+    pub fn is_curve(self) -> bool {
+        matches!(
+            self,
+            Self::LineString | Self::LinearRing | Self::CircularString
+        )
+    }
+    #[cfg(not(feature = "v3_13_0"))]
+    pub fn is_collection(self) -> bool {
+        matches!(
+            self,
+            Self::GeometryCollection
+                | Self::MultiPoint
+                | Self::MultiLineString
+                | Self::MultiPolygon
+        )
+    }
+    #[cfg(feature = "v3_13_0")]
+    pub fn is_collection(self) -> bool {
+        matches!(
+            self,
+            Self::GeometryCollection
+                | Self::MultiPoint
+                | Self::MultiLineString
+                | Self::MultiPolygon
+                | Self::MultiCurve
+                | Self::MultiSurface
+        )
     }
 }
 
