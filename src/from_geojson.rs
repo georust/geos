@@ -233,7 +233,10 @@ mod test {
         #[cfg(feature = "v3_12_0")]
         assert_eq!(
             gpolygon.to_wkt(),
-            Ok("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))".to_string()),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            ),
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
@@ -246,7 +249,10 @@ mod test {
         #[cfg(feature = "v3_12_0")]
         assert_eq!(
             tmp.to_wkt(),
-            Ok("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))".to_string()),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            ),
         );
     }
 
@@ -272,7 +278,10 @@ mod test {
         #[cfg(feature = "v3_12_0")]
         assert_eq!(
             gpolygon.to_wkt(),
-            Ok("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))".to_string())                
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            )
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
@@ -285,7 +294,10 @@ mod test {
         #[cfg(feature = "v3_12_0")]
         assert_eq!(
             tmp.to_wkt(),
-            Ok("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))".to_string())
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            )
         );
     }
 
