@@ -14,7 +14,7 @@ type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
 /// ```
 /// use geos::{CoordDimensions, CoordSeq};
 ///
-/// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
+/// let mut coords = CoordSeq::new(1, CoordDimensions::TwoD)
 ///                           .expect("failed to create CoordSeq");
 /// coords.set_x(0, 10.);
 /// assert_eq!(coords.get_x(0), Ok(10.));
@@ -279,7 +279,7 @@ impl CoordSeq {
     /// ```
     /// use geos::{CoordDimensions, CoordSeq};
     ///
-    /// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::TwoD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_x(0, 10.);
     /// assert_eq!(coords.get_x(0), Ok(10.));
@@ -392,7 +392,7 @@ impl CoordSeq {
     /// ```
     /// use geos::{CoordDimensions, CoordSeq};
     ///
-    /// let mut coords = CoordSeq::new(1, CoordDimensions::OneD)
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::TwoD)
     ///                           .expect("failed to create CoordSeq");
     /// coords.set_x(0, 10.);
     /// assert_eq!(coords.get_x(0), Ok(10.));
@@ -680,7 +680,7 @@ impl CoordSeq {
     ///                       .expect("failed to create CoordSeq");
     /// assert_eq!(coords.size(), Ok(2));
     ///
-    /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.], &[5., 6.], &[7., 8.]])
     ///                       .expect("failed to create CoordSeq");
     /// assert_eq!(coords.size(), Ok(4));
     /// ```
@@ -709,7 +709,7 @@ impl CoordSeq {
     ///                       .expect("failed to create CoordSeq");
     /// assert_eq!(coords.number_of_lines(), Ok(2));
     ///
-    /// let coords = CoordSeq::new_from_vec(&[&[1f64], &[2.], &[3.], &[4.]])
+    /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3., 4.], &[5., 6.], &[7., 8.]])
     ///                       .expect("failed to create CoordSeq");
     /// assert_eq!(coords.number_of_lines(), Ok(4));
     /// ```
@@ -724,9 +724,9 @@ impl CoordSeq {
     /// ```
     /// use geos::{CoordDimensions, CoordSeq};
     ///
-    /// let coords = CoordSeq::new(2, CoordDimensions::OneD)
+    /// let coords = CoordSeq::new(2, CoordDimensions::ThreeD)
     ///                       .expect("failed to create CoordSeq");
-    /// assert_eq!(coords.dimensions(), Ok(CoordDimensions::OneD));
+    /// assert_eq!(coords.dimensions(), Ok(CoordDimensions::ThreeD));
     ///
     /// let coords = CoordSeq::new_from_vec(&[&[1., 2.], &[3. ,4.]])
     ///                       .expect("failed to create CoordSeq");
@@ -773,7 +773,10 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_point(coords).expect("Failed to create point");
     ///
+    /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
+    /// #[cfg(feature = "v3_12_0")]
+    /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1 2)");
     /// ```
     pub fn create_point(self) -> GResult<Geometry> {
         Geometry::create_point(self)
@@ -791,9 +794,12 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_line_string(coords).expect("Failed to create line string");
     ///
+    /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(geom.to_wkt().unwrap(),
     ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
     ///                         3.0000000000000000 4.0000000000000000)");
+    /// #[cfg(feature = "v3_12_0")]
+    /// assert_eq!(geom.to_wkt().unwrap(), "LINESTRING (1 2, 3 4)");
     /// ```
     pub fn create_line_string(self) -> GResult<Geometry> {
         Geometry::create_line_string(self)
