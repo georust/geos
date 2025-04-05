@@ -3514,7 +3514,7 @@ impl Geometry {
     ///
     /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(geom.to_wkt_precision(1).unwrap(), "POLYGON ((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0))");
-    /// #[cfg(not(feature = "v3_12_0"))]
+    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(geom.to_wkt().unwrap(), "POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))");
     /// ```
     #[cfg(any(feature = "v3_11_0", feature = "dox"))]
