@@ -156,11 +156,9 @@ impl WKBWriter {
     ///
     /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
     /// let geom = Geometry::new_from_wkb(&v).unwrap();
+    /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(wkt_writer.write(&geom).unwrap(), "POINT (1.1 2.2)");
-    ///
-    /// writer.set_output_dimension(OutputDimension::ThreeD);
-    /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-    /// let geom = Geometry::new_from_wkb(&v).unwrap();
+    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(wkt_writer.write(&geom).unwrap(), "POINT Z (1.1 2.2 3.3)");
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
@@ -179,6 +177,9 @@ impl WKBWriter {
     ///
     /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
     ///
+    /// #[cfg(feature = "v3_12_0")]
+    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::FourD));
+    /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
     /// writer.set_output_dimension(OutputDimension::ThreeD);
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
