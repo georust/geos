@@ -1163,15 +1163,15 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> {
     /// # Example
     ///
     /// ```
-    /// use geos::{Dimensions, Geom, Geometry};
+    /// use geos::{CoordDimensions, Geom, Geometry};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 4.0)").expect("Invalid geometry");
-    /// assert!(point_geom.get_coordinate_dimension() == Ok(Dimensions::ThreeD));
+    /// assert!(point_geom.get_coordinate_dimension() == Ok(CoordDimensions::ThreeD));
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 4.0)").expect("Invalid geometry");
-    /// assert!(point_geom.get_coordinate_dimension() == Ok(Dimensions::TwoD));
+    /// assert!(point_geom.get_coordinate_dimension() == Ok(CoordDimensions::TwoD));
     /// ```
-    fn get_coordinate_dimension(&self) -> GResult<Dimensions>;
+    fn get_coordinate_dimension(&self) -> GResult<CoordDimensions>;
     /// This functions attempts to return a valid representation of `self`.
     ///
     /// Available using the `v3_8_0` feature.
@@ -1965,6 +1965,11 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
     }
 
     fn is_closed(&self) -> GResult<bool> {
+        #[cfg(not(feature = "v3_12_0"))]
+        if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::MultiLineString) {
+            return Err(Error::GenericError("Geometry must be a LineString, LinearRing or MultiLineString".to_owned()));
+        }
+        #[cfg(feature = "v3_12_0")]
         if !matches!(self.geometry_type(), GeometryTypes::LinearRing | GeometryTypes::LineString | GeometryTypes::CircularString | GeometryTypes::MultiLineString | GeometryTypes::MultiCurve) {
             return Err(Error::GenericError("Geometry must be a LineString, LinearRing, CircularString, MultiLineString or MultiCurve".to_owned()));
         }
@@ -2239,13 +2244,13 @@ impl$(<$lt>)? Geom for $ty_name$(<$lt>)? {
         })
     }
 
-    fn get_coordinate_dimension(&self) -> GResult<Dimensions> {
+    fn get_coordinate_dimension(&self) -> GResult<CoordDimensions> {
         with_context(|ctx| unsafe {
             let ret = GEOSGeom_getCoordinateDimension_r(ctx.as_raw(), self.as_raw());
             if ret == 0 {
                 Err(Error::GenericError("GEOSGeom_getCoordinateDimension_r failed".to_owned()))
             } else {
-                Ok(Dimensions::try_from(ret).expect("Failed to convert to Dimensions"))
+                CoordDimensions::try_from(ret as u32)
             }
         })
     }

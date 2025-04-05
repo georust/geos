@@ -50,37 +50,6 @@ impl Into<u32> for CoordDimensions {
 }
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Dimensions {
-    TwoD,
-    ThreeD,
-    Other(u32),
-}
-
-impl TryFrom<c_int> for Dimensions {
-    type Error = &'static str;
-
-    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
-        match dimensions {
-            2 => Ok(Dimensions::TwoD),
-            3 => Ok(Dimensions::ThreeD),
-            x if x > 3 => Ok(Dimensions::Other(x as _)),
-            _ => Err("dimensions must be > 1"),
-        }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<c_int> for Dimensions {
-    fn into(self) -> c_int {
-        match self {
-            Dimensions::TwoD => 2,
-            Dimensions::ThreeD => 3,
-            Dimensions::Other(dim) => dim as _,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum OutputDimension {
     TwoD,
     ThreeD,
