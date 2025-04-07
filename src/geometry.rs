@@ -3422,6 +3422,33 @@ impl Geometry {
         create_multi_geom(curves, GeometryTypes::MultiCurve)
     }
 
+    /// Create a multisurface geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("CURVEPOLYGON(CIRCULARSTRING(1 3, 3 5, 4 7, 7 3, 1 3))").expect("invalid geometry");
+    ///
+    /// let geom = Geometry::create_multisurface(vec![geom1, geom2])
+    ///                     .expect("Failed to build multisurface");
+    ///
+    /// assert_eq!(geom.to_wkt().unwrap(),
+    ///            "MULTISURFACE (((0 0, 1 1, 1 2, 1 1, 0 0)), CURVEPOLYGON (CIRCULARSTRING (1 3, 3 5, 4 7, 7 3, 1 3)))");
+    /// ```
+    #[cfg(any(feature = "v3_13_0", feature = "dox"))]
+    pub fn create_multisurface(surfaces: Vec<Geometry>) -> GResult<Geometry> {
+        if !surfaces.iter().all(|g| g.geometry_type().is_surface()) {
+            return Err(Error::ImpossibleOperation(
+                "all the provided geometry have to be of type Polygon or CurvePolygon"
+                    .to_owned(),
+            ));
+        }
+        create_multi_geom(surfaces, GeometryTypes::MultiSurface)
+    }
+
     /// Creates a point geometry.
     ///
     /// # Example
