@@ -137,7 +137,7 @@ jobs:
           ccache --show-stats --set-config cache_dir=~/.ccache
 
       - name: Install cmake
-        uses: aminya/install-cmake@master
+        uses: aminya/setup-cpp@v1
         with:
           cmake: 3.31.6
 
