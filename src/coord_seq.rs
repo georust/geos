@@ -92,7 +92,7 @@ impl CoordSeq {
 
         if size > 0 {
             let dims = data[0].as_ref().len();
-            let _ = CoordDimensions::try_from(dims as u32)?;
+            CoordDimensions::try_from(dims as u32)?;
             if !data.iter().skip(1).all(|x| x.as_ref().len() == dims) {
                 return Err(Error::GenericError(
                     "All vec entries must have the same size!".into(),
