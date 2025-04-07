@@ -146,15 +146,27 @@ mod test {
     fn geom_from_geojson_multipoint() {
         let geojson_pts = Geometry::new(Value::MultiPoint(vec![vec![1., 1.], vec![2., 2.]]));
         let gpts: GGeometry = (&geojson_pts).try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             gpts.to_wkt_precision(0),
             Ok("MULTIPOINT (1 1, 2 2)".to_string()),
         );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            gpts.to_wkt_precision(0),
+            Ok("MULTIPOINT ((1 1), (2 2))".to_string()),
+        );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_pts.try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             tmp.to_wkt_precision(0),
             Ok("MULTIPOINT (1 1, 2 2)".to_string()),
+        );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            tmp.to_wkt_precision(0),
+            Ok("MULTIPOINT ((1 1), (2 2))".to_string()),
         );
     }
 
@@ -212,17 +224,35 @@ mod test {
             ],
         ]));
         let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
         );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            gpolygon.to_wkt(),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            ),
+        );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             tmp.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
+        );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            tmp.to_wkt(),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            ),
         );
     }
 
@@ -239,17 +269,35 @@ mod test {
             vec![vec![0.2, 0.2], vec![0.2, 2.], vec![2., 2.], vec![2., 0.2]],
         ]));
         let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             gpolygon.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
         );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            gpolygon.to_wkt(),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            )
+        );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
+        #[cfg(not(feature = "v3_12_0"))]
         assert_eq!(
             tmp.to_wkt_precision(1),
             Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
                 .to_string()),
+        );
+        #[cfg(feature = "v3_12_0")]
+        assert_eq!(
+            tmp.to_wkt(),
+            Ok(
+                "POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (0.2 0.2, 0.2 2, 2 2, 2 0.2, 0.2 0.2))"
+                    .to_string()
+            )
         );
     }
 

@@ -5,7 +5,7 @@ use std::process::Command;
 
 const MINIMUM_GEOS_VERSION: &str = "3.6.0";
 // BUNDLED_GEOS_VERSION is the GEOS version tracked by submodule
-const BUNDLED_GEOS_VERSION: &str = "3.11.0";
+const BUNDLED_GEOS_VERSION: &str = "3.13.1";
 
 /// standardize GEOS prerelease versions to match semver format:
 fn parse_geos_version(raw_version: &str) -> Version {
@@ -177,6 +177,14 @@ fn main() {
 
     if cfg!(feature = "v3_11_0") {
         binding_version = Version::new(3, 11, 0);
+    }
+
+    if cfg!(feature = "v3_12_0") {
+        binding_version = Version::new(3, 12, 0);
+    }
+
+    if cfg!(feature = "v3_13_0") {
+        binding_version = Version::new(3, 13, 0);
     }
 
     if version < binding_version {
