@@ -3442,8 +3442,7 @@ impl Geometry {
     pub fn create_multisurface(surfaces: Vec<Geometry>) -> GResult<Geometry> {
         if !surfaces.iter().all(|g| g.geometry_type().is_surface()) {
             return Err(Error::ImpossibleOperation(
-                "all the provided geometry have to be of type Polygon or CurvePolygon"
-                    .to_owned(),
+                "all the provided geometry have to be of type Polygon or CurvePolygon".to_owned(),
             ));
         }
         create_multi_geom(surfaces, GeometryTypes::MultiSurface)
