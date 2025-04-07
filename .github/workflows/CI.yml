@@ -85,15 +85,15 @@ jobs:
             version_feature: ""
           - version: "3.7.5"
             version_feature: "v3_7_0"
-          - version: "3.8.3"
+          - version: "3.8.4"
             version_feature: "v3_8_0"
-          - version: "3.9.3"
+          - version: "3.9.6"
             version_feature: "v3_9_0"
-          - version: "3.10.3"
+          - version: "3.10.7"
             version_feature: "v3_10_0"
-          - version: "3.11.0"
+          - version: "3.11.5"
             version_feature: "v3_11_0"
-          - version: "3.12.1"
+          - version: "3.12.3"
             version_feature: "v3_12_0"
           - version: "3.13.1"
             version_feature: "v3_13_0"
@@ -135,11 +135,6 @@ jobs:
           ccache --zero-stats --set-config cache_dir=~/.ccache
           ccache --max-size=2G --set-config cache_dir=~/.ccache
           ccache --show-stats --set-config cache_dir=~/.ccache
-
-      - name: Install cmake
-        uses: aminya/setup-cpp@v1
-        with:
-          cmake: 3.31.6
 
       - name: Install GEOS
         run: |
