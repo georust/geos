@@ -9,13 +9,11 @@ use std;
 use std::borrow::Borrow;
 use std::convert::{TryFrom, TryInto};
 
-#[allow(clippy::needless_lifetimes)]
-fn create_coord_seq_from_vec<'a, 'b>(coords: &'a [Coord<f64>]) -> Result<CoordSeq, Error> {
+fn create_coord_seq_from_vec(coords: &[Coord<f64>]) -> Result<CoordSeq, Error> {
     create_coord_seq(coords.iter(), coords.len())
 }
 
-#[allow(clippy::needless_lifetimes)]
-fn create_coord_seq<'a, 'b, It>(points: It, len: usize) -> Result<CoordSeq, Error>
+fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where
     It: Iterator<Item = &'a Coord<f64>>,
 {
@@ -28,10 +26,10 @@ where
     Ok(coord_seq)
 }
 
-impl<'a, 'b> TryFrom<&'a Point<f64>> for GGeometry {
+impl TryFrom<&Point<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a Point<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Point<f64>) -> Result<GGeometry, Self::Error> {
         let coord_seq = create_coord_seq(std::iter::once(&other.0), 1)?;
 
         GGeometry::create_point(coord_seq)
@@ -46,10 +44,10 @@ impl TryFrom<Point<f64>> for GGeometry {
     }
 }
 
-impl<'a, T: Borrow<Point<f64>>> TryFrom<&'a [T]> for GGeometry {
+impl<T: Borrow<Point<f64>>> TryFrom<&[T]> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a [T]) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &[T]) -> Result<GGeometry, Self::Error> {
         let geom_points = other
             .iter()
             .map(|p| p.borrow().try_into())
@@ -59,10 +57,10 @@ impl<'a, T: Borrow<Point<f64>>> TryFrom<&'a [T]> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a MultiPoint<f64>> for GGeometry {
+impl TryFrom<&MultiPoint<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a MultiPoint<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiPoint<f64>) -> Result<GGeometry, Self::Error> {
         let points: Vec<_> = other
             .0
             .iter()
@@ -81,10 +79,10 @@ impl TryFrom<MultiPoint<f64>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a LineString<f64>> for GGeometry {
+impl TryFrom<&LineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a LineString<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &LineString<f64>) -> Result<GGeometry, Self::Error> {
         let coord_seq = create_coord_seq_from_vec(other.0.as_slice())?;
 
         GGeometry::create_line_string(coord_seq)
@@ -99,10 +97,10 @@ impl TryFrom<LineString<f64>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a MultiLineString<f64>> for GGeometry {
+impl TryFrom<&MultiLineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a MultiLineString<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiLineString<f64>) -> Result<GGeometry, Self::Error> {
         let lines: Vec<_> = other
             .0
             .iter()
@@ -127,10 +125,10 @@ struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a geo_types::LineString to a geos LinearRing
 /// a LinearRing should be closed so cloase the geometry if needed
-impl<'a, 'b> TryFrom<LineRing<'a>> for GGeometry {
+impl TryFrom<LineRing<'_>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: LineRing<'a>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: LineRing<'_>) -> Result<GGeometry, Self::Error> {
         let points = &(other.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
@@ -156,10 +154,10 @@ impl<'a, 'b> TryFrom<LineRing<'a>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a Polygon<f64>> for GGeometry {
+impl TryFrom<&Polygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a Polygon<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Polygon<f64>) -> Result<GGeometry, Self::Error> {
         let ring = LineRing(other.exterior());
         let geom_exterior: GGeometry = ring.try_into()?;
 
@@ -181,10 +179,10 @@ impl TryFrom<Polygon<f64>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a MultiPolygon<f64>> for GGeometry {
+impl TryFrom<&MultiPolygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a MultiPolygon<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiPolygon<f64>) -> Result<GGeometry, Self::Error> {
         let polygons: Vec<_> = other
             .0
             .iter()
@@ -203,10 +201,10 @@ impl TryFrom<MultiPolygon<f64>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a GeometryCollection<f64>> for GGeometry {
+impl TryFrom<&GeometryCollection<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
         let geoms: Vec<_> = other
             .0
             .iter()
@@ -225,10 +223,10 @@ impl TryFrom<GeometryCollection<f64>> for GGeometry {
     }
 }
 
-impl<'a, 'b> TryFrom<&'a Geometry<f64>> for GGeometry {
+impl TryFrom<&Geometry<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &'a Geometry<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Geometry<f64>) -> Result<GGeometry, Self::Error> {
         match other {
             Geometry::Point(inner) => GGeometry::try_from(inner),
             Geometry::MultiPoint(inner) => GGeometry::try_from(inner),
