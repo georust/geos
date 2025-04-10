@@ -13,105 +13,107 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
     Ok(coords)
 }
 
-macro_rules! impl_try_from_geojson {
-    ($ty_name:ident $(,$lt:lifetime)?) => (
-impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry {
-    type Error = Error;
+fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
+    let _type = other.geometry_type();
+    match _type {
+        GeometryTypes::Point => {
+            let coord_seq = other.get_coord_seq()?;
+            Ok(Geometry::new(Value::Point(vec![
+                coord_seq.get_x(0)?,
+                coord_seq.get_y(0)?,
+            ])))
+        }
+        GeometryTypes::MultiPoint => {
+            let n_pts = other.get_num_geometries()?;
+            let mut coords = Vec::with_capacity(n_pts);
+            for i in 0..n_pts {
+                let coord_seq = other.get_geometry_n(i)?.get_coord_seq()?;
+                coords.push(vec![coord_seq.get_x(0)?, coord_seq.get_y(0)?]);
+            }
+            Ok(Geometry::new(Value::MultiPoint(coords)))
+        }
+        GeometryTypes::LineString | GeometryTypes::LinearRing => {
+            let cs = other.get_coord_seq()?;
+            let coords = coords_seq_to_vec_position(&cs)?;
+            Ok(Geometry::new(Value::LineString(coords)))
+        }
+        GeometryTypes::MultiLineString => {
+            let n_lines = other.get_num_geometries()?;
+            let mut result_lines = Vec::with_capacity(n_lines);
+            for i in 0..n_lines {
+                let cs = other.get_geometry_n(i)?.get_coord_seq()?;
+                result_lines.push(coords_seq_to_vec_position(&(cs))?);
+            }
+            Ok(Geometry::new(Value::MultiLineString(result_lines)))
+        }
+        GeometryTypes::Polygon => {
+            let nb_interiors = other.get_num_interior_rings()?;
 
-    fn try_from(other: $ty_name$(<$lt>)?) -> Result<Geometry, Self::Error> {
-        let _type = other.geometry_type();
-        match _type {
-            GeometryTypes::Point => {
-                let coord_seq = other.get_coord_seq()?;
-                Ok(Geometry::new(
-                    Value::Point(
-                        vec![
-                            coord_seq.get_x(0)?,
-                            coord_seq.get_y(0)?,
-                        ]
-                    )
-                ))
+            let mut rings = Vec::with_capacity(nb_interiors + 1usize);
+            // Exterior ring to coordinates
+            rings.push(coords_seq_to_vec_position(
+                &(other.get_exterior_ring()?.get_coord_seq()?),
+            )?);
+            // Interior rings to coordinates
+            for ix_interior in 0..nb_interiors {
+                rings.push(coords_seq_to_vec_position(
+                    &(other.get_interior_ring_n(ix_interior)?.get_coord_seq()?),
+                )?);
             }
-            GeometryTypes::MultiPoint => {
-                let n_pts = other.get_num_geometries()?;
-                let mut coords = Vec::with_capacity(n_pts);
-                for i in 0..n_pts {
-                    let coord_seq = other.get_geometry_n(i)?.get_coord_seq()?;
-                    coords.push(vec![
-                        coord_seq.get_x(0)?,
-                        coord_seq.get_y(0)?,
-                    ]);
-                }
-                Ok(Geometry::new(Value::MultiPoint(coords)))
-            }
-            GeometryTypes::LineString | GeometryTypes::LinearRing => {
-                let cs = other.get_coord_seq()?;
-                let coords = coords_seq_to_vec_position(&cs)?;
-                Ok(Geometry::new(Value::LineString(coords)))
-            }
-            GeometryTypes::MultiLineString => {
-                let n_lines = other.get_num_geometries()?;
-                let mut result_lines = Vec::with_capacity(n_lines);
-                for i in 0..n_lines {
-                    let cs = other.get_geometry_n(i)?.get_coord_seq()?;
-                    result_lines.push(coords_seq_to_vec_position(&(cs))?);
-                }
-                Ok(Geometry::new(Value::MultiLineString(result_lines)))
-            }
-            GeometryTypes::Polygon => {
-                let nb_interiors = other.get_num_interior_rings()?;
+            Ok(Geometry::new(Value::Polygon(rings)))
+        }
+        GeometryTypes::MultiPolygon => {
+            let n_polygs = other.get_num_geometries()?;
+            let mut result_polygs = Vec::with_capacity(n_polygs);
+            for i in 0..n_polygs {
+                let polyg = other.get_geometry_n(i)?;
+                let nb_interiors = polyg.get_num_interior_rings()?;
 
                 let mut rings = Vec::with_capacity(nb_interiors + 1usize);
                 // Exterior ring to coordinates
-                rings.push(coords_seq_to_vec_position(&(
-                    other.get_exterior_ring()?.get_coord_seq()?))?);
+                rings.push(coords_seq_to_vec_position(
+                    &(polyg.get_exterior_ring()?.get_coord_seq()?),
+                )?);
                 // Interior rings to coordinates
                 for ix_interior in 0..nb_interiors {
                     rings.push(coords_seq_to_vec_position(
-                        &(other.get_interior_ring_n(ix_interior)?.get_coord_seq()?))?);
+                        &(polyg.get_interior_ring_n(ix_interior)?.get_coord_seq()?),
+                    )?);
                 }
-                Ok(Geometry::new(Value::Polygon(rings)))
+                result_polygs.push(rings);
             }
-            GeometryTypes::MultiPolygon => {
-                let n_polygs = other.get_num_geometries()?;
-                let mut result_polygs = Vec::with_capacity(n_polygs);
-                for i in 0..n_polygs {
-                    let polyg = other.get_geometry_n(i)?;
-                    let nb_interiors = polyg.get_num_interior_rings()?;
-
-                    let mut rings = Vec::with_capacity(nb_interiors + 1usize);
-                    // Exterior ring to coordinates
-                    rings.push(coords_seq_to_vec_position(&(
-                        polyg.get_exterior_ring()?.get_coord_seq()?))?);
-                    // Interior rings to coordinates
-                    for ix_interior in 0..nb_interiors {
-                        rings.push(coords_seq_to_vec_position(
-                            &(polyg.get_interior_ring_n(ix_interior)?.get_coord_seq()?))?);
-                    }
-                    result_polygs.push(rings);
-                }
-                Ok(Geometry::new(Value::MultiPolygon(result_polygs)))
-            }
-            GeometryTypes::GeometryCollection => {
-                let n_geoms = other.get_num_geometries()?;
-                let mut result_geoms = Vec::with_capacity(n_geoms);
-                for i in 0..n_geoms {
-                    let g = other.get_geometry_n(i)?;
-                    let geojsongeom: Geometry = g.try_into()?;
-                    result_geoms.push(geojsongeom);
-                }
-                Ok(Geometry::new(Value::GeometryCollection(result_geoms)))
-            }
-            #[cfg(feature = "v3_13_0")]
-            _ => Err(Self::Error::GenericError("invalid type for GeoJSON".into())),
+            Ok(Geometry::new(Value::MultiPolygon(result_polygs)))
         }
+        GeometryTypes::GeometryCollection => {
+            let n_geoms = other.get_num_geometries()?;
+            let mut result_geoms = Vec::with_capacity(n_geoms);
+            for i in 0..n_geoms {
+                let g = other.get_geometry_n(i)?;
+                let geojsongeom: Geometry = g.try_into()?;
+                result_geoms.push(geojsongeom);
+            }
+            Ok(Geometry::new(Value::GeometryCollection(result_geoms)))
+        }
+        #[cfg(feature = "v3_13_0")]
+        _ => Err(Error::GenericError("invalid type for GeoJSON".into())),
     }
 }
-    );
+
+impl TryFrom<GGeometry> for Geometry {
+    type Error = Error;
+
+    fn try_from(other: GGeometry) -> Result<Geometry, Self::Error> {
+        to_geojson(other)
+    }
 }
 
-impl_try_from_geojson!(GGeometry);
-impl_try_from_geojson!(ConstGeometry, 'c);
+impl TryFrom<ConstGeometry<'_>> for Geometry {
+    type Error = Error;
+
+    fn try_from(other: ConstGeometry<'_>) -> Result<Geometry, Self::Error> {
+        to_geojson(other)
+    }
+}
 
 #[cfg(test)]
 mod test {

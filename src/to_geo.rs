@@ -6,32 +6,46 @@ use wkt::TryFromWkt;
 
 use std::convert::TryFrom;
 
-macro_rules! impl_try_into {
-    ($ty_name:ident $(,$lt:lifetime)?) => (
-impl<'b$(,$lt)?> TryFrom<&'b $ty_name$(<$lt>)?> for Geometry<f64> {
+fn to_geo<T: Geom>(other: &T) -> Result<Geometry<f64>, Error> {
+    // This is a first draft, it's very inefficient, we use wkt as a pivot format to
+    // translate the geometry.
+    // We should at least use wkb, or even better implement a direct translation
+    let wkt_str = other.to_wkt()?;
+    geo_types::Geometry::try_from_wkt_str(&wkt_str)
+        .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
+}
+
+impl TryFrom<GGeometry> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: &'b $ty_name$(<$lt>)?) -> Result<Geometry<f64>, Self::Error> {
-        // This is a first draft, it's very inefficient, we use wkt as a pivot format to
-        // translate the geometry.
-        // We should at least use wkb, or even better implement a direct translation
-        let wkt_str = other.to_wkt()?;
-        geo_types::Geometry::try_from_wkt_str(&wkt_str)
-            .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
+    fn try_from(other: GGeometry) -> Result<Geometry<f64>, Self::Error> {
+        to_geo(&other)
     }
 }
-impl$(<$lt>)? TryFrom<$ty_name$(<$lt>)?> for Geometry<f64> {
+
+impl TryFrom<&GGeometry> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: $ty_name$(<$lt>)?) -> Result<Geometry<f64>, Self::Error> {
-        Geometry::try_from(&other)
+    fn try_from(other: &GGeometry) -> Result<Geometry<f64>, Self::Error> {
+        to_geo(other)
     }
 }
-    );
+
+impl TryFrom<ConstGeometry<'_>> for Geometry<f64> {
+    type Error = Error;
+
+    fn try_from(other: ConstGeometry<'_>) -> Result<Geometry<f64>, Self::Error> {
+        to_geo(&other)
+    }
 }
 
-impl_try_into!(GGeometry);
-impl_try_into!(ConstGeometry, 'c);
+impl TryFrom<&ConstGeometry<'_>> for Geometry<f64> {
+    type Error = Error;
+
+    fn try_from(other: &ConstGeometry<'_>) -> Result<Geometry<f64>, Self::Error> {
+        to_geo(other)
+    }
+}
 
 #[cfg(test)]
 mod test {
