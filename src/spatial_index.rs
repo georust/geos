@@ -1,11 +1,12 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
+use std::ptr::NonNull;
 
 use geos_sys::*;
 
 use crate::context_handle::with_context;
 use crate::functions::nullcheck;
-use crate::{AsRaw, AsRawMut, GResult, Geom, PtrWrap};
+use crate::{AsRaw, AsRawMut, GResult, Geom};
 
 pub trait SpatialIndex<I> {
     fn insert<G: Geom>(&mut self, geometry: &G, item: I);
@@ -14,7 +15,7 @@ pub trait SpatialIndex<I> {
 }
 
 pub struct STRtree<I> {
-    pub(crate) ptr: PtrWrap<*mut GEOSSTRtree>,
+    pub(crate) ptr: NonNull<GEOSSTRtree>,
     item_type: PhantomData<I>,
 }
 
@@ -23,7 +24,7 @@ impl<I> STRtree<I> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSSTRtree_create_r(ctx.as_raw(), node_capacity))?;
             Ok(STRtree {
-                ptr: PtrWrap(ptr.as_ptr()),
+                ptr,
                 item_type: PhantomData,
             })
         })
@@ -70,13 +71,13 @@ impl<I> AsRaw for STRtree<I> {
     type RawType = GEOSSTRtree;
 
     fn as_raw(&self) -> *const Self::RawType {
-        *self.ptr
+        self.ptr.as_ptr()
     }
 }
 
 impl<I> AsRawMut for STRtree<I> {
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
-        *self.ptr
+        self.ptr.as_ptr()
     }
 }
 

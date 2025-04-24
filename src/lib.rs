@@ -59,7 +59,7 @@ mod traits;
 mod wkb_writer;
 mod wkt_writer;
 
-pub(crate) use traits::{AsRaw, AsRawMut, PtrWrap};
+pub(crate) use traits::{AsRaw, AsRawMut};
 
 #[cfg(test)]
 mod test;

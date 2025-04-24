@@ -7,7 +7,7 @@ use crate::traits::{as_raw_impl, as_raw_mut_impl};
 use crate::GeoJSONWriter;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
-use crate::{AsRaw, AsRawMut, BufferParams, CoordSeq, PreparedGeometry, PtrWrap, WKTWriter};
+use crate::{AsRaw, AsRawMut, BufferParams, CoordSeq, PreparedGeometry, WKTWriter};
 use c_vec::CVec;
 use geos_sys::*;
 use std::borrow::Borrow;
@@ -30,7 +30,7 @@ use std::{self, str};
 /// assert_eq!(point_geom.get_y(), Ok(3.5));
 /// ```
 pub struct Geometry {
-    pub(crate) ptr: PtrWrap<*mut GEOSGeometry>,
+    pub(crate) ptr: NonNull<GEOSGeometry>,
 }
 
 // Representation of a GEOS geometry. Since it's only a view over another GEOS geometry data,
@@ -50,7 +50,7 @@ pub struct Geometry {
 ///     .expect("failed to get const geometry");
 /// ```
 pub struct ConstGeometry<'a> {
-    pub(crate) ptr: PtrWrap<*const GEOSGeometry>,
+    pub(crate) ptr: NonNull<GEOSGeometry>,
     phantom: PhantomData<&'a Geometry>,
 }
 
@@ -2513,7 +2513,7 @@ impl<F: FnMut(f64, f64) -> Result<(f64, f64), E>, E: From<Error>> Trampoline<F, 
 impl<'a> ConstGeometry<'a> {
     pub(crate) fn new_from_raw(ptr: NonNull<GEOSGeometry>) -> ConstGeometry<'a> {
         ConstGeometry {
-            ptr: PtrWrap(ptr.as_ptr()),
+            ptr,
             phantom: PhantomData,
         }
     }
@@ -2521,9 +2521,7 @@ impl<'a> ConstGeometry<'a> {
 
 impl Geometry {
     pub(crate) fn new_from_raw(ptr: NonNull<GEOSGeometry>) -> Geometry {
-        Geometry {
-            ptr: PtrWrap(ptr.as_ptr()),
-        }
+        Geometry { ptr }
     }
 
     /// Creates a `Geometry` from the WKT format.
