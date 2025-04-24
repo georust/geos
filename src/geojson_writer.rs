@@ -1,8 +1,9 @@
 use crate::context_handle::with_context;
 use crate::functions::*;
 use crate::traits::as_raw_mut_impl;
-use crate::{AsRaw, AsRawMut, GResult, Geom, PtrWrap};
+use crate::{AsRaw, AsRawMut, GResult, Geom};
 use geos_sys::*;
+use std::ptr::NonNull;
 
 /// The `GeoJSONWriter` type is used to generate `GeoJSON` formatted output from [`Geometry`](crate::Geometry).
 ///
@@ -17,7 +18,7 @@ use geos_sys::*;
 /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[2.5,2.5]}"#);
 /// ```
 pub struct GeoJSONWriter {
-    ptr: PtrWrap<*mut GEOSGeoJSONWriter>,
+    ptr: NonNull<GEOSGeoJSONWriter>,
 }
 
 impl GeoJSONWriter {
@@ -36,9 +37,7 @@ impl GeoJSONWriter {
     pub fn new() -> GResult<GeoJSONWriter> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGeoJSONWriter_create_r(ctx.as_raw()))?;
-            Ok(GeoJSONWriter {
-                ptr: PtrWrap(ptr.as_ptr()),
-            })
+            Ok(GeoJSONWriter { ptr })
         })
     }
 

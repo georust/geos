@@ -2,13 +2,13 @@ use crate::context_handle::with_context;
 use crate::enums::CapStyle;
 use crate::functions::{errcheck, nullcheck};
 use crate::traits::as_raw_mut_impl;
-use crate::{AsRaw, AsRawMut, GResult, JoinStyle, PtrWrap};
-
+use crate::{AsRaw, AsRawMut, GResult, JoinStyle};
 use geos_sys::*;
+use std::ptr::NonNull;
 
 /// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [`buffer_with_params`](crate::Geom::buffer_with_params)
 pub struct BufferParams {
-    ptr: PtrWrap<*mut GEOSBufferParams>,
+    ptr: NonNull<GEOSBufferParams>,
 }
 
 /// Build options for a [`BufferParams`] object
@@ -25,9 +25,7 @@ impl BufferParams {
     pub fn new() -> GResult<BufferParams> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSBufferParams_create_r(ctx.as_raw()))?;
-            Ok(BufferParams {
-                ptr: PtrWrap(ptr.as_ptr()),
-            })
+            Ok(BufferParams { ptr })
         })
     }
 

@@ -2,11 +2,12 @@ use crate::context_handle::with_context;
 use crate::enums::{ByteOrder, OutputDimension};
 use crate::functions::{errcheck, nullcheck, predicate};
 use crate::traits::as_raw_mut_impl;
-use crate::{AsRaw, AsRawMut, GResult, Geom, PtrWrap};
+use crate::{AsRaw, AsRawMut, GResult, Geom};
 
 use c_vec::CVec;
 use geos_sys::*;
 use std::convert::TryFrom;
+use std::ptr::NonNull;
 
 /// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`](crate::Geometry).
 ///
@@ -29,7 +30,7 @@ use std::convert::TryFrom;
 ///            "POINT (2.5 2.5)");
 /// ```
 pub struct WKBWriter {
-    ptr: PtrWrap<*mut GEOSWKBWriter>,
+    ptr: NonNull<GEOSWKBWriter>,
 }
 
 impl WKBWriter {
@@ -50,9 +51,7 @@ impl WKBWriter {
     pub fn new() -> GResult<WKBWriter> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKBWriter_create_r(ctx.as_raw()))?;
-            Ok(WKBWriter {
-                ptr: PtrWrap(ptr.as_ptr()),
-            })
+            Ok(WKBWriter { ptr })
         })
     }
 

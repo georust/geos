@@ -1,15 +1,3 @@
-use std::ops::Deref;
-
-pub(crate) struct PtrWrap<T>(pub T);
-
-impl<T> Deref for PtrWrap<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 pub trait AsRaw {
     type RawType;
 
@@ -34,7 +22,7 @@ macro_rules! as_raw_impl {
             type RawType = $geos_type_name;
 
             fn as_raw(&self) -> *const Self::RawType {
-                *self.ptr
+                self.ptr.as_ptr()
             }
         }
     };
@@ -46,7 +34,7 @@ macro_rules! as_raw_mut_impl {
 
         impl AsRawMut for $type_name {
             unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
-                *self.ptr
+                self.ptr.as_ptr()
             }
         }
     };

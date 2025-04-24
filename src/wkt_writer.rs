@@ -1,9 +1,10 @@
 use crate::context_handle::with_context;
 use crate::functions::*;
 use crate::traits::as_raw_mut_impl;
-use crate::{AsRaw, AsRawMut, GResult, Geom, OutputDimension, PtrWrap};
+use crate::{AsRaw, AsRawMut, GResult, Geom, OutputDimension};
 use geos_sys::*;
 use std::convert::TryFrom;
+use std::ptr::NonNull;
 
 /// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`](crate::Geometry).
 ///
@@ -21,7 +22,7 @@ use std::convert::TryFrom;
 /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
 /// ```
 pub struct WKTWriter {
-    ptr: PtrWrap<*mut GEOSWKTWriter>,
+    ptr: NonNull<GEOSWKTWriter>,
 }
 
 impl WKTWriter {
@@ -43,9 +44,7 @@ impl WKTWriter {
     pub fn new() -> GResult<WKTWriter> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKTWriter_create_r(ctx.as_raw()))?;
-            Ok(WKTWriter {
-                ptr: PtrWrap(ptr.as_ptr()),
-            })
+            Ok(WKTWriter { ptr })
         })
     }
 

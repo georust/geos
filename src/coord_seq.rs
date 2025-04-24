@@ -2,7 +2,7 @@ use crate::context_handle::with_context;
 use crate::error::{Error, GResult};
 use crate::functions::{errcheck, nullcheck};
 use crate::traits::as_raw_mut_impl;
-use crate::{AsRaw, AsRawMut, CoordDimensions, Geometry, Ordinate, PtrWrap};
+use crate::{AsRaw, AsRawMut, CoordDimensions, Geometry, Ordinate};
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::ptr::NonNull;
@@ -23,7 +23,7 @@ type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
 /// assert_eq!(coords.get_x(0), Ok(10.));
 /// ```
 pub struct CoordSeq {
-    pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
+    pub(crate) ptr: NonNull<GEOSCoordSequence>,
     nb_dimensions: usize,
     nb_lines: usize,
 }
@@ -245,7 +245,7 @@ impl CoordSeq {
         dims: u32,
     ) -> CoordSeq {
         CoordSeq {
-            ptr: PtrWrap(ptr.as_ptr()),
+            ptr,
             nb_dimensions: dims as _,
             nb_lines: size as _,
         }
@@ -764,22 +764,18 @@ unsafe impl Sync for CoordSeq {}
 
 impl Drop for CoordSeq {
     fn drop(&mut self) {
-        if self.ptr.is_null() {
-            return;
-        }
         with_context(|ctx| unsafe { GEOSCoordSeq_destroy_r(ctx.as_raw(), self.as_raw_mut()) });
     }
 }
 
 impl Clone for CoordSeq {
-    /// Also pass the context to the newly created `CoordSeq`.
     fn clone(&self) -> CoordSeq {
-        let ptr = with_context(|ctx| unsafe { GEOSCoordSeq_clone_r(ctx.as_raw(), self.as_raw()) });
-        if ptr.is_null() {
-            panic!("Couldn't clone CoordSeq...");
-        }
+        let ptr = with_context(|ctx| unsafe {
+            nullcheck!(GEOSCoordSeq_clone_r(ctx.as_raw(), self.as_raw()))
+                .expect("GEOSCoordSeq_clone_r failed")
+        });
         CoordSeq {
-            ptr: PtrWrap(ptr),
+            ptr,
             nb_dimensions: self.nb_dimensions,
             nb_lines: self.nb_lines,
         }

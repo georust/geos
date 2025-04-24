@@ -1,9 +1,10 @@
 use crate::context_handle::with_context;
 use crate::functions::*;
-use crate::traits::{as_raw_impl, PtrWrap};
+use crate::traits::as_raw_impl;
 use crate::{AsRaw, GResult, Geom};
 use geos_sys::*;
 use std::marker::PhantomData;
+use std::ptr::NonNull;
 
 /// `PreparedGeometry` is an interface which prepares [`Geometry`](crate::Geometry) for greater performance
 /// on repeated calls.
@@ -23,7 +24,7 @@ use std::marker::PhantomData;
 /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
 /// ```
 pub struct PreparedGeometry<'a> {
-    ptr: PtrWrap<*const GEOSPreparedGeometry>,
+    ptr: NonNull<GEOSPreparedGeometry>,
     phantom: PhantomData<&'a ()>,
 }
 
@@ -43,7 +44,7 @@ impl<'a> PreparedGeometry<'a> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSPrepare_r(ctx.as_raw(), g.as_raw()))?;
             Ok(PreparedGeometry {
-                ptr: PtrWrap(ptr.as_ptr()),
+                ptr,
                 phantom: PhantomData,
             })
         })

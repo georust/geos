@@ -1,11 +1,11 @@
 use crate::enums::{ByteOrder, OutputDimension};
 use crate::error::{Error, GResult};
 use crate::functions::errcheck;
-use crate::traits::PtrWrap;
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
 use std::convert::TryFrom;
 use std::ffi::CStr;
+use std::ptr::NonNull;
 use std::slice;
 use std::sync::Mutex;
 
@@ -57,9 +57,9 @@ impl InnerContext {
 }
 
 pub struct ContextHandle {
-    ptr: PtrWrap<GEOSContextHandle_t>,
-    pub(crate) notice_ctx: PtrWrap<*mut InnerContext>,
-    pub(crate) error_ctx: PtrWrap<*mut InnerContext>,
+    ptr: NonNull<GEOSContextHandle_HS>,
+    pub(crate) notice_ctx: NonNull<InnerContext>,
+    pub(crate) error_ctx: NonNull<InnerContext>,
 }
 
 impl ContextHandle {
@@ -74,42 +74,52 @@ impl ContextHandle {
     /// ```
     pub fn init() -> GResult<Self> {
         let ptr = unsafe { GEOS_init_r() };
-        if ptr.is_null() {
-            return Err(Error::GeosError(("GEOS_init_r", None)));
-        }
+        let ptr = NonNull::new(ptr).ok_or(Error::GeosError(("GEOS_init_r", None)))?;
 
-        let error_ctx = Box::into_raw(Box::new(InnerContext {
-            last: Mutex::new(None),
-            callback: Mutex::new(Box::new(|_| {})),
-        }));
+        let error_ctx = unsafe {
+            NonNull::new_unchecked(Box::into_raw(Box::new(InnerContext {
+                last: Mutex::new(None),
+                callback: Mutex::new(Box::new(|_| {})),
+            })))
+        };
 
-        let notice_ctx = Box::into_raw(Box::new(InnerContext {
-            last: Mutex::new(None),
-            callback: Mutex::new(Box::new(|_| {})),
-        }));
+        let notice_ctx = unsafe {
+            NonNull::new_unchecked(Box::into_raw(Box::new(InnerContext {
+                last: Mutex::new(None),
+                callback: Mutex::new(Box::new(|_| {})),
+            })))
+        };
 
         unsafe {
-            GEOSContext_setNoticeMessageHandler_r(ptr, Some(message_handler), notice_ctx.cast());
-            GEOSContext_setErrorMessageHandler_r(ptr, Some(message_handler), error_ctx.cast());
+            GEOSContext_setNoticeMessageHandler_r(
+                ptr.as_ptr(),
+                Some(message_handler),
+                notice_ctx.as_ptr().cast(),
+            );
+            GEOSContext_setErrorMessageHandler_r(
+                ptr.as_ptr(),
+                Some(message_handler),
+                error_ctx.as_ptr().cast(),
+            );
         }
 
         Ok(ContextHandle {
-            ptr: PtrWrap(ptr),
-            error_ctx: PtrWrap(error_ctx),
-            notice_ctx: PtrWrap(notice_ctx),
+            ptr,
+            error_ctx,
+            notice_ctx,
         })
     }
 
     pub(crate) fn as_raw(&self) -> GEOSContextHandle_t {
-        *self.ptr
+        self.ptr.as_ptr()
     }
 
     pub(crate) fn get_notice_context(&self) -> &InnerContext {
-        unsafe { &*self.notice_ctx.0 }
+        unsafe { self.notice_ctx.as_ref() }
     }
 
     pub(crate) fn get_error_context(&self) -> &InnerContext {
-        unsafe { &*self.error_ctx.0 }
+        unsafe { self.error_ctx.as_ref() }
     }
 
     /// Allows to set a notice message handler.
@@ -271,12 +281,10 @@ impl ContextHandle {
 impl Drop for ContextHandle {
     fn drop(&mut self) {
         unsafe {
-            if !self.ptr.is_null() {
-                GEOS_finish_r(self.as_raw());
-            }
+            GEOS_finish_r(self.as_raw());
             // Now we just have to clear stuff!
-            let _inner: Box<InnerContext> = Box::from_raw(self.error_ctx.0);
-            let _inner: Box<InnerContext> = Box::from_raw(self.notice_ctx.0);
+            let _ = Box::from_raw(self.error_ctx.as_ptr());
+            let _ = Box::from_raw(self.notice_ctx.as_ptr());
         }
     }
 }
