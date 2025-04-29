@@ -1,10 +1,11 @@
 use crate::enums::{ByteOrder, OutputDimension};
 use crate::error::{Error, GResult};
+use crate::functions::errcheck;
+use crate::traits::PtrWrap;
 use geos_sys::*;
 use libc::{c_char, c_void, strlen};
 use std::convert::TryFrom;
 use std::ffi::CStr;
-use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
 
@@ -30,68 +31,35 @@ pub(crate) fn with_context<R>(f: impl FnOnce(&ContextHandle) -> R) -> R {
 
 pub type HandlerCallback = Box<dyn Fn(&str) + Send + Sync>;
 
-macro_rules! set_callbacks {
-    ($c_func:ident, $kind:ident, $callback_name:ident, $last:ident) => {
-        #[allow(clippy::needless_lifetimes)]
-        fn $kind(ptr: GEOSContextHandle_t, nf: *mut InnerContext) {
-            #[allow(clippy::extra_unused_lifetimes)]
-            unsafe extern "C" fn message_handler_func(message: *const c_char, data: *mut c_void) {
-                let inner_context: &InnerContext = &*(data as *mut _);
+unsafe extern "C" fn message_handler(message: *const c_char, data: *mut c_void) {
+    let inner_context: &InnerContext = &*(data.cast());
 
-                if let Ok(callback) = inner_context.$callback_name.lock() {
-                    let bytes = slice::from_raw_parts(message as *const u8, strlen(message));
-                    let s = CStr::from_bytes_with_nul_unchecked(bytes);
-                    let notif = s.to_str().expect("invalid CStr -> &str conversion");
-                    callback(notif);
-                    if let Ok(mut last) = inner_context.$last.lock() {
-                        *last = Some(notif.to_owned());
-                    }
-                }
-            }
-
-            unsafe {
-                $c_func(ptr, Some(message_handler_func), nf as *mut _);
-            }
+    if let Ok(callback) = inner_context.callback.lock() {
+        let bytes = slice::from_raw_parts(message.cast::<u8>(), strlen(message) + 1);
+        let s = CStr::from_bytes_with_nul_unchecked(bytes);
+        let notif = s.to_str().expect("invalid CStr -> &str conversion");
+        callback(notif);
+        if let Ok(mut last) = inner_context.last.lock() {
+            *last = Some(notif.to_owned());
         }
-    };
-}
-
-set_callbacks!(
-    GEOSContext_setNoticeMessageHandler_r,
-    set_notif,
-    notif_callback,
-    last_notification
-);
-set_callbacks!(
-    GEOSContext_setErrorMessageHandler_r,
-    set_error,
-    error_callback,
-    last_error
-);
-
-pub(crate) struct PtrWrap<T>(pub T);
-
-impl<T> Deref for PtrWrap<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
-unsafe impl<T> Send for PtrWrap<T> {}
-unsafe impl<T> Sync for PtrWrap<T> {}
-
 pub(crate) struct InnerContext {
-    last_notification: Mutex<Option<String>>,
-    last_error: Mutex<Option<String>>,
-    notif_callback: Mutex<HandlerCallback>,
-    error_callback: Mutex<HandlerCallback>,
+    last: Mutex<Option<String>>,
+    callback: Mutex<HandlerCallback>,
+}
+
+impl InnerContext {
+    fn take(&self) -> Option<String> {
+        self.last.lock().map(|mut last| last.take()).unwrap_or(None)
+    }
 }
 
 pub struct ContextHandle {
     ptr: PtrWrap<GEOSContextHandle_t>,
-    pub(crate) inner: PtrWrap<*mut InnerContext>,
+    pub(crate) notice_ctx: PtrWrap<*mut InnerContext>,
+    pub(crate) error_ctx: PtrWrap<*mut InnerContext>,
 }
 
 impl ContextHandle {
@@ -107,28 +75,28 @@ impl ContextHandle {
     pub fn init() -> GResult<Self> {
         let ptr = unsafe { GEOS_init_r() };
         if ptr.is_null() {
-            return Err(Error::GenericError("GEOS_init_r failed".to_owned()));
+            return Err(Error::GeosError(("GEOS_init_r", None)));
         }
 
-        let last_notification = Mutex::new(None);
-        let last_error = Mutex::new(None);
-
-        let notif_callback: Mutex<HandlerCallback> = Mutex::new(Box::new(|_| {}));
-        let error_callback: Mutex<HandlerCallback> = Mutex::new(Box::new(|_| {}));
-
-        let inner = Box::into_raw(Box::new(InnerContext {
-            last_notification,
-            last_error,
-            notif_callback,
-            error_callback,
+        let error_ctx = Box::into_raw(Box::new(InnerContext {
+            last: Mutex::new(None),
+            callback: Mutex::new(Box::new(|_| {})),
         }));
 
-        set_notif(ptr, inner);
-        set_error(ptr, inner);
+        let notice_ctx = Box::into_raw(Box::new(InnerContext {
+            last: Mutex::new(None),
+            callback: Mutex::new(Box::new(|_| {})),
+        }));
+
+        unsafe {
+            GEOSContext_setNoticeMessageHandler_r(ptr, Some(message_handler), notice_ctx.cast());
+            GEOSContext_setErrorMessageHandler_r(ptr, Some(message_handler), error_ctx.cast());
+        }
 
         Ok(ContextHandle {
             ptr: PtrWrap(ptr),
-            inner: PtrWrap(inner),
+            error_ctx: PtrWrap(error_ctx),
+            notice_ctx: PtrWrap(notice_ctx),
         })
     }
 
@@ -136,8 +104,12 @@ impl ContextHandle {
         *self.ptr
     }
 
-    pub(crate) fn get_inner(&self) -> &InnerContext {
-        unsafe { &*self.inner.0 }
+    pub(crate) fn get_notice_context(&self) -> &InnerContext {
+        unsafe { &*self.notice_ctx.0 }
+    }
+
+    pub(crate) fn get_error_context(&self) -> &InnerContext {
+        unsafe { &*self.error_ctx.0 }
     }
 
     /// Allows to set a notice message handler.
@@ -154,13 +126,8 @@ impl ContextHandle {
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
     pub fn set_notice_message_handler(&self, nf: Option<HandlerCallback>) {
-        let inner_context = self.get_inner();
-        if let Ok(mut callback) = inner_context.notif_callback.lock() {
-            if let Some(nf) = nf {
-                *callback = nf;
-            } else {
-                *callback = Box::new(|_| {});
-            }
+        if let Ok(mut callback) = self.get_notice_context().callback.lock() {
+            *callback = nf.unwrap_or_else(|| Box::new(|_| {}));
         }
     }
 
@@ -178,13 +145,8 @@ impl ContextHandle {
     /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
     pub fn set_error_message_handler(&self, ef: Option<HandlerCallback>) {
-        let inner_context = self.get_inner();
-        if let Ok(mut callback) = inner_context.error_callback.lock() {
-            if let Some(ef) = ef {
-                *callback = ef;
-            } else {
-                *callback = Box::new(|_| {});
-            }
+        if let Ok(mut callback) = self.get_error_context().callback.lock() {
+            *callback = ef.unwrap_or_else(|| Box::new(|_| {}));
         }
     }
 
@@ -204,12 +166,7 @@ impl ContextHandle {
     /// }
     /// ```
     pub fn get_last_error(&self) -> Option<String> {
-        let inner_context = self.get_inner();
-        if let Ok(mut last) = inner_context.last_error.lock() {
-            last.take()
-        } else {
-            None
-        }
+        self.get_error_context().take()
     }
 
     /// Returns the last notification encountered.
@@ -228,12 +185,7 @@ impl ContextHandle {
     /// }
     /// ```
     pub fn get_last_notification(&self) -> Option<String> {
-        let inner_context = self.get_inner();
-        if let Ok(mut last) = inner_context.last_notification.lock() {
-            last.take()
-        } else {
-            None
-        }
+        self.get_notice_context().take()
     }
 
     /// Gets WKB output dimensions.
@@ -250,7 +202,7 @@ impl ContextHandle {
     /// ```
     pub fn get_wkb_output_dimensions(&self) -> GResult<OutputDimension> {
         unsafe {
-            let out = GEOS_getWKBOutputDims_r(self.as_raw());
+            let out = errcheck!(-1, GEOS_getWKBOutputDims_r(self.as_raw()))?;
             OutputDimension::try_from(out)
         }
     }
@@ -272,7 +224,10 @@ impl ContextHandle {
         dimensions: OutputDimension,
     ) -> GResult<OutputDimension> {
         unsafe {
-            let out = GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into());
+            let out = errcheck!(
+                -1,
+                GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into())
+            )?;
             OutputDimension::try_from(out)
         }
     }
@@ -287,11 +242,11 @@ impl ContextHandle {
     /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_wkb_byte_order() == Ok(ByteOrder::LittleEndian));
     /// ```
-    pub fn get_wkb_byte_order(&self) -> ByteOrder {
-        ByteOrder::try_from(unsafe { GEOS_getWKBByteOrder_r(self.as_raw()) })
-            .expect("failed to convert to ByteOrder")
+    pub fn get_wkb_byte_order(&self) -> GResult<ByteOrder> {
+        let out = unsafe { errcheck!(-1, GEOS_getWKBByteOrder_r(self.as_raw()))? };
+        ByteOrder::try_from(out)
     }
 
     /// Sets WKB byte order.
@@ -304,11 +259,12 @@ impl ContextHandle {
     /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
     /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_wkb_byte_order() == ByteOrder::LittleEndian);
+    /// assert!(context_handle.get_wkb_byte_order() == Ok(ByteOrder::LittleEndian));
     /// ```
-    pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> ByteOrder {
-        ByteOrder::try_from(unsafe { GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()) })
-            .expect("failed to convert to ByteOrder")
+    pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> GResult<ByteOrder> {
+        let out =
+            unsafe { errcheck!(-1, GEOS_setWKBByteOrder_r(self.as_raw(), byte_order.into()))? };
+        ByteOrder::try_from(out)
     }
 }
 
@@ -319,7 +275,8 @@ impl Drop for ContextHandle {
                 GEOS_finish_r(self.as_raw());
             }
             // Now we just have to clear stuff!
-            let _inner: Box<InnerContext> = Box::from_raw(self.inner.0);
+            let _inner: Box<InnerContext> = Box::from_raw(self.error_ctx.0);
+            let _inner: Box<InnerContext> = Box::from_raw(self.notice_ctx.0);
         }
     }
 }

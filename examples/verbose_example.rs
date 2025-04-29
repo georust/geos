@@ -29,7 +29,7 @@ fn fun() -> Result<(), Error> {
         g4.to_wkt_precision(1)
     );
     println!("Geom4 contains centroid of geom1 : {:?}", g3.contains(&g4)?);
-    println!("Geom4 is valid ? : {}", g3.is_valid());
+    println!("Geom4 is valid ? : {:?}", g3.is_valid()?);
     Ok(())
 }
 

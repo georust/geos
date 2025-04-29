@@ -1,10 +1,12 @@
-use crate::context_handle::{with_context, PtrWrap};
+use crate::context_handle::with_context;
 use crate::enums::CapStyle;
-use crate::{AsRaw, AsRawMut, Error, GResult, JoinStyle};
+use crate::functions::{errcheck, nullcheck};
+use crate::traits::as_raw_mut_impl;
+use crate::{AsRaw, AsRawMut, GResult, JoinStyle, PtrWrap};
 
 use geos_sys::*;
 
-/// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [buffer_with_params](crate::Geom::buffer_with_params)
+/// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [`buffer_with_params`](crate::Geom::buffer_with_params)
 pub struct BufferParams {
     ptr: PtrWrap<*mut GEOSBufferParams>,
 }
@@ -22,8 +24,10 @@ pub struct BufferParamsBuilder {
 impl BufferParams {
     pub fn new() -> GResult<BufferParams> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSBufferParams_create_r(ctx.as_raw());
-            Ok(BufferParams { ptr: PtrWrap(ptr) })
+            let ptr = nullcheck!(GEOSBufferParams_create_r(ctx.as_raw()))?;
+            Ok(BufferParams {
+                ptr: PtrWrap(ptr.as_ptr()),
+            })
         })
     }
 
@@ -34,32 +38,24 @@ impl BufferParams {
     /// Specifies the end cap style of the generated buffer.
     pub fn set_end_cap_style(&mut self, style: CapStyle) -> GResult<()> {
         with_context(|ctx| unsafe {
-            let ret = GEOSBufferParams_setEndCapStyle_r(
+            errcheck!(GEOSBufferParams_setEndCapStyle_r(
                 ctx.as_raw(),
                 self.as_raw_mut_override(),
                 style.into(),
-            );
-            if ret == 0 {
-                Err(Error::GeosError("GEOSBufferParams_setEndCapStyle_r".into()))
-            } else {
-                Ok(())
-            }
+            ))?;
+            Ok(())
         })
     }
 
     /// Sets the join style for outside (reflex) corners between line segments.
     pub fn set_join_style(&mut self, style: JoinStyle) -> GResult<()> {
         with_context(|ctx| unsafe {
-            let ret = GEOSBufferParams_setJoinStyle_r(
+            errcheck!(GEOSBufferParams_setJoinStyle_r(
                 ctx.as_raw(),
                 self.as_raw_mut_override(),
                 style.into(),
-            );
-            if ret == 0 {
-                Err(Error::GeosError("GEOSBufferParams_setJoinStyle_r".into()))
-            } else {
-                Ok(())
-            }
+            ))?;
+            Ok(())
         })
     }
 
@@ -75,13 +71,12 @@ impl BufferParams {
     /// Corners with a ratio which exceed the limit will be beveled.
     pub fn set_mitre_limit(&mut self, limit: f64) -> GResult<()> {
         with_context(|ctx| unsafe {
-            let ret =
-                GEOSBufferParams_setMitreLimit_r(ctx.as_raw(), self.as_raw_mut_override(), limit);
-            if ret == 0 {
-                Err(Error::GeosError("GEOSBufferParams_setMitreLimit_r".into()))
-            } else {
-                Ok(())
-            }
+            errcheck!(GEOSBufferParams_setMitreLimit_r(
+                ctx.as_raw(),
+                self.as_raw_mut_override(),
+                limit
+            ))?;
+            Ok(())
         })
     }
 
@@ -107,18 +102,12 @@ impl BufferParams {
     ///  the true curve).
     pub fn set_quadrant_segments(&mut self, quadsegs: i32) -> GResult<()> {
         with_context(|ctx| unsafe {
-            let ret = GEOSBufferParams_setQuadrantSegments_r(
+            errcheck!(GEOSBufferParams_setQuadrantSegments_r(
                 ctx.as_raw(),
                 self.as_raw_mut_override(),
                 quadsegs as _,
-            );
-            if ret == 0 {
-                Err(Error::GeosError(
-                    "GEOSBufferParams_setQuadrantSegments_r".into(),
-                ))
-            } else {
-                Ok(())
-            }
+            ))?;
+            Ok(())
         })
     }
 
@@ -136,17 +125,12 @@ impl BufferParams {
     /// equivalent of [`CapStyle::Flat`].
     pub fn set_single_sided(&mut self, is_single_sided: bool) -> GResult<()> {
         with_context(|ctx| unsafe {
-            let single_sided = if is_single_sided { 1 } else { 0 };
-            let ret = GEOSBufferParams_setSingleSided_r(
+            errcheck!(GEOSBufferParams_setSingleSided_r(
                 ctx.as_raw(),
                 self.as_raw_mut_override(),
-                single_sided,
-            );
-            if ret == 0 {
-                Err(Error::GeosError("GEOSBufferParams_setSingleSided_r".into()))
-            } else {
-                Ok(())
-            }
+                is_single_sided.into(),
+            ))?;
+            Ok(())
         })
     }
 }
@@ -156,29 +140,11 @@ unsafe impl Sync for BufferParams {}
 
 impl Drop for BufferParams {
     fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            with_context(|ctx| unsafe {
-                GEOSBufferParams_destroy_r(ctx.as_raw(), self.as_raw_mut())
-            });
-        }
+        with_context(|ctx| unsafe { GEOSBufferParams_destroy_r(ctx.as_raw(), self.as_raw_mut()) });
     }
 }
 
-impl AsRaw for BufferParams {
-    type RawType = GEOSBufferParams;
-
-    fn as_raw(&self) -> *const Self::RawType {
-        *self.ptr
-    }
-}
-
-impl AsRawMut for BufferParams {
-    type RawType = GEOSBufferParams;
-
-    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
-        *self.ptr
-    }
-}
+as_raw_mut_impl!(BufferParams, GEOSBufferParams);
 
 impl BufferParamsBuilder {
     pub fn end_cap_style(mut self, style: CapStyle) -> BufferParamsBuilder {

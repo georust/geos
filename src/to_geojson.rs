@@ -14,8 +14,8 @@ fn coords_seq_to_vec_position(cs: &CoordSeq) -> GResult<Vec<Vec<f64>>> {
 }
 
 fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
-    let _type = other.geometry_type();
-    match _type {
+    let geom_type = other.geometry_type()?;
+    match geom_type {
         GeometryTypes::Point => {
             let coord_seq = other.get_coord_seq()?;
             Ok(Geometry::new(Value::Point(vec![
@@ -27,7 +27,8 @@ fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
             let n_pts = other.get_num_geometries()?;
             let mut coords = Vec::with_capacity(n_pts);
             for i in 0..n_pts {
-                let coord_seq = other.get_geometry_n(i)?.get_coord_seq()?;
+                let point = other.get_geometry_n(i)?;
+                let coord_seq = point.get_coord_seq()?;
                 coords.push(vec![coord_seq.get_x(0)?, coord_seq.get_y(0)?]);
             }
             Ok(Geometry::new(Value::MultiPoint(coords)))
@@ -41,8 +42,9 @@ fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
             let n_lines = other.get_num_geometries()?;
             let mut result_lines = Vec::with_capacity(n_lines);
             for i in 0..n_lines {
-                let cs = other.get_geometry_n(i)?.get_coord_seq()?;
-                result_lines.push(coords_seq_to_vec_position(&(cs))?);
+                result_lines.push(coords_seq_to_vec_position(
+                    &other.get_geometry_n(i)?.get_coord_seq()?,
+                )?);
             }
             Ok(Geometry::new(Value::MultiLineString(result_lines)))
         }
@@ -52,12 +54,12 @@ fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
             let mut rings = Vec::with_capacity(nb_interiors + 1usize);
             // Exterior ring to coordinates
             rings.push(coords_seq_to_vec_position(
-                &(other.get_exterior_ring()?.get_coord_seq()?),
+                &other.get_exterior_ring()?.get_coord_seq()?,
             )?);
             // Interior rings to coordinates
             for ix_interior in 0..nb_interiors {
                 rings.push(coords_seq_to_vec_position(
-                    &(other.get_interior_ring_n(ix_interior)?.get_coord_seq()?),
+                    &other.get_interior_ring_n(ix_interior)?.get_coord_seq()?,
                 )?);
             }
             Ok(Geometry::new(Value::Polygon(rings)))

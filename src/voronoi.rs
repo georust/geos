@@ -18,13 +18,9 @@ pub fn compute_voronoi<T: Borrow<Point<f64>>>(
 ) -> Result<Vec<Polygon<f64>>, Error> {
     let geom_points: GGeometry = points.try_into()?;
 
-    let mut voronoi = geom_points
-        .voronoi(envelope, tolerance, only_edges)
-        .map_err(|e| Error::VoronoiError(e.to_string()))?;
+    let mut voronoi = geom_points.voronoi(envelope, tolerance, only_edges)?;
 
-    voronoi
-        .normalize()
-        .map_err(|e| Error::NormalizeError(e.to_string()))?;
+    voronoi.normalize()?;
 
     voronoi
         .try_into()
