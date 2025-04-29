@@ -103,11 +103,11 @@ impl TryFrom<&Geometry> for GGeometry {
                 GGeometry::create_multipolygon(ggpolys)
             }
             Value::GeometryCollection(ref geoms) => {
-                let _geoms = geoms
+                let geoms = geoms
                     .iter()
-                    .map(|geom| geom.try_into())
+                    .map(TryInto::try_into)
                     .collect::<GResult<Vec<GGeometry>>>()?;
-                GGeometry::create_geometry_collection(_geoms)
+                GGeometry::create_geometry_collection(geoms)
             }
         }
     }

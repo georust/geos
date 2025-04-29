@@ -1,7 +1,7 @@
-use crate::context_handle::{with_context, PtrWrap};
-use crate::error::Error;
+use crate::context_handle::with_context;
 use crate::functions::*;
-use crate::{AsRaw, AsRawMut, ContextHandle, GResult, Geom};
+use crate::traits::as_raw_mut_impl;
+use crate::{AsRaw, AsRawMut, GResult, Geom, PtrWrap};
 use geos_sys::*;
 
 /// The `GeoJSONWriter` type is used to generate `GeoJSON` formatted output from [`Geometry`](crate::Geometry).
@@ -35,27 +35,11 @@ impl GeoJSONWriter {
     /// ```
     pub fn new() -> GResult<GeoJSONWriter> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSGeoJSONWriter_create_r(ctx.as_raw());
-            GeoJSONWriter::new_from_raw(ptr, ctx, "new_with_context")
+            let ptr = nullcheck!(GEOSGeoJSONWriter_create_r(ctx.as_raw()))?;
+            Ok(GeoJSONWriter {
+                ptr: PtrWrap(ptr.as_ptr()),
+            })
         })
-    }
-
-    pub(crate) unsafe fn new_from_raw(
-        ptr: *mut GEOSGeoJSONWriter,
-        ctx: &ContextHandle,
-        caller: &str,
-    ) -> GResult<GeoJSONWriter> {
-        if ptr.is_null() {
-            let extra = if let Some(x) = ctx.get_last_error() {
-                format!("\nLast error: {x}")
-            } else {
-                String::new()
-            };
-            return Err(Error::NoConstructionFromNullPtr(format!(
-                "GeoJSONWriter::{caller}{extra}",
-            )));
-        }
-        Ok(GeoJSONWriter { ptr: PtrWrap(ptr) })
     }
 
     /// Writes out the given `geometry` as GeoJSON format.
@@ -76,13 +60,13 @@ impl GeoJSONWriter {
 
     pub fn write_formatted<G: Geom>(&mut self, geometry: &G, indent: i32) -> GResult<String> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSGeoJSONWriter_writeGeometry_r(
+            let ptr = nullcheck!(GEOSGeoJSONWriter_writeGeometry_r(
                 ctx.as_raw(),
                 self.as_raw_mut(),
                 geometry.as_raw(),
                 indent,
-            );
-            managed_string(ptr, ctx, "GeoJSONWriter::write")
+            ))?;
+            managed_string(ptr, ctx)
         })
     }
 }
@@ -96,18 +80,4 @@ impl Drop for GeoJSONWriter {
     }
 }
 
-impl AsRaw for GeoJSONWriter {
-    type RawType = GEOSGeoJSONWriter;
-
-    fn as_raw(&self) -> *const Self::RawType {
-        *self.ptr
-    }
-}
-
-impl AsRawMut for GeoJSONWriter {
-    type RawType = GEOSGeoJSONWriter;
-
-    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
-        *self.ptr
-    }
-}
+as_raw_mut_impl!(GeoJSONWriter, GEOSGeoJSONWriter);

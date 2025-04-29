@@ -64,7 +64,7 @@ impl TryFrom<&MultiPoint<f64>> for GGeometry {
         let points: Vec<_> = other
             .0
             .iter()
-            .map(|p| p.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
         GGeometry::create_multipoint(points)
@@ -104,7 +104,7 @@ impl TryFrom<&MultiLineString<f64>> for GGeometry {
         let lines: Vec<_> = other
             .0
             .iter()
-            .map(|p| p.try_into())
+            .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
         GGeometry::create_multiline_string(lines)
@@ -132,9 +132,8 @@ impl TryFrom<LineRing<'_>> for GGeometry {
         let points = &(other.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
-            return Err(Error::InvalidGeometry(
-                "impossible to create a LinearRing, A LinearRing must have at least 3 coordinates"
-                    .into(),
+            return Err(Error::ConversionError(
+                "a LinearRing must have at least 3 coordinates".into(),
             ));
         }
 
@@ -165,7 +164,7 @@ impl TryFrom<&Polygon<f64>> for GGeometry {
             .interiors()
             .iter()
             .map(|i| LineRing(i).try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<_, _>>()?;
 
         GGeometry::create_polygon(geom_exterior, interiors)
     }
@@ -186,8 +185,8 @@ impl TryFrom<&MultiPolygon<f64>> for GGeometry {
         let polygons: Vec<_> = other
             .0
             .iter()
-            .map(|p| p.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()?;
 
         GGeometry::create_multipolygon(polygons)
     }
@@ -208,8 +207,8 @@ impl TryFrom<&GeometryCollection<f64>> for GGeometry {
         let geoms: Vec<_> = other
             .0
             .iter()
-            .map(|p| p.try_into())
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()?;
 
         GGeometry::create_geometry_collection(geoms)
     }
@@ -417,7 +416,7 @@ mod test {
         let ls = LineString(vec![]);
         let geom: GGeometry = LineRing(&ls).try_into().unwrap();
 
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
         assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 0);
     }
@@ -428,7 +427,11 @@ mod test {
         let ls = LineString(coords(vec![(0., 0.)]));
         let geom: Result<GGeometry, _> = LineRing(&ls).try_into();
         let error = geom.err().unwrap();
-        assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
+        assert_eq!(
+            error.to_string(),
+            "impossible to convert geometry: a LinearRing must have at least 3 coordinates"
+                .to_string()
+        );
     }
 
     /// a linear ring should have at least 3 elements
@@ -437,7 +440,11 @@ mod test {
         let ls = LineString(coords(vec![(0., 0.), (0., 1.)]));
         let geom: Result<GGeometry, _> = LineRing(&ls).try_into();
         let error = geom.err().unwrap();
-        assert_eq!(format!("{}", error), "Invalid geometry, impossible to create a LinearRing, A LinearRing must have at least 3 coordinates".to_string());
+        assert_eq!(
+            error.to_string(),
+            "impossible to convert geometry: a LinearRing must have at least 3 coordinates"
+                .to_string()
+        );
     }
 
     /// an unclosed linearring is valid since we close it before giving it to geos
@@ -446,7 +453,7 @@ mod test {
         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.)]));
         let geom: GGeometry = LineRing(&ls).try_into().unwrap();
 
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
         assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
@@ -468,7 +475,7 @@ mod test {
         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 1.)]));
         let geom: GGeometry = LineRing(&ls).try_into().unwrap();
 
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
         assert!(geom.is_ring().expect("is_ring failed"));
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
@@ -479,7 +486,7 @@ mod test {
         let ls = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.), (0., 0.)]));
         let geom: GGeometry = LineRing(&ls).try_into().unwrap();
 
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
         assert!(geom.is_ring().unwrap());
         assert_eq!(geom.get_coord_seq().unwrap().size().unwrap(), 4);
     }
@@ -489,7 +496,7 @@ mod test {
         let ls1 = LineString(coords(vec![(0., 0.), (0., 1.), (1., 2.)]));
         let ls2 = LineString(coords(vec![(2., 2.), (3., 3.), (3., 2.)]));
         let geom: GGeometry = MultiLineString(vec![ls1, ls2]).try_into().unwrap();
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
     }
 
     #[test]
@@ -498,6 +505,6 @@ mod test {
         let p2 = Point::new(0., 1.);
         let p3 = Point::new(1., 2.);
         let geom: GGeometry = MultiPoint(vec![p1, p2, p3]).try_into().unwrap();
-        assert!(geom.is_valid());
+        assert!(geom.is_valid().unwrap());
     }
 }

@@ -1,7 +1,7 @@
-use crate::context_handle::{with_context, PtrWrap};
-use crate::error::Error;
+use crate::context_handle::with_context;
 use crate::functions::*;
-use crate::{AsRaw, AsRawMut, ContextHandle, GResult, Geom, OutputDimension};
+use crate::traits::as_raw_mut_impl;
+use crate::{AsRaw, AsRawMut, GResult, Geom, OutputDimension, PtrWrap};
 use geos_sys::*;
 use std::convert::TryFrom;
 
@@ -42,27 +42,11 @@ impl WKTWriter {
     /// ```
     pub fn new() -> GResult<WKTWriter> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSWKTWriter_create_r(ctx.as_raw());
-            WKTWriter::new_from_raw(ptr, ctx, "new_with_context")
+            let ptr = nullcheck!(GEOSWKTWriter_create_r(ctx.as_raw()))?;
+            Ok(WKTWriter {
+                ptr: PtrWrap(ptr.as_ptr()),
+            })
         })
-    }
-
-    pub(crate) unsafe fn new_from_raw(
-        ptr: *mut GEOSWKTWriter,
-        ctx: &ContextHandle,
-        caller: &str,
-    ) -> GResult<WKTWriter> {
-        if ptr.is_null() {
-            let extra = if let Some(x) = ctx.get_last_error() {
-                format!("\nLast error: {x}")
-            } else {
-                String::new()
-            };
-            return Err(Error::NoConstructionFromNullPtr(format!(
-                "WKTWriter::{caller}{extra}",
-            )));
-        }
-        Ok(WKTWriter { ptr: PtrWrap(ptr) })
     }
 
     /// Writes out the given `geometry` as WKT format.
@@ -82,8 +66,12 @@ impl WKTWriter {
     /// ```
     pub fn write<G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSWKTWriter_write_r(ctx.as_raw(), self.as_raw_mut(), geometry.as_raw());
-            managed_string(ptr, ctx, "WKTWriter::write")
+            let ptr = nullcheck!(GEOSWKTWriter_write_r(
+                ctx.as_raw(),
+                self.as_raw_mut(),
+                geometry.as_raw()
+            ))?;
+            managed_string(ptr, ctx)
         })
     }
 
@@ -106,7 +94,7 @@ impl WKTWriter {
     /// ```
     pub fn set_rounding_precision(&mut self, precision: u32) {
         with_context(|ctx| unsafe {
-            GEOSWKTWriter_setRoundingPrecision_r(ctx.as_raw(), self.as_raw_mut(), precision as _)
+            GEOSWKTWriter_setRoundingPrecision_r(ctx.as_raw(), self.as_raw_mut(), precision as _);
         })
     }
 
@@ -130,7 +118,7 @@ impl WKTWriter {
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
         with_context(|ctx| unsafe {
-            GEOSWKTWriter_setOutputDimension_r(ctx.as_raw(), self.as_raw_mut(), dimension.into())
+            GEOSWKTWriter_setOutputDimension_r(ctx.as_raw(), self.as_raw_mut(), dimension.into());
         })
     }
 
@@ -153,7 +141,10 @@ impl WKTWriter {
     /// ```
     pub fn get_out_dimension(&self) -> GResult<OutputDimension> {
         with_context(|ctx| unsafe {
-            let out = GEOSWKTWriter_getOutputDimension_r(ctx.as_raw(), self.as_raw_mut_override());
+            let out = errcheck!(
+                -1,
+                GEOSWKTWriter_getOutputDimension_r(ctx.as_raw(), self.as_raw_mut_override())
+            )?;
             OutputDimension::try_from(out)
         })
     }
@@ -176,7 +167,7 @@ impl WKTWriter {
     /// ```
     pub fn set_trim(&mut self, trim: bool) {
         with_context(|ctx| unsafe {
-            GEOSWKTWriter_setTrim_r(ctx.as_raw(), self.as_raw_mut(), trim as _)
+            GEOSWKTWriter_setTrim_r(ctx.as_raw(), self.as_raw_mut(), trim.into());
         })
     }
 
@@ -201,7 +192,7 @@ impl WKTWriter {
     #[allow(non_snake_case)]
     pub fn set_old_3D(&mut self, use_old_3D: bool) {
         with_context(|ctx| unsafe {
-            GEOSWKTWriter_setOld3D_r(ctx.as_raw(), self.as_raw_mut(), use_old_3D as _)
+            GEOSWKTWriter_setOld3D_r(ctx.as_raw(), self.as_raw_mut(), use_old_3D.into());
         })
     }
 }
@@ -215,18 +206,4 @@ impl Drop for WKTWriter {
     }
 }
 
-impl AsRaw for WKTWriter {
-    type RawType = GEOSWKTWriter;
-
-    fn as_raw(&self) -> *const Self::RawType {
-        *self.ptr
-    }
-}
-
-impl AsRawMut for WKTWriter {
-    type RawType = GEOSWKTWriter;
-
-    unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
-        *self.ptr
-    }
-}
+as_raw_mut_impl!(WKTWriter, GEOSWKTWriter);

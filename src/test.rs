@@ -50,11 +50,17 @@ fn test_geom_creation_from_geoms() {
         g3.area().expect("area 2.2 failed"),
     );
     let g4 = g3.get_centroid().expect("get_centroid failed");
-    assert_eq!(GeometryTypes::Point, g4.geometry_type());
+    assert_eq!(
+        GeometryTypes::Point,
+        g4.geometry_type().expect("geometry_type failed")
+    );
     let g5 = g4.buffer(200.0, 12).expect("buffer 2 failed");
 
     assert!(g5.area().expect("area 3.1 failed") > g4.area().expect("area 3.2 failed"));
-    assert_eq!(GeometryTypes::Polygon, g5.geometry_type());
+    assert_eq!(
+        GeometryTypes::Polygon,
+        g5.geometry_type().expect("geometry_type failed")
+    );
 }
 
 #[test]
@@ -97,7 +103,7 @@ fn test_multipoint_from_vec_single() {
     let expected = "MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)";
     #[cfg(feature = "v3_12_0")]
     let expected = "MULTIPOINT ((1.3 2.4), (2.1 0.3), (3.1 4.7), (0.4 4.1))";
-    assert_eq!(multi_point.to_wkt_precision(1), Ok(expected.to_owned()),)
+    assert_eq!(multi_point.to_wkt_precision(1), Ok(expected.to_owned()));
 }
 
 #[test]
@@ -110,7 +116,7 @@ fn test_multilinestring_from_vec_single() {
     assert_eq!(
         multi_linestring.to_wkt_precision(0),
         Ok("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))".to_owned()),
-    )
+    );
 }
 
 #[test]
@@ -150,8 +156,8 @@ fn test_error_multi_from_vec_single() {
     let e = multi_point.err().unwrap();
 
     assert_eq!(
-        format!("{}", e),
-        "Impossible operation, all the provided geometry have to be of type Point".to_string(),
+        e.to_string(),
+        "impossible operation: all the provided geometry have to be of type Point".to_string(),
     );
 }
 
@@ -171,6 +177,241 @@ fn test_get_geometry_n() {
         l1.to_wkt_precision(0),
         Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()),
     );
+}
+
+#[rustfmt::skip]
+#[test]
+fn test_incompatible_types() {
+    use crate::JoinStyle;
+
+    let point = Geometry::new_from_wkt("POINT (0 0)").unwrap();
+    let line = Geometry::new_from_wkt("LINESTRING(1 1,10 50,20 25)").unwrap();
+    let ring = Geometry::new_from_wkt("LINEARRING(1 1,10 50,20 25, 1 1)").unwrap();
+    let polygon = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0), (1 1, 1 2, 2 2, 2 1, 1 1))").unwrap();
+    let multiline = Geometry::new_from_wkt("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50))").unwrap();
+    let multipolygon = Geometry::new_from_wkt("MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))").unwrap();
+    #[cfg(feature = "v3_13_0")]
+    let curve = Geometry::new_from_wkt("CIRCULARSTRING(1 1,10 50,20 25)").unwrap();
+    #[cfg(feature = "v3_13_0")]
+    let multicurve = Geometry::new_from_wkt("MULTICURVE ((1 1, 10 50, 20 25), CIRCULARSTRING(0 0, 7 7, 45 50))").unwrap();
+
+    assert!(point.get_start_point().is_err());
+    assert!(line.get_start_point().is_ok());
+    assert!(ring.get_start_point().is_ok());
+    assert!(polygon.get_start_point().is_err());
+    assert!(multiline.get_start_point().is_err());
+    assert!(multipolygon.get_start_point().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_start_point().is_err());
+        assert!(multicurve.get_start_point().is_err());
+    }
+
+    assert!(point.get_end_point().is_err());
+    assert!(line.get_end_point().is_ok());
+    assert!(ring.get_end_point().is_ok());
+    assert!(polygon.get_end_point().is_err());
+    assert!(multiline.get_end_point().is_err());
+    assert!(multipolygon.get_end_point().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_end_point().is_err());
+        assert!(multicurve.get_end_point().is_err());
+    }
+
+    assert!(point.get_point_n(0).is_err());
+    assert!(line.get_point_n(0).is_ok());
+    assert!(ring.get_point_n(0).is_ok());
+    assert!(polygon.get_point_n(0).is_err());
+    assert!(multiline.get_point_n(0).is_err());
+    assert!(multipolygon.get_point_n(0).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_point_n(0).is_err());
+        assert!(multicurve.get_point_n(0).is_err());
+    }
+
+    assert!(point.get_num_points().is_err());
+    assert!(line.get_num_points().is_ok());
+    assert!(ring.get_num_points().is_ok());
+    assert!(polygon.get_num_points().is_err());
+    assert!(multiline.get_num_points().is_err());
+    assert!(multipolygon.get_num_points().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_num_points().is_ok());
+        assert!(multicurve.get_num_points().is_err());
+    }
+
+    assert!(point.get_coord_seq().is_ok());
+    assert!(line.get_coord_seq().is_ok());
+    assert!(ring.get_coord_seq().is_ok());
+    assert!(multiline.get_coord_seq().is_err());
+    assert!(multipolygon.get_coord_seq().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_coord_seq().is_ok());
+        assert!(multicurve.get_coord_seq().is_err());
+    }
+
+    assert!(point.is_closed().is_err());
+    assert!(line.is_closed().is_ok());
+    assert!(ring.is_closed().is_ok());
+    assert!(polygon.is_closed().is_err());
+    assert!(multiline.is_closed().is_ok());
+    assert!(multipolygon.is_closed().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.is_closed().is_ok());
+        assert!(multicurve.is_closed().is_ok());
+    }
+
+    assert!(point.interpolate(1.0).is_err());
+    assert!(line.interpolate(1.0).is_ok());
+    assert!(ring.interpolate(1.0).is_ok());
+    assert!(polygon.interpolate(1.0).is_err());
+    assert!(multiline.interpolate(1.0).is_ok());
+    assert!(multipolygon.interpolate(1.0).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.interpolate(1.0).is_err());
+        assert!(multicurve.interpolate(1.0).is_ok());
+    }
+
+    assert!(point.interpolate_normalized(1.0).is_err());
+    assert!(line.interpolate_normalized(1.0).is_ok());
+    assert!(ring.interpolate_normalized(1.0).is_ok());
+    assert!(polygon.interpolate_normalized(1.0).is_err());
+    assert!(multiline.interpolate_normalized(1.0).is_ok());
+    assert!(multipolygon.interpolate_normalized(1.0).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.interpolate_normalized(1.0).is_err());
+        assert!(multicurve.interpolate_normalized(1.0).is_err());
+    }
+
+    assert!(point.project(&point).is_err());
+    assert!(line.project(&polygon).is_err());
+    assert!(line.project(&point).is_ok());
+    assert!(ring.project(&point).is_ok());
+    assert!(polygon.project(&point).is_err());
+    assert!(multiline.project(&point).is_ok());
+    assert!(multipolygon.project(&point).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.project(&point).is_err());
+        assert!(multicurve.project(&point).is_err());
+    }
+
+    #[cfg(not(feature = "v3_8_0"))]{
+        assert!(point.project_normalized(&point).is_ok());
+        assert!(line.project_normalized(&polygon).is_ok());
+        assert!(line.project_normalized(&point).is_ok());
+        assert!(ring.project_normalized(&point).is_ok());
+        assert!(polygon.project_normalized(&point).is_ok());
+        assert!(multiline.project_normalized(&point).is_ok());
+        assert!(multipolygon.project_normalized(&point).is_ok());
+    }
+    #[cfg(feature = "v3_8_0")] {
+        assert!(point.project_normalized(&point).is_err());
+        assert!(line.project_normalized(&polygon).is_err());
+        assert!(line.project_normalized(&point).is_ok());
+        assert!(ring.project_normalized(&point).is_ok());
+        assert!(polygon.project_normalized(&point).is_err());
+        assert!(multiline.project_normalized(&point).is_ok());
+        assert!(multipolygon.project_normalized(&point).is_err());
+    }
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.project_normalized(&point).is_err());
+        assert!(multicurve.project_normalized(&point).is_err());
+    }
+
+    assert!(line.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+    assert!(ring.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+    #[cfg(not(feature = "v3_11_0"))]
+    {
+        assert!(point.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+        assert!(polygon.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+        assert!(multiline.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+        assert!(multipolygon.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+    }
+    #[cfg(feature = "v3_11_0")]
+    {
+        assert!(point.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+        assert!(polygon.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+        assert!(multiline.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+        assert!(multipolygon.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_ok());
+    }
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+        assert!(multicurve.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+    }
+
+    assert!(point.shared_paths(&line).is_err());
+    assert!(line.shared_paths(&point).is_err());
+    assert!(line.shared_paths(&line).is_ok());
+    assert!(ring.shared_paths(&line).is_ok());
+    assert!(polygon.shared_paths(&line).is_err());
+    assert!(multiline.shared_paths(&line).is_ok());
+    assert!(multipolygon.shared_paths(&line).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.shared_paths(&line).is_err());
+        assert!(multicurve.shared_paths(&line).is_err());
+    }
+
+    assert!(point.get_exterior_ring().is_err());
+    assert!(line.get_exterior_ring().is_err());
+    assert!(ring.get_exterior_ring().is_err());
+    assert!(polygon.get_exterior_ring().is_ok());
+    assert!(multiline.get_exterior_ring().is_err());
+    #[cfg(not(feature = "v3_11_0"))]
+    assert!(multipolygon.offset_curve(1.0, 8, JoinStyle::Round, 5.0).is_err());
+    #[cfg(feature = "v3_11_0")]
+    assert!(multipolygon.get_exterior_ring().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_exterior_ring().is_err());
+        assert!(multicurve.get_exterior_ring().is_err());
+    }
+
+    assert!(point.get_interior_ring_n(0).is_err());
+    assert!(line.get_interior_ring_n(0).is_err());
+    assert!(ring.get_interior_ring_n(0).is_err());
+    assert!(polygon.get_interior_ring_n(0).is_ok());
+    assert!(multiline.get_interior_ring_n(0).is_err());
+    assert!(multipolygon.get_interior_ring_n(0).is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_interior_ring_n(0).is_err());
+        assert!(multicurve.get_interior_ring_n(0).is_err());
+    }
+
+    assert!(point.get_num_interior_rings().is_err());
+    assert!(line.get_num_interior_rings().is_err());
+    assert!(ring.get_num_interior_rings().is_err());
+    assert!(polygon.get_num_interior_rings().is_ok());
+    assert!(multiline.get_num_interior_rings().is_err());
+    assert!(multipolygon.get_num_interior_rings().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_num_interior_rings().is_err());
+        assert!(multicurve.get_num_interior_rings().is_err());
+    }
+
+    assert!(point.get_x().is_ok());
+    assert!(line.get_x().is_err());
+    assert!(ring.get_x().is_err());
+    assert!(polygon.get_x().is_err());
+    assert!(multiline.get_x().is_err());
+    assert!(multipolygon.get_x().is_err());
+    #[cfg(feature = "v3_13_0")]
+    {
+        assert!(curve.get_x().is_err());
+        assert!(multicurve.get_x().is_err());
+    }
 }
 
 fn assert_almost_eq(a: f64, b: f64) {

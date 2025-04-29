@@ -12,7 +12,7 @@ fn to_geo<T: Geom>(other: &T) -> Result<Geometry<f64>, Error> {
     // We should at least use wkb, or even better implement a direct translation
     let wkt_str = other.to_wkt()?;
     geo_types::Geometry::try_from_wkt_str(&wkt_str)
-        .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {}", e)))
+        .map_err(|e| Error::ConversionError(format!("impossible to read wkt: {e}")))
 }
 
 impl TryFrom<GGeometry> for Geometry<f64> {

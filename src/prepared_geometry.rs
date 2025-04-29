@@ -1,7 +1,7 @@
-use crate::context_handle::{with_context, PtrWrap};
-use crate::error::{Error, PredicateType};
+use crate::context_handle::with_context;
 use crate::functions::*;
-use crate::{AsRaw, ContextHandle, GResult, Geom};
+use crate::traits::{as_raw_impl, PtrWrap};
+use crate::{AsRaw, GResult, Geom};
 use geos_sys::*;
 use std::marker::PhantomData;
 
@@ -41,31 +41,11 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     pub fn new<G: Geom>(g: &'a G) -> GResult<PreparedGeometry<'a>> {
         with_context(|ctx| unsafe {
-            let ptr = GEOSPrepare_r(ctx.as_raw(), g.as_raw());
-            PreparedGeometry::new_from_raw(ptr, ctx, "new", g)
-        })
-    }
-
-    pub(crate) unsafe fn new_from_raw<G: Geom>(
-        ptr: *const GEOSPreparedGeometry,
-        context: &ContextHandle,
-        caller: &str,
-        // This argument is only used to provide the lifetime.
-        _: &'a G,
-    ) -> GResult<PreparedGeometry<'a>> {
-        if ptr.is_null() {
-            let extra = if let Some(x) = context.get_last_error() {
-                format!("\nLast error: {x}")
-            } else {
-                String::new()
-            };
-            return Err(Error::NoConstructionFromNullPtr(format!(
-                "PreparedGeometry::{caller}{extra}",
-            )));
-        }
-        Ok(PreparedGeometry {
-            ptr: PtrWrap(ptr),
-            phantom: PhantomData,
+            let ptr = nullcheck!(GEOSPrepare_r(ctx.as_raw(), g.as_raw()))?;
+            Ok(PreparedGeometry {
+                ptr: PtrWrap(ptr.as_ptr()),
+                phantom: PhantomData,
+            })
         })
     }
 
@@ -87,10 +67,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
     /// ```
     pub fn contains<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedContains_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedContains)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedContains_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if every point of the `other` geometry is inside self's interior.
@@ -111,10 +94,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.contains_properly(&geom2), Ok(true));
     /// ```
     pub fn contains_properly<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedContainsProperly_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedContainsProperly)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedContainsProperly_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if no point of `self` is outside of `other`.
@@ -140,10 +126,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_big_geom.covered_by(&little_geom), Ok(false));
     /// ```
     pub fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedCoveredBy_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedCoveredBy)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedCoveredBy_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if no point of `other` is outside of `self`.
@@ -169,10 +158,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
     /// ```
     pub fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedCovers_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedCovers)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedCovers_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if `self` and `other` have at least one interior into each other.
@@ -191,10 +183,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
     /// ```
     pub fn crosses<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedCrosses_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedCrosses)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedCrosses_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if `self` doesn't:
@@ -222,10 +217,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.disjoint(&geom3), Ok(false));
     /// ```
     pub fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedDisjoint_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedDisjoint)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedDisjoint_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if `self` shares any portion of space with `other`. So if any of this is
@@ -256,10 +254,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.intersects(&geom3), Ok(true));
     /// ```
     pub fn intersects<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedIntersects_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedIntersects)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedIntersects_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if `self` spatially overlaps `other`.
@@ -288,10 +289,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(true));
     /// ```
     pub fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedOverlaps_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedOverlaps)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedOverlaps_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if the only points in common between `self` and `other` lie in the union of
@@ -316,10 +320,13 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.touches(&geom2), Ok(true));
     /// ```
     pub fn touches<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedTouches_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedTouches)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedTouches_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     /// Returns `true` if `self` is completely inside `other`.
@@ -346,26 +353,32 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(big_prepared_geom.within(&small_geom), Ok(false));
     /// ```
     pub fn within<G: Geom>(&self, other: &G) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedWithin_r(ctx.as_raw(), self.as_raw(), other.as_raw())
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedWithin)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedWithin_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))
+        })
     }
 
     #[cfg(any(feature = "v3_12_0", feature = "dox"))]
     pub fn contains_xy(&self, x: f64, y: f64) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedContainsXY_r(ctx.as_raw(), self.as_raw(), x, y)
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedContainsXY)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedContainsXY_r(ctx.as_raw(), self.as_raw(), x, y))
+        })
     }
 
     #[cfg(any(feature = "v3_12_0", feature = "dox"))]
     pub fn intersects_xy(&self, x: f64, y: f64) -> GResult<bool> {
-        let ret_val = with_context(|ctx| unsafe {
-            GEOSPreparedIntersectsXY_r(ctx.as_raw(), self.as_raw(), x, y)
-        });
-        check_geos_predicate(ret_val as _, PredicateType::PreparedIntersectsXY)
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedIntersectsXY_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                x,
+                y
+            ))
+        })
     }
 }
 
@@ -378,13 +391,7 @@ impl Drop for PreparedGeometry<'_> {
     }
 }
 
-impl AsRaw for PreparedGeometry<'_> {
-    type RawType = GEOSPreparedGeometry;
-
-    fn as_raw(&self) -> *const Self::RawType {
-        *self.ptr
-    }
-}
+as_raw_impl!(PreparedGeometry<'_>, GEOSPreparedGeometry);
 
 /// Tests to ensure that the lifetime is correctly set.
 ///
