@@ -2268,7 +2268,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
-    fn to_prepared_geom(&self) -> GResult<PreparedGeometry> {
+    fn to_prepared_geom(&self) -> GResult<PreparedGeometry<'_>> {
         PreparedGeometry::new(self)
     }
 
@@ -2299,7 +2299,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(point_nb3.to_wkt().unwrap(), "POINT (3 3)");
     /// ```
-    fn get_geometry_n(&self, n: usize) -> GResult<ConstGeometry> {
+    fn get_geometry_n(&self, n: usize) -> GResult<ConstGeometry<'_>> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGetGeometryN_r(ctx.as_raw(), self.as_raw(), n as _))?;
             Ok(ConstGeometry::new_from_raw(ptr))
@@ -2330,7 +2330,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(interior.to_wkt().unwrap(), "LINEARRING (1 1, 2 1, 2 5, 1 5, 1 1)");
     /// ```
-    fn get_interior_ring_n(&self, n: usize) -> GResult<ConstGeometry> {
+    fn get_interior_ring_n(&self, n: usize) -> GResult<ConstGeometry<'_>> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGetInteriorRingN_r(ctx.as_raw(), self.as_raw(), n as _))?;
             Ok(ConstGeometry::new_from_raw(ptr))
@@ -2361,7 +2361,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(exterior.to_wkt().unwrap(), "LINEARRING (0 0, 10 0, 10 6, 0 6, 0 0)");
     /// ```
-    fn get_exterior_ring(&self) -> GResult<ConstGeometry> {
+    fn get_exterior_ring(&self) -> GResult<ConstGeometry<'_>> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGetExteriorRing_r(ctx.as_raw(), self.as_raw()))?;
             Ok(ConstGeometry::new_from_raw(ptr))
