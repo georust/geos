@@ -363,6 +363,35 @@ impl<'a> PreparedGeometry<'a> {
         })
     }
 
+    /// Returns `true` if the distance between `self` and `other` is shorter than `distance`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("POINT (3 2)").expect("Invalid geometry");
+    ///
+    /// let prepared_geom = geom1
+    ///     .to_prepared_geom()
+    ///     .expect("to_prepared_geom failed");
+    /// assert_eq!(prepared_geom.dwithin(&geom2, 1.0), Ok(true));
+    /// assert_eq!(prepared_geom.dwithin(&geom3, 1.0), Ok(false));
+    /// ```
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    pub fn dwithin<G: Geom>(&self, other: &G, distance: f64) -> GResult<bool> {
+        with_context(|ctx| unsafe {
+            predicate!(GEOSPreparedDistanceWithin_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                distance
+            ))
+        })
+    }
+
     #[cfg(any(feature = "v3_12_0", feature = "dox"))]
     pub fn contains_xy(&self, x: f64, y: f64) -> GResult<bool> {
         with_context(|ctx| unsafe {
