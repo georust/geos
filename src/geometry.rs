@@ -1238,6 +1238,32 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
+    /// Returns `true` if the distance between `self` and `other` is shorter than `distance`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
+    /// let geom3 = Geometry::new_from_wkt("POINT (3 2)").expect("Invalid geometry");
+    ///
+    /// assert_eq!(geom1.dwithin(&geom2, 1.0), Ok(true));
+    /// assert_eq!(geom1.dwithin(&geom3, 1.0), Ok(false));
+    /// ```
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn dwithin<G: Geom>(&self, other: &G, distance: f64) -> GResult<bool> {
+        with_context(|ctx| unsafe {
+            predicate!(GEOSDistanceWithin_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                distance
+            ))
+        })
+    }
+
     /// Returns the indexed distance between `self` and `other`. The unit depends of the SRID.
     ///
     /// Available using the `v3_7_0` feature.
