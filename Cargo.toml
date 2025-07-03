@@ -35,7 +35,6 @@ v3_13_0 = ["geos-sys/v3_13_0", "v3_12_0"]
 [dependencies]
 libc = "0.2"
 num = "0.4"
-c_vec = "2"
 geojson = { version = "0.24", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.10.3", optional = true }
