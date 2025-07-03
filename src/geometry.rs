@@ -8,7 +8,6 @@ use crate::GeoJSONWriter;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{AsRaw, AsRawMut, BufferParams, CoordSeq, PreparedGeometry, WKTWriter};
-use c_vec::CVec;
 use geos_sys::*;
 use std::borrow::Borrow;
 use std::convert::TryFrom;
@@ -2204,11 +2203,11 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     ///                           .expect("Invalid geometry");
     /// let hex_buf = point_geom.to_hex().expect("conversion to WKB failed");
     /// ```
-    fn to_hex(&self) -> GResult<CVec<u8>> {
+    fn to_hex(&self) -> GResult<Vec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGeomToHEX_buf_r(ctx.as_raw(), self.as_raw(), &mut size))?;
-            Ok(CVec::new(ptr.as_ptr(), size as _))
+            Ok(managed_vec(ptr, size, ctx))
         })
     }
 
@@ -2224,11 +2223,11 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     ///                           .expect("Invalid geometry");
     /// let wkb_buf = point_geom.to_wkb().expect("conversion to WKB failed");
     /// ```
-    fn to_wkb(&self) -> GResult<CVec<u8>> {
+    fn to_wkb(&self) -> GResult<Vec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGeomToWKB_buf_r(ctx.as_raw(), self.as_raw(), &mut size))?;
-            Ok(CVec::new(ptr.as_ptr(), size as _))
+            Ok(managed_vec(ptr, size, ctx))
         })
     }
 

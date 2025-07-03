@@ -6,7 +6,7 @@ use crate::{AsRawMut, ContextHandle, Geom};
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_uchar};
 use std::ptr::NonNull;
 
 // We need to cleanup only the char* from geos, the const char* are not to be freed.
@@ -14,15 +14,26 @@ use std::ptr::NonNull;
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
 pub(crate) unsafe fn unmanaged_string(ptr: NonNull<c_char>) -> GResult<String> {
-    let c_str = CStr::from_ptr(ptr.as_ptr());
-    String::from_utf8(c_str.to_bytes().to_vec())
+    CStr::from_ptr(ptr.as_ptr())
+        .to_str()
         .map_err(|e| Error::GenericError(format!("unmanaged_string failed with {e}")))
+        .map(|str| str.to_owned())
 }
 
 pub(crate) unsafe fn managed_string(ptr: NonNull<c_char>, ctx: &ContextHandle) -> GResult<String> {
     let s = unmanaged_string(ptr);
     GEOSFree_r(ctx.as_raw(), ptr.as_ptr().cast());
     s
+}
+
+pub(crate) unsafe fn managed_vec(
+    ptr: NonNull<c_uchar>,
+    size: usize,
+    ctx: &ContextHandle,
+) -> Vec<u8> {
+    let vec = std::slice::from_raw_parts(ptr.as_ptr(), size).to_vec();
+    GEOSFree_r(ctx.as_raw(), ptr.as_ptr().cast());
+    vec
 }
 
 pub fn version() -> GResult<String> {

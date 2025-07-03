@@ -1,10 +1,9 @@
 use crate::context_handle::with_context;
 use crate::enums::{ByteOrder, OutputDimension};
-use crate::functions::{errcheck, nullcheck, predicate};
+use crate::functions::{errcheck, managed_vec, nullcheck, predicate};
 use crate::traits::as_raw_mut_impl;
 use crate::{AsRaw, AsRawMut, GResult, Geom};
 
-use c_vec::CVec;
 use geos_sys::*;
 use std::convert::TryFrom;
 use std::ptr::NonNull;
@@ -69,7 +68,7 @@ impl WKBWriter {
     /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<Vec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKBWriter_write_r(
@@ -78,7 +77,7 @@ impl WKBWriter {
                 geometry.as_raw(),
                 &mut size,
             ))?;
-            Ok(CVec::new(ptr.as_ptr(), size as _))
+            Ok(managed_vec(ptr, size, ctx))
         })
     }
 
@@ -97,7 +96,7 @@ impl WKBWriter {
     ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<Vec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKBWriter_writeHEX_r(
@@ -106,7 +105,7 @@ impl WKBWriter {
                 geometry.as_raw(),
                 &mut size,
             ))?;
-            Ok(CVec::new(ptr.as_ptr(), size as _))
+            Ok(managed_vec(ptr, size, ctx))
         })
     }
 
