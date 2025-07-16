@@ -11,7 +11,7 @@ use crate::{AsRaw, AsRawMut, GResult, Geom};
 pub trait SpatialIndex<I> {
     fn insert<G: Geom>(&mut self, geometry: &G, item: I);
 
-    fn query<G: Geom, V: FnMut(&I)>(&mut self, geometry: &G, visitor: V);
+    fn query<G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
 }
 
 pub struct STRtree<I> {
@@ -53,12 +53,12 @@ impl<I> SpatialIndex<I> for STRtree<I> {
         });
     }
 
-    fn query<'b, G: Geom, V: FnMut(&I)>(&mut self, geometry: &G, visitor: V) {
+    fn query<'b, G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
         with_context(|ctx| unsafe {
             let (closure, callback) = unpack_closure(&visitor);
             GEOSSTRtree_query_r(
                 ctx.as_raw(),
-                self.as_raw_mut(),
+                self.as_raw_mut_override(),
                 geometry.as_raw(),
                 Some(callback),
                 closure,
@@ -80,6 +80,9 @@ impl<I> AsRawMut for STRtree<I> {
         self.ptr.as_ptr()
     }
 }
+
+unsafe impl<I: Send> Send for STRtree<I> {}
+unsafe impl<I: Sync> Sync for STRtree<I> {}
 
 impl<I> Drop for STRtree<I> {
     fn drop(&mut self) {
