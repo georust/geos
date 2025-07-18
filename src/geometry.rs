@@ -3285,9 +3285,9 @@ impl Geometry {
     /// ```
     pub fn create_point(mut s: CoordSeq) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
-            let ptr = nullcheck!(GEOSGeom_createPoint_r(ctx.as_raw(), s.as_raw_mut()))?;
+            let ptr = nullcheck!(GEOSGeom_createPoint_r(ctx.as_raw(), s.as_raw_mut()));
             std::mem::forget(s);
-            Ok(Geometry::new_from_raw(ptr))
+            Ok(Geometry::new_from_raw(ptr?))
         })
     }
 
@@ -3310,9 +3310,9 @@ impl Geometry {
     /// ```
     pub fn create_line_string(mut s: CoordSeq) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
-            let ptr = nullcheck!(GEOSGeom_createLineString_r(ctx.as_raw(), s.as_raw_mut()))?;
+            let ptr = nullcheck!(GEOSGeom_createLineString_r(ctx.as_raw(), s.as_raw_mut()));
             std::mem::forget(s);
-            Ok(Geometry::new_from_raw(ptr))
+            Ok(Geometry::new_from_raw(ptr?))
         })
     }
 
@@ -3337,9 +3337,9 @@ impl Geometry {
     /// ```
     pub fn create_linear_ring(mut s: CoordSeq) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
-            let ptr = nullcheck!(GEOSGeom_createLinearRing_r(ctx.as_raw(), s.as_raw_mut()))?;
+            let ptr = nullcheck!(GEOSGeom_createLinearRing_r(ctx.as_raw(), s.as_raw_mut()));
             std::mem::forget(s);
-            Ok(Geometry::new_from_raw(ptr))
+            Ok(Geometry::new_from_raw(ptr?))
         })
     }
 
@@ -3396,9 +3396,9 @@ impl Geometry {
             let ptr = nullcheck!(GEOSGeom_createCircularString_r(
                 ctx.as_raw(),
                 s.as_raw_mut()
-            ))?;
+            ));
             std::mem::forget(s);
-            Ok(Geometry::new_from_raw(ptr))
+            Ok(Geometry::new_from_raw(ptr?))
         })
     }
 }
