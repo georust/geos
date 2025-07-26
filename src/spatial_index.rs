@@ -5,6 +5,8 @@ use std::ptr::NonNull;
 use geos_sys::*;
 
 use crate::context_handle::with_context;
+#[cfg(any(feature = "v3_12_0", feature = "dox"))]
+use crate::functions::errcheck;
 use crate::functions::nullcheck;
 use crate::{AsRaw, AsRawMut, GResult, Geom};
 
@@ -12,6 +14,9 @@ pub trait SpatialIndex<I> {
     fn insert<G: Geom>(&mut self, geometry: &G, item: I);
 
     fn query<G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
+
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn build(&self) -> GResult<()>;
 }
 
 pub struct STRtree<I> {
@@ -53,7 +58,7 @@ impl<I> SpatialIndex<I> for STRtree<I> {
         });
     }
 
-    fn query<'b, G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
+    fn query<G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V) {
         with_context(|ctx| unsafe {
             let (closure, callback) = unpack_closure(&visitor);
             GEOSSTRtree_query_r(
@@ -63,6 +68,17 @@ impl<I> SpatialIndex<I> for STRtree<I> {
                 Some(callback),
                 closure,
             );
+        })
+    }
+
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn build(&self) -> GResult<()> {
+        with_context(|ctx| unsafe {
+            errcheck!(GEOSSTRtree_build_r(
+                ctx.as_raw(),
+                self.as_raw_mut_override(),
+            ))?;
+            Ok(())
         })
     }
 }
