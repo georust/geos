@@ -410,6 +410,20 @@ impl<'a> PreparedGeometry<'a> {
             ))
         })
     }
+
+    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    pub fn distance<G: Geom>(&self, other: &G) -> GResult<f64> {
+        with_context(|ctx| unsafe {
+            let mut distance = 0.0;
+            errcheck!(GEOSPreparedDistance_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                &mut distance
+            ))?;
+            Ok(distance)
+        })
+    }
 }
 
 unsafe impl Send for PreparedGeometry<'_> {}
