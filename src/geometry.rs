@@ -5,6 +5,8 @@ use crate::functions::*;
 use crate::traits::{as_raw_impl, as_raw_mut_impl};
 #[cfg(any(feature = "v3_10_0", feature = "dox"))]
 use crate::GeoJSONWriter;
+#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+use crate::MakeValidParams;
 #[cfg(any(feature = "v3_6_0", feature = "dox"))]
 use crate::Precision;
 use crate::{AsRaw, AsRawMut, BufferParams, CoordSeq, PreparedGeometry, WKTWriter};
@@ -1768,13 +1770,56 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// This functions attempts to return a valid representation of `self`.
+    /// This function attempts to return a valid representation of `self`.
     ///
     /// Available using the `v3_8_0` feature.
     #[cfg(any(feature = "v3_8_0", feature = "dox"))]
     fn make_valid(&self) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSMakeValid_r(ctx.as_raw(), self.as_raw()))?;
+            Ok(Geometry::new_from_raw(ptr))
+        })
+    }
+
+    /// Attempts to return a valid representation of `self` using the provided parameters.
+    ///
+    /// This allows control over the validation method and whether to preserve collapsed geometries.
+    ///
+    /// Available using the `v3_10_0` feature.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry, GeometryTypes, MakeValidMethod, MakeValidParams};
+    ///
+    /// // Bow-tie polygon (self-intersecting, invalid)
+    /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))")
+    ///     .expect("Invalid geometry");
+    ///
+    /// let params = MakeValidParams::builder()
+    ///     .method(MakeValidMethod::Structure)
+    ///     .keep_collapsed(false)
+    ///     .build()
+    ///     .expect("Failed to create params");
+    ///
+    /// let valid_geom = geom.make_valid_with_params(&params)
+    ///     .expect("make_valid_with_params failed");
+    ///
+    /// assert!(valid_geom.is_valid().unwrap());
+    /// assert_eq!(valid_geom.geometry_type().unwrap(), GeometryTypes::MultiPolygon);
+    /// assert_eq!(
+    ///     valid_geom.to_wkt().unwrap(),
+    ///     "MULTIPOLYGON (((0 0, 0.5 0.5, 1 0, 0 0)), ((0.5 0.5, 0 1, 1 1, 0.5 0.5)))"
+    /// );
+    /// ```
+    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    fn make_valid_with_params(&self, params: &MakeValidParams) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSMakeValidWithParams_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                params.as_raw(),
+            ))?;
             Ok(Geometry::new_from_raw(ptr))
         })
     }
