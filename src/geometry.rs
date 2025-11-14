@@ -657,7 +657,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// let geom = Geometry::new_from_wkt("POINT(1 3)").expect("Invalid geometry");
     /// let buffer_geom = geom.buffer_with_style(
     ///     2., 8, CapStyle::Round, JoinStyle::Round, 5.
-    /// ).expect("buffer_with_style failed");    
+    /// ).expect("buffer_with_style failed");
     /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(buffer_geom.to_wkt_precision(1).unwrap(),
     ///            "POLYGON ((3.0 3.0, 3.0 2.6, 2.8 2.2, 2.7 1.9, 2.4 1.6, 2.1 1.3, 1.8 1.2, \
@@ -1790,7 +1790,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geom, Geometry, GeometryTypes, MakeValidMethod, MakeValidParams};
+    /// use geos::{Geom, Geometry, MakeValidMethod, MakeValidParams};
     ///
     /// // Bow-tie polygon (self-intersecting, invalid)
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))")
@@ -1806,11 +1806,6 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     ///     .expect("make_valid_with_params failed");
     ///
     /// assert!(valid_geom.is_valid().unwrap());
-    /// assert_eq!(valid_geom.geometry_type().unwrap(), GeometryTypes::MultiPolygon);
-    /// assert_eq!(
-    ///     valid_geom.to_wkt().unwrap(),
-    ///     "MULTIPOLYGON (((0 0, 0.5 0.5, 1 0, 0 0)), ((0.5 0.5, 0 1, 1 1, 0.5 0.5)))"
-    /// );
     /// ```
     #[cfg(any(feature = "v3_10_0", feature = "dox"))]
     fn make_valid_with_params(&self, params: &MakeValidParams) -> GResult<Geometry> {

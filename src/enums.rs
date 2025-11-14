@@ -430,7 +430,9 @@ impl TryFrom<u32> for MakeValidMethod {
         match method {
             0 => Ok(MakeValidMethod::Linework),
             1 => Ok(MakeValidMethod::Structure),
-            _ => Err(Self::Error::GenericError("Unknown make valid method".into())),
+            _ => Err(Self::Error::GenericError(
+                "Unknown make valid method".into(),
+            )),
         }
     }
 }
