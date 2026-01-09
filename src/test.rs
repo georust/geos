@@ -203,7 +203,10 @@ fn test_incompatible_types() {
     assert!(multipolygon.get_start_point().is_err());
     #[cfg(feature = "v3_13_0")]
     {
+        #[cfg(not(feature = "v3_14_0"))]
         assert!(curve.get_start_point().is_err());
+        #[cfg(feature = "v3_14_0")]
+        assert!(curve.get_start_point().is_ok());
         assert!(multicurve.get_start_point().is_err());
     }
 
@@ -215,7 +218,10 @@ fn test_incompatible_types() {
     assert!(multipolygon.get_end_point().is_err());
     #[cfg(feature = "v3_13_0")]
     {
+        #[cfg(not(feature = "v3_14_0"))]
         assert!(curve.get_end_point().is_err());
+        #[cfg(feature = "v3_14_0")]
+        assert!(curve.get_end_point().is_ok());
         assert!(multicurve.get_end_point().is_err());
     }
 
@@ -227,7 +233,10 @@ fn test_incompatible_types() {
     assert!(multipolygon.get_point_n(0).is_err());
     #[cfg(feature = "v3_13_0")]
     {
+        #[cfg(not(feature = "v3_14_0"))]
         assert!(curve.get_point_n(0).is_err());
+        #[cfg(feature = "v3_14_0")]
+        assert!(curve.get_point_n(0).is_ok());
         assert!(multicurve.get_point_n(0).is_err());
     }
 

@@ -83,10 +83,10 @@ impl GeoJSONWriter {
     /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
     ///
     /// writer.set_output_dimension(OutputDimension::TwoD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (1.1 2.2)");
+    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2]}"#);
     ///
     /// writer.set_output_dimension(OutputDimension::ThreeD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT Z (1.1 2.2 3.3)");
+    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2,3.3]}"#);
     /// ```
     #[cfg(feature = "v3_14_0")]
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
@@ -109,8 +109,10 @@ impl GeoJSONWriter {
     ///
     /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
     ///
-    /// #[cfg(feature = "v3_12_0")]
+    /// #[cfg(all(feature = "v3_12_0", not(feature = "v3_14_0")))]
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::FourD));
+    /// #[cfg(feature = "v3_14_0")]
+    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
     /// #[cfg(not(feature = "v3_12_0"))]
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
     /// writer.set_output_dimension(OutputDimension::ThreeD);
