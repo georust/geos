@@ -277,6 +277,8 @@ pub enum Ordinate {
     X,
     Y,
     Z,
+    #[cfg(feature = "v3_14_0")]
+    M,
 }
 
 impl TryFrom<size_t> for Ordinate {
@@ -287,8 +289,15 @@ impl TryFrom<size_t> for Ordinate {
             0 => Ok(Ordinate::X),
             1 => Ok(Ordinate::Y),
             2 => Ok(Ordinate::Z),
+            #[cfg(feature = "v3_14_0")]
+            3 => Ok(Ordinate::M),
+            #[cfg(not(feature = "v3_14_0"))]
             _ => Err(Self::Error::GenericError(
                 "ordinate value must be >= 0 and <= 2".into(),
+            )),
+            #[cfg(feature = "v3_14_0")]
+            _ => Err(Self::Error::GenericError(
+                "ordinate value must be >= 0 and <= 3".into(),
             )),
         }
     }
@@ -301,6 +310,8 @@ impl Into<u32> for Ordinate {
             Ordinate::X => 0,
             Ordinate::Y => 1,
             Ordinate::Z => 2,
+            #[cfg(feature = "v3_14_0")]
+            Ordinate::M => 3,
         }
     }
 }
