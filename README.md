@@ -105,7 +105,7 @@ more information.
 If you want to link GEOS statically, use the `static` feature.
 
 The static build uses the GEOS version in the git submodule in`sys/geos-src/source`.
-This is currently GEOS 3.13.1.
+This is currently GEOS 3.14.1.
 
 You will need to have a build environment supported for the static version of
 GEOS. See [GEOS build instructions](https://libgeos.org/usage/download/#build-from-source)
