@@ -153,7 +153,7 @@ fn main() {
         );
     }
 
-    // resolve user-requested version (via specific version feature, e.g., "v3_10")
+    // resolve user-requested version (via specific version feature, e.g., "v3_10_0")
     // to the correct pre-built binding; their available GEOS must be >= requested
     // pre-built binding version
 

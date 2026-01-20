@@ -380,7 +380,7 @@ impl<'a> PreparedGeometry<'a> {
     /// assert_eq!(prepared_geom.dwithin(&geom2, 1.0), Ok(true));
     /// assert_eq!(prepared_geom.dwithin(&geom3, 1.0), Ok(false));
     /// ```
-    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    #[cfg(feature = "v3_10_0")]
     pub fn dwithin<G: Geom>(&self, other: &G, distance: f64) -> GResult<bool> {
         with_context(|ctx| unsafe {
             predicate!(GEOSPreparedDistanceWithin_r(
@@ -392,14 +392,14 @@ impl<'a> PreparedGeometry<'a> {
         })
     }
 
-    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    #[cfg(feature = "v3_12_0")]
     pub fn contains_xy(&self, x: f64, y: f64) -> GResult<bool> {
         with_context(|ctx| unsafe {
             predicate!(GEOSPreparedContainsXY_r(ctx.as_raw(), self.as_raw(), x, y))
         })
     }
 
-    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    #[cfg(feature = "v3_12_0")]
     pub fn intersects_xy(&self, x: f64, y: f64) -> GResult<bool> {
         with_context(|ctx| unsafe {
             predicate!(GEOSPreparedIntersectsXY_r(
@@ -411,7 +411,7 @@ impl<'a> PreparedGeometry<'a> {
         })
     }
 
-    #[cfg(any(feature = "v3_9_0", feature = "dox"))]
+    #[cfg(feature = "v3_9_0")]
     pub fn distance<G: Geom>(&self, other: &G) -> GResult<f64> {
         with_context(|ctx| unsafe {
             let mut distance = 0.0;

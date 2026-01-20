@@ -2,7 +2,7 @@
 
 Rust bindings for [GEOS](https://libgeos.org/) C API.
 
-The supported geos version is >= 3.5
+The supported geos version is >= 3.6
 
 ### Disclaimer
 
@@ -26,7 +26,7 @@ let mut gg3 = gg1.difference(&gg2).expect("difference failed");
 // normalize is only used for consistent ordering of vertices
 gg3.normalize().expect("normalize failed");
 assert_eq!(
-    gg3.to_wkt_precision(0).expect("to_wkt failed"),
+    gg3.to_wkt().expect("to_wkt failed"),
     "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))",
 );
 ```

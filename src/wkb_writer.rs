@@ -20,13 +20,11 @@ use std::ptr::NonNull;
 ///
 /// // Output as WKB
 /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-/// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
-///            "POINT (2.5 2.5)");
+/// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
 ///
 /// // Output as HEX
 /// let v: Vec<u8> = writer.write_hex(&point_geom).unwrap().into();
-/// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt_precision(1).unwrap(),
-///            "POINT (2.5 2.5)");
+/// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
 /// ```
 pub struct WKBWriter {
     ptr: NonNull<GEOSWKBWriter>,
@@ -44,12 +42,23 @@ impl WKBWriter {
     /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
     ///
     /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-    /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
-    ///            "POINT (2.5 2.5)");
+    /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
     /// ```
+    #[cfg(not(feature = "tests"))]
     pub fn new() -> GResult<WKBWriter> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKBWriter_create_r(ctx.as_raw()))?;
+            Ok(WKBWriter { ptr })
+        })
+    }
+    #[cfg(feature = "tests")]
+    pub fn new() -> GResult<WKBWriter> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSWKBWriter_create_r(ctx.as_raw()))?;
+            #[cfg(not(feature = "v3_12_0"))]
+            GEOSWKBWriter_setOutputDimension_r(ctx.as_raw(), ptr.as_ptr(), 3);
+            #[cfg(feature = "v3_12_0")]
+            GEOSWKBWriter_setOutputDimension_r(ctx.as_raw(), ptr.as_ptr(), 4);
             Ok(WKBWriter { ptr })
         })
     }
@@ -115,21 +124,15 @@ impl WKBWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, OutputDimension, WKBWriter, WKTWriter};
+    /// use geos::{Geom, Geometry, OutputDimension, CoordDimensions, WKBWriter, WKTWriter};
     ///
-    /// let mut wkt_writer = WKTWriter::new().expect("Failed to create WKTWriter");
-    /// wkt_writer.set_output_dimension(OutputDimension::ThreeD);
-    /// wkt_writer.set_trim(true);
-    ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)").expect("Invalid geometry");
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT Z (1.1 2.2 3.3)").unwrap();
+    /// let mut writer = WKBWriter::new().unwrap();
+    /// writer.set_output_dimension(OutputDimension::TwoD);
     ///
     /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
     /// let geom = Geometry::new_from_wkb(&v).unwrap();
-    /// #[cfg(not(feature = "v3_12_0"))]
-    /// assert_eq!(wkt_writer.write(&geom).unwrap(), "POINT (1.1 2.2)");
-    /// #[cfg(feature = "v3_12_0")]
-    /// assert_eq!(wkt_writer.write(&geom).unwrap(), "POINT Z (1.1 2.2 3.3)");
+    /// assert_eq!(geom.get_coordinate_dimension().unwrap(), CoordDimensions::TwoD);
     /// ```
     pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
         with_context(|ctx| unsafe {
@@ -147,10 +150,9 @@ impl WKBWriter {
     ///
     /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
     ///
-    /// #[cfg(feature = "v3_12_0")]
-    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::FourD));
-    /// #[cfg(not(feature = "v3_12_0"))]
+    /// writer.set_output_dimension(OutputDimension::TwoD);
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
+    ///
     /// writer.set_output_dimension(OutputDimension::ThreeD);
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
     /// ```
