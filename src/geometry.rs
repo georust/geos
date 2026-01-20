@@ -2393,7 +2393,31 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
             let ptr = GEOSGeom_transformXY_r(
                 ctx.as_raw(),
                 self.as_raw(),
-                trampoline.get_callback(),
+                trampoline.get_xy_callback(),
+                trampoline.as_mut_void(),
+            );
+            if let Some(ptr) = NonNull::new(ptr) {
+                Ok(Geometry::new_from_raw(ptr))
+            } else if let Some(err) = trampoline.err {
+                Err(err)
+            } else {
+                Err(Error::GeosError(("GEOSGeom_transformXY_r", ctx.get_last_error())).into())
+            }
+        })
+    }
+
+    #[cfg(any(feature = "v3_14_0", feature = "dox"))]
+    fn transform_xyz<F: Fn(f64, f64, f64) -> Result<(f64, f64, f64), E>, E: From<Error>>(
+        &self,
+        on_transform_point: F,
+    ) -> Result<Geometry, E> {
+        let mut trampoline = Trampoline::new(on_transform_point);
+
+        with_context(|ctx| unsafe {
+            let ptr = GEOSGeom_transformXYZ_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                trampoline.get_xyz_callback(),
                 trampoline.as_mut_void(),
             );
             if let Some(ptr) = NonNull::new(ptr) {
@@ -2506,7 +2530,7 @@ impl<F, E: From<Error>> Trampoline<F, E> {
 
 #[cfg(feature = "v3_11_0")]
 impl<F: FnMut(f64, f64) -> Result<(f64, f64), E>, E: From<Error>> Trampoline<F, E> {
-    fn get_callback(&self) -> GEOSTransformXYCallback {
+    fn get_xy_callback(&self) -> GEOSTransformXYCallback {
         unsafe extern "C" fn transform_trampoline<F, E>(
             x: *mut libc::c_double,
             y: *mut libc::c_double,
@@ -2522,6 +2546,39 @@ impl<F: FnMut(f64, f64) -> Result<(f64, f64), E>, E: From<Error>> Trampoline<F, 
                 Ok((new_x, new_y)) => {
                     *x = new_x;
                     *y = new_y;
+                    1
+                }
+                Err(error) => {
+                    trampoline.err = Some(error);
+                    0
+                }
+            }
+        }
+
+        Some(transform_trampoline::<F, E>)
+    }
+}
+
+#[cfg(feature = "v3_14_0")]
+impl<F: FnMut(f64, f64, f64) -> Result<(f64, f64, f64), E>, E: From<Error>> Trampoline<F, E> {
+    fn get_xyz_callback(&self) -> GEOSTransformXYZCallback {
+        unsafe extern "C" fn transform_trampoline<F, E>(
+            x: *mut libc::c_double,
+            y: *mut libc::c_double,
+            z: *mut libc::c_double,
+            user_data: *mut libc::c_void,
+        ) -> libc::c_int
+        where
+            F: FnMut(f64, f64, f64) -> Result<(f64, f64, f64), E>,
+            E: From<Error>,
+        {
+            let trampoline = &mut *user_data.cast::<Trampoline<F, E>>();
+            let closure = &mut trampoline.closure;
+            match closure(*x, *y, *z) {
+                Ok((new_x, new_y, new_z)) => {
+                    *x = new_x;
+                    *y = new_y;
+                    *z = new_z;
                     1
                 }
                 Err(error) => {
