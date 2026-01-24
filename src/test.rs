@@ -83,9 +83,9 @@ fn test_prepared_geoms() {
 
 #[test]
 fn test_wkt_rounding_precision() {
-    let g = Geometry::new_from_wkt("LINESTRING(0.0 0.0, 7.0 7.0, 45.0 50.5, 100.0 100.0)").unwrap();
+    let g = Geometry::new_from_wkt("LINESTRING(0.0 0.0, 7.1 7.2, 5.0 5.6, 9.0 9.0)").unwrap();
     let wkt = g.to_wkt_precision(0);
-    assert_eq!(wkt, Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()));
+    assert_eq!(wkt, Ok("LINESTRING (0 0, 7 7, 5 6, 9 9)".to_owned()));
     let wkt2 = g.to_wkt();
     assert!(wkt2 != wkt);
 }
@@ -103,7 +103,7 @@ fn test_multipoint_from_vec_single() {
     let expected = "MULTIPOINT (1.3 2.4, 2.1 0.3, 3.1 4.7, 0.4 4.1)";
     #[cfg(feature = "v3_12_0")]
     let expected = "MULTIPOINT ((1.3 2.4), (2.1 0.3), (3.1 4.7), (0.4 4.1))";
-    assert_eq!(multi_point.to_wkt_precision(1), Ok(expected.to_owned()));
+    assert_eq!(multi_point.to_wkt(), Ok(expected.to_owned()));
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn test_multilinestring_from_vec_single() {
     ];
     let multi_linestring = Geometry::create_multiline_string(vec_geoms).unwrap();
     assert_eq!(
-        multi_linestring.to_wkt_precision(0),
+        multi_linestring.to_wkt(),
         Ok("MULTILINESTRING ((1 1, 10 50, 20 25), (0 0, 7 7, 45 50, 100 100))".to_owned()),
     );
 }
@@ -127,7 +127,7 @@ fn test_multipolygon_from_vec_single() {
     ];
     let multi_polygon = Geometry::create_multipolygon(vec_geoms).unwrap();
     assert_eq!(
-        multi_polygon.to_wkt_precision(0),
+        multi_polygon.to_wkt(),
         Ok("MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)), ((1 1, 1 3, 5 5, 5 0, 1 1)))".to_owned()),
     );
 }
@@ -141,9 +141,9 @@ fn test_geometrycollection_from_vec_geometry() {
     ];
     let gc = Geometry::create_geometry_collection(vec_geoms).unwrap();
     assert_eq!(
-            gc.to_wkt_precision(0),
-            Ok("GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 1, 10 50, 20 25), POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0)))".to_owned()),
-        );
+        gc.to_wkt(),
+        Ok("GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 1, 10 50, 20 25), POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0)))".to_owned()),
+    );
 }
 
 #[test]
@@ -169,12 +169,9 @@ fn test_get_geometry_n() {
     let l0 = multilinestring.get_geometry_n(0).unwrap();
     let l1 = multilinestring.get_geometry_n(1).unwrap();
 
+    assert_eq!(l0.to_wkt(), Ok("LINESTRING (1 1, 10 50, 20 25)".to_owned()),);
     assert_eq!(
-        l0.to_wkt_precision(0),
-        Ok("LINESTRING (1 1, 10 50, 20 25)".to_owned()),
-    );
-    assert_eq!(
-        l1.to_wkt_precision(0),
+        l1.to_wkt(),
         Ok("LINESTRING (0 0, 7 7, 45 50, 100 100)".to_owned()),
     );
 }

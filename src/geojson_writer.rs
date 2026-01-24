@@ -109,12 +109,9 @@ impl GeoJSONWriter {
     ///
     /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
     ///
-    /// #[cfg(all(feature = "v3_12_0", not(feature = "v3_14_0")))]
-    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::FourD));
-    /// #[cfg(feature = "v3_14_0")]
-    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
-    /// #[cfg(not(feature = "v3_12_0"))]
+    /// writer.set_output_dimension(OutputDimension::TwoD);
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
+    ///
     /// writer.set_output_dimension(OutputDimension::ThreeD);
     /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
     /// ```

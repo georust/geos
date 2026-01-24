@@ -130,7 +130,7 @@ pub fn orientation_index(
 /// Returns [`None`] if the segments don't intersect, otherwise returns `Some(x_pos, y_pos)`.
 ///
 /// Available using the `v3_7_0` feature.
-#[cfg(any(feature = "v3_7_0", feature = "dox"))]
+#[cfg(feature = "v3_7_0")]
 #[allow(clippy::too_many_arguments)]
 pub fn segment_intersection(
     ax0: f64,

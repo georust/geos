@@ -151,12 +151,12 @@ jobs:
       - name: Build geos crate
         run: |
           cargo build --features '${{ matrix.geos.version_feature }}'
-          cargo build --features 'geo,json,${{ matrix.geos.version_feature }}'
+          cargo build --features '${{ matrix.geos.version_feature }},geo,json'
 
       - name: Run geos tests
         run: |
-          cargo test --features '${{ matrix.geos.version_feature }}'
-          cargo test --features 'geo,json,${{ matrix.geos.version_feature }}'
+          cargo test --features '${{ matrix.geos.version_feature }},tests'
+          cargo test --features '${{ matrix.geos.version_feature }},tests,geo,json'
 
       - name: Check doc generation
         run: |

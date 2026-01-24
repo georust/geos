@@ -1,6 +1,6 @@
 use crate::context_handle::with_context;
 use crate::error::{Error, GResult};
-#[cfg(any(feature = "v3_14_0", feature = "dox"))]
+#[cfg(feature = "v3_14_0")]
 use crate::functions::predicate;
 use crate::functions::{errcheck, nullcheck};
 use crate::traits::as_raw_mut_impl;
@@ -759,7 +759,7 @@ impl CoordSeq {
     /// Returns `true` if the geometry has a counter-clockwise orientation.
     ///
     /// Available using the `v3_7_0` feature.
-    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
+    #[cfg(feature = "v3_7_0")]
     pub fn is_ccw(&self) -> GResult<bool> {
         with_context(|ctx| unsafe {
             let mut is_ccw = 0;
@@ -773,7 +773,7 @@ impl CoordSeq {
     }
 
     /// Returns `true` if `self` has a Z coordinate.
-    #[cfg(any(feature = "v3_14_0", feature = "dox"))]
+    #[cfg(feature = "v3_14_0")]
     pub fn has_z(&self) -> GResult<bool> {
         with_context(|ctx| unsafe {
             predicate!(GEOSCoordSeq_hasZ_r(
@@ -784,7 +784,7 @@ impl CoordSeq {
     }
 
     /// Returns `true` if `self` has a M coordinate.
-    #[cfg(any(feature = "v3_14_0", feature = "dox"))]
+    #[cfg(feature = "v3_14_0")]
     pub fn has_m(&self) -> GResult<bool> {
         with_context(|ctx| unsafe {
             predicate!(GEOSCoordSeq_hasM_r(
@@ -806,9 +806,6 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_point(coords).expect("Failed to create point");
     ///
-    /// #[cfg(not(feature = "v3_12_0"))]
-    /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
-    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1 2)");
     /// ```
     pub fn create_point(self) -> GResult<Geometry> {
@@ -827,11 +824,6 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_line_string(coords).expect("Failed to create line string");
     ///
-    /// #[cfg(not(feature = "v3_12_0"))]
-    /// assert_eq!(geom.to_wkt().unwrap(),
-    ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
-    ///                         3.0000000000000000 4.0000000000000000)");
-    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(geom.to_wkt().unwrap(), "LINESTRING (1 2, 3 4)");
     /// ```
     pub fn create_line_string(self) -> GResult<Geometry> {
