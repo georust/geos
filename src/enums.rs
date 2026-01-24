@@ -4,25 +4,100 @@ use std::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum CoordDimensions {
-    #[cfg(not(feature = "v3_12_0"))]
-    OneD,
     TwoD,
     ThreeD,
     #[cfg(feature = "v3_12_0")]
     FourD,
 }
 
-impl TryFrom<u32> for CoordDimensions {
+impl TryFrom<c_int> for CoordDimensions {
     type Error = crate::error::Error;
 
-    fn try_from(dimensions: u32) -> Result<Self, Self::Error> {
+    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
         match dimensions {
-            #[cfg(not(feature = "v3_12_0"))]
-            1 => Ok(CoordDimensions::OneD),
             2 => Ok(CoordDimensions::TwoD),
             3 => Ok(CoordDimensions::ThreeD),
             #[cfg(feature = "v3_12_0")]
             4 => Ok(CoordDimensions::FourD),
+            #[cfg(not(feature = "v3_12_0"))]
+            _ => Err(Self::Error::GenericError(
+                "dimensions must be 2 or 3".into(),
+            )),
+            #[cfg(feature = "v3_12_0")]
+            _ => Err(Self::Error::GenericError(
+                "dimensions must be 2, 3 or 4".into(),
+            )),
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<c_int> for CoordDimensions {
+    fn into(self) -> c_int {
+        match self {
+            CoordDimensions::TwoD => 2,
+            CoordDimensions::ThreeD => 3,
+            #[cfg(feature = "v3_12_0")]
+            CoordDimensions::FourD => 4,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum CoordType {
+    XY,
+    XYZ,
+    #[cfg(feature = "v3_12_0")]
+    XYZM,
+    #[cfg(feature = "v3_12_0")]
+    XYM,
+}
+
+impl CoordType {
+    #[cfg(not(feature = "v3_12_0"))]
+    pub fn has_z(&self) -> bool {
+        matches!(self, Self::XYZ)
+    }
+    #[cfg(feature = "v3_12_0")]
+    pub fn has_z(&self) -> bool {
+        matches!(self, Self::XYZ | Self::XYZM)
+    }
+    #[cfg(not(feature = "v3_12_0"))]
+    pub fn has_m(&self) -> bool {
+        false
+    }
+    #[cfg(feature = "v3_12_0")]
+    pub fn has_m(&self) -> bool {
+        matches!(self, Self::XYM | Self::XYZM)
+    }
+}
+
+impl TryFrom<(bool, bool)> for CoordType {
+    type Error = crate::error::Error;
+
+    fn try_from((has_z, has_m): (bool, bool)) -> Result<Self, Self::Error> {
+        match (has_z, has_m) {
+            (false, false) => Ok(Self::XY),
+            (true, false) => Ok(Self::XYZ),
+            #[cfg(feature = "v3_12_0")]
+            (false, true) => Ok(Self::XYM),
+            #[cfg(feature = "v3_12_0")]
+            (true, true) => Ok(Self::XYZM),
+            #[cfg(not(feature = "v3_12_0"))]
+            _ => Err(Self::Error::GenericError("unsupported dimension".into())),
+        }
+    }
+}
+
+impl TryFrom<u32> for CoordType {
+    type Error = crate::error::Error;
+
+    fn try_from(dimensions: u32) -> Result<Self, Self::Error> {
+        match dimensions {
+            2 => Ok(Self::XY),
+            3 => Ok(Self::XYZ),
+            #[cfg(feature = "v3_12_0")]
+            4 => Ok(Self::XYZM),
             #[cfg(not(feature = "v3_12_0"))]
             _ => Err(Self::Error::GenericError(
                 "dimensions must be >=1 and <= 3".into(),
@@ -35,55 +110,15 @@ impl TryFrom<u32> for CoordDimensions {
     }
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<u32> for CoordDimensions {
-    fn into(self) -> u32 {
-        match self {
-            #[cfg(not(feature = "v3_12_0"))]
-            CoordDimensions::OneD => 1,
-            CoordDimensions::TwoD => 2,
-            CoordDimensions::ThreeD => 3,
+impl From<CoordType> for u32 {
+    fn from(c: CoordType) -> u32 {
+        match c {
+            CoordType::XY => 2,
+            CoordType::XYZ => 3,
             #[cfg(feature = "v3_12_0")]
-            CoordDimensions::FourD => 4,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-pub enum OutputDimension {
-    TwoD,
-    ThreeD,
-    #[cfg(feature = "v3_12_0")]
-    FourD,
-}
-
-impl TryFrom<c_int> for OutputDimension {
-    type Error = crate::error::Error;
-
-    fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
-        match dimensions {
-            2 => Ok(OutputDimension::TwoD),
-            3 => Ok(OutputDimension::ThreeD),
+            CoordType::XYM => 3,
             #[cfg(feature = "v3_12_0")]
-            4 => Ok(OutputDimension::FourD),
-            #[cfg(not(feature = "v3_12_0"))]
-            _ => Err(Self::Error::GenericError("dimension must be 2 or 3".into())),
-            #[cfg(feature = "v3_12_0")]
-            _ => Err(Self::Error::GenericError(
-                "dimension must be 2, 3 or 4".into(),
-            )),
-        }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<c_int> for OutputDimension {
-    fn into(self) -> c_int {
-        match self {
-            OutputDimension::TwoD => 2,
-            OutputDimension::ThreeD => 3,
-            #[cfg(feature = "v3_12_0")]
-            OutputDimension::FourD => 4,
+            CoordType::XYZM => 4,
         }
     }
 }
@@ -455,6 +490,26 @@ impl Into<u32> for MakeValidMethod {
         match self {
             MakeValidMethod::Linework => 0,
             MakeValidMethod::Structure => 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub enum DimensionType {
+    Point,
+    Curve,
+    Surface,
+}
+
+impl TryFrom<c_int> for DimensionType {
+    type Error = crate::error::Error;
+
+    fn try_from(cap_style: c_int) -> Result<Self, Self::Error> {
+        match cap_style {
+            0 => Ok(Self::Point),
+            1 => Ok(Self::Curve),
+            2 => Ok(Self::Surface),
+            _ => Err(Self::Error::GenericError("Unknown dimension type".into())),
         }
     }
 }

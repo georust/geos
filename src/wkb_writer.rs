@@ -1,5 +1,5 @@
 use crate::context_handle::with_context;
-use crate::enums::{ByteOrder, OutputDimension};
+use crate::enums::{ByteOrder, CoordDimensions};
 use crate::functions::{errcheck, managed_vec, nullcheck, predicate};
 use crate::traits::as_raw_mut_impl;
 use crate::{AsRaw, AsRawMut, GResult, Geom};
@@ -124,17 +124,17 @@ impl WKBWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geom, Geometry, OutputDimension, CoordDimensions, WKBWriter, WKTWriter};
+    /// use geos::{Geom, Geometry, CoordDimensions, WKBWriter, WKTWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT Z (1.1 2.2 3.3)").unwrap();
     /// let mut writer = WKBWriter::new().unwrap();
-    /// writer.set_output_dimension(OutputDimension::TwoD);
+    /// writer.set_output_dimension(CoordDimensions::TwoD);
     ///
     /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
     /// let geom = Geometry::new_from_wkb(&v).unwrap();
     /// assert_eq!(geom.get_coordinate_dimension().unwrap(), CoordDimensions::TwoD);
     /// ```
-    pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
+    pub fn set_output_dimension(&mut self, dimension: CoordDimensions) {
         with_context(|ctx| unsafe {
             GEOSWKBWriter_setOutputDimension_r(ctx.as_raw(), self.as_raw_mut(), dimension.into());
         })
@@ -146,20 +146,20 @@ impl WKBWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{OutputDimension, WKBWriter};
+    /// use geos::{CoordDimensions, WKBWriter};
     ///
     /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
     ///
-    /// writer.set_output_dimension(OutputDimension::TwoD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
+    /// writer.set_output_dimension(CoordDimensions::TwoD);
+    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::TwoD));
     ///
-    /// writer.set_output_dimension(OutputDimension::ThreeD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
+    /// writer.set_output_dimension(CoordDimensions::ThreeD);
+    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::ThreeD));
     /// ```
-    pub fn get_out_dimension(&self) -> GResult<OutputDimension> {
+    pub fn get_out_dimension(&self) -> GResult<CoordDimensions> {
         with_context(|ctx| unsafe {
             let out = GEOSWKBWriter_getOutputDimension_r(ctx.as_raw(), self.as_raw());
-            OutputDimension::try_from(out)
+            CoordDimensions::try_from(out)
         })
     }
 

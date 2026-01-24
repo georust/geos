@@ -1,4 +1,4 @@
-use crate::enums::{ByteOrder, OutputDimension};
+use crate::enums::{ByteOrder, CoordDimensions};
 use crate::error::{Error, GResult};
 use crate::functions::errcheck;
 use geos_sys::*;
@@ -203,17 +203,17 @@ impl ContextHandle {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, OutputDimension};
+    /// use geos::{ContextHandle, CoordDimensions};
     ///
     /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
-    /// context_handle.set_wkb_output_dimensions(OutputDimension::TwoD);
-    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(OutputDimension::TwoD));
+    /// context_handle.set_wkb_output_dimensions(CoordDimensions::TwoD);
+    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(CoordDimensions::TwoD));
     /// ```
-    pub fn get_wkb_output_dimensions(&self) -> GResult<OutputDimension> {
+    pub fn get_wkb_output_dimensions(&self) -> GResult<CoordDimensions> {
         unsafe {
             let out = errcheck!(-1, GEOS_getWKBOutputDims_r(self.as_raw()))?;
-            OutputDimension::try_from(out)
+            CoordDimensions::try_from(out)
         }
     }
 
@@ -222,23 +222,23 @@ impl ContextHandle {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, OutputDimension};
+    /// use geos::{ContextHandle, CoordDimensions};
     ///
     /// let mut context_handle = ContextHandle::init().expect("invalid init");
     ///
-    /// context_handle.set_wkb_output_dimensions(OutputDimension::TwoD);
-    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(OutputDimension::TwoD));
+    /// context_handle.set_wkb_output_dimensions(CoordDimensions::TwoD);
+    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(CoordDimensions::TwoD));
     /// ```
     pub fn set_wkb_output_dimensions(
         &mut self,
-        dimensions: OutputDimension,
-    ) -> GResult<OutputDimension> {
+        dimensions: CoordDimensions,
+    ) -> GResult<CoordDimensions> {
         unsafe {
             let out = errcheck!(
                 -1,
                 GEOS_setWKBOutputDims_r(self.as_raw(), dimensions.into())
             )?;
-            OutputDimension::try_from(out)
+            CoordDimensions::try_from(out)
         }
     }
 

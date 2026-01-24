@@ -1,5 +1,5 @@
 use crate::error::{Error, GResult};
-use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
+use crate::{CoordSeq, CoordType, Geometry as GGeometry};
 use geojson::{Geometry, Value};
 
 use std::convert::{TryFrom, TryInto};
@@ -14,7 +14,7 @@ where
     It: Iterator<Item = &'a Vec<f64>>,
 {
     let mut coord_seq =
-        CoordSeq::new(len as u32, CoordDimensions::TwoD).expect("failed to create CoordSeq");
+        CoordSeq::new(len as u32, CoordType::XY).expect("failed to create CoordSeq");
 
     for (i, p) in points.enumerate() {
         coord_seq.set_x(i, p[0])?;
