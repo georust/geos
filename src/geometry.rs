@@ -1707,6 +1707,8 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))")
     ///     .expect("Invalid geometry");
     ///
+    /// assert_eq!(geom.is_valid(), Ok(false));
+    ///
     /// let params = MakeValidParams::builder()
     ///     .method(MakeValidMethod::Structure)
     ///     .keep_collapsed(false)
@@ -1716,7 +1718,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// let valid_geom = geom.make_valid_with_params(&params)
     ///     .expect("make_valid_with_params failed");
     ///
-    /// assert!(valid_geom.is_valid().unwrap());
+    /// assert_eq!(valid_geom.is_valid(), Ok(true));
     /// ```
     #[cfg(feature = "v3_10_0")]
     fn make_valid_with_params(&self, params: &MakeValidParams) -> GResult<Geometry> {
