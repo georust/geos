@@ -1,6 +1,8 @@
 use crate::context_handle::with_context;
 use crate::functions::*;
 use crate::traits::as_raw_mut_impl;
+#[cfg(feature = "v3_14_0")]
+use crate::OutputDimension;
 use crate::{AsRaw, AsRawMut, GResult, Geom};
 use geos_sys::*;
 use std::ptr::NonNull;
@@ -66,6 +68,61 @@ impl GeoJSONWriter {
                 indent,
             ))?;
             managed_string(ptr, ctx)
+        })
+    }
+
+    /// Sets the number of dimensions to be used when calling [`GeoJSONWriter::write`]. By default, it
+    /// is 3.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geometry, OutputDimension, GeoJSONWriter};
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)").expect("Invalid geometry");
+    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    ///
+    /// writer.set_output_dimension(OutputDimension::TwoD);
+    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2]}"#);
+    ///
+    /// writer.set_output_dimension(OutputDimension::ThreeD);
+    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2,3.3]}"#);
+    /// ```
+    #[cfg(feature = "v3_14_0")]
+    pub fn set_output_dimension(&mut self, dimension: OutputDimension) {
+        with_context(|ctx| unsafe {
+            GEOSGeoJSONWriter_setOutputDimension_r(
+                ctx.as_raw(),
+                self.as_raw_mut(),
+                dimension.into(),
+            );
+        })
+    }
+
+    /// Returns the number of dimensions to be used when calling [`GeoJSONWriter::write`]. By default,
+    /// it is 3.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{OutputDimension, GeoJSONWriter};
+    ///
+    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    ///
+    /// writer.set_output_dimension(OutputDimension::TwoD);
+    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::TwoD));
+    ///
+    /// writer.set_output_dimension(OutputDimension::ThreeD);
+    /// assert_eq!(writer.get_out_dimension(), Ok(OutputDimension::ThreeD));
+    /// ```
+    #[cfg(feature = "v3_14_0")]
+    pub fn get_out_dimension(&self) -> GResult<OutputDimension> {
+        with_context(|ctx| unsafe {
+            let out = errcheck!(
+                -1,
+                GEOSGeoJSONWriter_getOutputDimension_r(ctx.as_raw(), self.as_raw_mut_override())
+            )?;
+            OutputDimension::try_from(out)
         })
     }
 }

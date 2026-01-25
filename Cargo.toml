@@ -18,10 +18,11 @@ edition = "2021"
 rust-version = "1.65"
 
 [features]
-dox = ["geo-types", "wkt", "json", "geos-sys/dox"]
+dox = ["vlatest", "geo", "json", "geos-sys/dox"]
 geo = ["geo-types", "wkt"]
 json = ["geojson"]
 static = ["geos-sys/static"]
+tests = []
 
 v3_6_0 = []
 v3_7_0 = ["geos-sys/v3_7_0", "v3_6_0"]
@@ -31,6 +32,8 @@ v3_10_0 = ["geos-sys/v3_10_0", "v3_9_0"]
 v3_11_0 = ["geos-sys/v3_11_0", "v3_10_0"]
 v3_12_0 = ["geos-sys/v3_12_0", "v3_11_0"]
 v3_13_0 = ["geos-sys/v3_13_0", "v3_12_0"]
+v3_14_0 = ["geos-sys/v3_14_0", "v3_13_0"]
+vlatest = ["v3_14_0"]
 
 [dependencies]
 libc = "0.2"

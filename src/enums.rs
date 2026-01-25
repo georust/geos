@@ -277,6 +277,8 @@ pub enum Ordinate {
     X,
     Y,
     Z,
+    #[cfg(feature = "v3_14_0")]
+    M,
 }
 
 impl TryFrom<size_t> for Ordinate {
@@ -287,8 +289,15 @@ impl TryFrom<size_t> for Ordinate {
             0 => Ok(Ordinate::X),
             1 => Ok(Ordinate::Y),
             2 => Ok(Ordinate::Z),
+            #[cfg(feature = "v3_14_0")]
+            3 => Ok(Ordinate::M),
+            #[cfg(not(feature = "v3_14_0"))]
             _ => Err(Self::Error::GenericError(
                 "ordinate value must be >= 0 and <= 2".into(),
+            )),
+            #[cfg(feature = "v3_14_0")]
+            _ => Err(Self::Error::GenericError(
+                "ordinate value must be >= 0 and <= 3".into(),
             )),
         }
     }
@@ -301,11 +310,13 @@ impl Into<u32> for Ordinate {
             Ordinate::X => 0,
             Ordinate::Y => 1,
             Ordinate::Z => 2,
+            #[cfg(feature = "v3_14_0")]
+            Ordinate::M => 3,
         }
     }
 }
 
-#[cfg(any(feature = "v3_6_0", feature = "dox"))]
+#[cfg(feature = "v3_6_0")]
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Precision {
     ValidOutput,
@@ -313,7 +324,7 @@ pub enum Precision {
     KeepCollapsed,
 }
 
-#[cfg(any(feature = "v3_6_0", feature = "dox"))]
+#[cfg(feature = "v3_6_0")]
 impl TryFrom<c_int> for Precision {
     type Error = crate::error::Error;
 
@@ -327,7 +338,7 @@ impl TryFrom<c_int> for Precision {
     }
 }
 
-#[cfg(any(feature = "v3_6_0", feature = "dox"))]
+#[cfg(feature = "v3_6_0")]
 #[allow(clippy::from_over_into)]
 impl Into<c_int> for Precision {
     fn into(self) -> c_int {

@@ -133,10 +133,10 @@ mod test {
         let geojson_pt = Geometry::new(Value::Point(vec![1., 1.]));
         let gpoint: GGeometry = (&geojson_pt).try_into().unwrap();
 
-        assert_eq!(gpoint.to_wkt_precision(0), Ok("POINT (1 1)".to_string()));
+        assert_eq!(gpoint.to_wkt(), Ok("POINT (1 1)".to_string()));
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_pt.try_into().unwrap();
-        assert_eq!(tmp.to_wkt_precision(0), Ok("POINT (1 1)".to_string()),);
+        assert_eq!(tmp.to_wkt(), Ok("POINT (1 1)".to_string()),);
     }
 
     #[test]
@@ -144,43 +144,25 @@ mod test {
         let geojson_pts = Geometry::new(Value::MultiPoint(vec![vec![1., 1.], vec![2., 2.]]));
         let gpts: GGeometry = (&geojson_pts).try_into().unwrap();
         #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            gpts.to_wkt_precision(0),
-            Ok("MULTIPOINT (1 1, 2 2)".to_string()),
-        );
+        assert_eq!(gpts.to_wkt(), Ok("MULTIPOINT (1 1, 2 2)".to_string()),);
         #[cfg(feature = "v3_12_0")]
-        assert_eq!(
-            gpts.to_wkt_precision(0),
-            Ok("MULTIPOINT ((1 1), (2 2))".to_string()),
-        );
+        assert_eq!(gpts.to_wkt(), Ok("MULTIPOINT ((1 1), (2 2))".to_string()),);
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_pts.try_into().unwrap();
         #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            tmp.to_wkt_precision(0),
-            Ok("MULTIPOINT (1 1, 2 2)".to_string()),
-        );
+        assert_eq!(tmp.to_wkt(), Ok("MULTIPOINT (1 1, 2 2)".to_string()),);
         #[cfg(feature = "v3_12_0")]
-        assert_eq!(
-            tmp.to_wkt_precision(0),
-            Ok("MULTIPOINT ((1 1), (2 2))".to_string()),
-        );
+        assert_eq!(tmp.to_wkt(), Ok("MULTIPOINT ((1 1), (2 2))".to_string()),);
     }
 
     #[test]
     fn geom_from_geojson_line() {
         let geojson_line = Geometry::new(Value::LineString(vec![vec![1., 1.], vec![2., 2.]]));
         let gline: GGeometry = (&geojson_line).try_into().unwrap();
-        assert_eq!(
-            gline.to_wkt_precision(0),
-            Ok("LINESTRING (1 1, 2 2)".to_string()),
-        );
+        assert_eq!(gline.to_wkt(), Ok("LINESTRING (1 1, 2 2)".to_string()),);
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_line.try_into().unwrap();
-        assert_eq!(
-            tmp.to_wkt_precision(0),
-            Ok("LINESTRING (1 1, 2 2)".to_string()),
-        );
+        assert_eq!(tmp.to_wkt(), Ok("LINESTRING (1 1, 2 2)".to_string()),);
     }
 
     #[test]
@@ -191,13 +173,13 @@ mod test {
         ]));
         let glines: GGeometry = (&geojson_lines).try_into().unwrap();
         assert_eq!(
-            glines.to_wkt_precision(0),
+            glines.to_wkt(),
             Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_lines.try_into().unwrap();
         assert_eq!(
-            tmp.to_wkt_precision(0),
+            tmp.to_wkt(),
             Ok("MULTILINESTRING ((1 1, 2 2), (3 3, 4 4))".to_string()),
         );
     }
@@ -221,13 +203,6 @@ mod test {
             ],
         ]));
         let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
-        #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            gpolygon.to_wkt_precision(1),
-            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
-                .to_string()),
-        );
-        #[cfg(feature = "v3_12_0")]
         assert_eq!(
             gpolygon.to_wkt(),
             Ok(
@@ -237,13 +212,6 @@ mod test {
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
-        #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            tmp.to_wkt_precision(1),
-            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
-                .to_string()),
-        );
-        #[cfg(feature = "v3_12_0")]
         assert_eq!(
             tmp.to_wkt(),
             Ok(
@@ -266,13 +234,6 @@ mod test {
             vec![vec![0.2, 0.2], vec![0.2, 2.], vec![2., 2.], vec![2., 0.2]],
         ]));
         let gpolygon: GGeometry = (&geojson_polygon).try_into().unwrap();
-        #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            gpolygon.to_wkt_precision(1),
-            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
-                .to_string()),
-        );
-        #[cfg(feature = "v3_12_0")]
         assert_eq!(
             gpolygon.to_wkt(),
             Ok(
@@ -282,13 +243,6 @@ mod test {
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_polygon.try_into().unwrap();
-        #[cfg(not(feature = "v3_12_0"))]
-        assert_eq!(
-            tmp.to_wkt_precision(1),
-            Ok("POLYGON ((0.0 0.0, 0.0 3.0, 3.0 3.0, 3.0 0.0, 0.0 0.0), (0.2 0.2, 0.2 2.0, 2.0 2.0, 2.0 0.2, 0.2 0.2))"
-                .to_string()),
-        );
-        #[cfg(feature = "v3_12_0")]
         assert_eq!(
             tmp.to_wkt(),
             Ok(
@@ -328,13 +282,13 @@ mod test {
         ]));
         let gc: GGeometry = (&geojson_gc).try_into().unwrap();
         assert_eq!(
-            gc.to_wkt_precision(0),
+            gc.to_wkt(),
             Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),
         );
         // This check ensures that `TryFrom` is implemented for both reference and value.
         let tmp: GGeometry = geojson_gc.try_into().unwrap();
         assert_eq!(
-            tmp.to_wkt_precision(0),
+            tmp.to_wkt(),
             Ok("GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (1 1, 2 2))".to_string()),
         );
     }

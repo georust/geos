@@ -5,7 +5,7 @@ use std::ptr::NonNull;
 use geos_sys::*;
 
 use crate::context_handle::with_context;
-#[cfg(any(feature = "v3_12_0", feature = "dox"))]
+#[cfg(feature = "v3_12_0")]
 use crate::functions::errcheck;
 use crate::functions::nullcheck;
 use crate::{AsRaw, AsRawMut, GResult, Geom};
@@ -15,7 +15,7 @@ pub trait SpatialIndex<I> {
 
     fn query<G: Geom, V: FnMut(&I)>(&self, geometry: &G, visitor: V);
 
-    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    #[cfg(feature = "v3_12_0")]
     fn build(&self) -> GResult<()>;
 }
 
@@ -71,7 +71,7 @@ impl<I> SpatialIndex<I> for STRtree<I> {
         })
     }
 
-    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    #[cfg(feature = "v3_12_0")]
     fn build(&self) -> GResult<()> {
         with_context(|ctx| unsafe {
             errcheck!(GEOSSTRtree_build_r(

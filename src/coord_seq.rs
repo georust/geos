@@ -1,5 +1,7 @@
 use crate::context_handle::with_context;
 use crate::error::{Error, GResult};
+#[cfg(feature = "v3_14_0")]
+use crate::functions::predicate;
 use crate::functions::{errcheck, nullcheck};
 use crate::traits::as_raw_mut_impl;
 use crate::{AsRaw, AsRawMut, CoordDimensions, Geometry, Ordinate};
@@ -335,6 +337,36 @@ impl CoordSeq {
         })
     }
 
+    /// Sets the M position value at the given `line`.
+    ///
+    /// Note: your `CoordSeq` object must have four dimensions!
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq};
+    ///
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::FourD)
+    ///                           .expect("failed to create CoordSeq");
+    /// coords.set_m(0, 10.);
+    /// assert_eq!(coords.get_m(0), Ok(10.));
+    /// ```
+    #[cfg(feature = "v3_14_0")]
+    pub fn set_m(&mut self, line: usize, val: f64) -> GResult<()> {
+        assert!(line < self.nb_lines);
+        assert!(self.nb_dimensions >= 4);
+
+        with_context(|ctx| unsafe {
+            errcheck!(GEOSCoordSeq_setM_r(
+                ctx.as_raw(),
+                self.as_raw_mut(),
+                line as _,
+                val
+            ))?;
+            Ok(())
+        })
+    }
+
     /// Sets the value at the given `ordinate` (aka position).
     ///
     /// Note: your `CoordSeq` object must have enough dimensions to set at the given `ordinate`!
@@ -445,6 +477,37 @@ impl CoordSeq {
         with_context(|ctx| unsafe {
             let mut n = 0.0;
             errcheck!(GEOSCoordSeq_getZ_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                line as _,
+                &mut n
+            ))?;
+            Ok(n)
+        })
+    }
+
+    /// Gets the M position value at the given `line`.
+    ///
+    /// Note: your `CoordSeq` object must have four dimensions!
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordDimensions, CoordSeq};
+    ///
+    /// let mut coords = CoordSeq::new(1, CoordDimensions::FourD)
+    ///                           .expect("failed to create CoordSeq");
+    /// coords.set_m(0, 10.);
+    /// assert_eq!(coords.get_m(0), Ok(10.));
+    /// ```
+    #[cfg(feature = "v3_14_0")]
+    pub fn get_m(&self, line: usize) -> GResult<f64> {
+        assert!(line < self.nb_lines);
+        assert!(self.nb_dimensions >= 4);
+
+        with_context(|ctx| unsafe {
+            let mut n = 0.0;
+            errcheck!(GEOSCoordSeq_getM_r(
                 ctx.as_raw(),
                 self.as_raw(),
                 line as _,
@@ -696,7 +759,7 @@ impl CoordSeq {
     /// Returns `true` if the geometry has a counter-clockwise orientation.
     ///
     /// Available using the `v3_7_0` feature.
-    #[cfg(any(feature = "v3_7_0", feature = "dox"))]
+    #[cfg(feature = "v3_7_0")]
     pub fn is_ccw(&self) -> GResult<bool> {
         with_context(|ctx| unsafe {
             let mut is_ccw = 0;
@@ -706,6 +769,28 @@ impl CoordSeq {
                 &mut is_ccw
             ))?;
             Ok(is_ccw == 1)
+        })
+    }
+
+    /// Returns `true` if `self` has a Z coordinate.
+    #[cfg(feature = "v3_14_0")]
+    pub fn has_z(&self) -> GResult<bool> {
+        with_context(|ctx| unsafe {
+            predicate!(GEOSCoordSeq_hasZ_r(
+                ctx.as_raw(),
+                self.as_raw_mut_override(),
+            ))
+        })
+    }
+
+    /// Returns `true` if `self` has a M coordinate.
+    #[cfg(feature = "v3_14_0")]
+    pub fn has_m(&self) -> GResult<bool> {
+        with_context(|ctx| unsafe {
+            predicate!(GEOSCoordSeq_hasM_r(
+                ctx.as_raw(),
+                self.as_raw_mut_override(),
+            ))
         })
     }
 
@@ -721,9 +806,6 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_point(coords).expect("Failed to create point");
     ///
-    /// #[cfg(not(feature = "v3_12_0"))]
-    /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
-    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1 2)");
     /// ```
     pub fn create_point(self) -> GResult<Geometry> {
@@ -742,11 +824,6 @@ impl CoordSeq {
     ///
     /// let geom = Geometry::create_line_string(coords).expect("Failed to create line string");
     ///
-    /// #[cfg(not(feature = "v3_12_0"))]
-    /// assert_eq!(geom.to_wkt().unwrap(),
-    ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
-    ///                         3.0000000000000000 4.0000000000000000)");
-    /// #[cfg(feature = "v3_12_0")]
     /// assert_eq!(geom.to_wkt().unwrap(), "LINESTRING (1 2, 3 4)");
     /// ```
     pub fn create_line_string(self) -> GResult<Geometry> {

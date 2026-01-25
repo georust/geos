@@ -2,12 +2,12 @@
 #![crate_type = "lib"]
 #![cfg_attr(doc, doc = include_str!("../README.md"))]
 
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 pub use geo_types;
-#[cfg(any(feature = "json", feature = "dox"))]
+#[cfg(feature = "json")]
 pub use geojson;
 pub use geos_sys as sys;
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 pub use wkt;
 
 pub(crate) mod functions;
@@ -15,18 +15,18 @@ pub(crate) mod functions;
 pub use buffer_params::{BufferParams, BufferParamsBuilder};
 pub use context_handle::{ContextHandle, HandlerCallback};
 pub use coord_seq::CoordSeq;
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 pub use enums::MakeValidMethod;
-#[cfg(any(feature = "v3_6_0", feature = "dox"))]
+#[cfg(feature = "v3_6_0")]
 pub use enums::Precision;
 pub use enums::{
     ByteOrder, CapStyle, CoordDimensions, GeometryTypes, JoinStyle, Ordinate, Orientation,
     OutputDimension,
 };
-#[cfg(any(feature = "v3_7_0", feature = "dox"))]
+#[cfg(feature = "v3_7_0")]
 pub use functions::segment_intersection;
 pub use functions::{orientation_index, version};
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 pub use geojson_writer::GeoJSONWriter;
 pub use geometry::{ConstGeometry, Geom, Geometry};
 #[cfg(any(feature = "v3_10_0", feature = "dox"))]
@@ -40,7 +40,7 @@ mod buffer_params;
 mod context_handle;
 mod coord_seq;
 mod error;
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 pub mod from_geo;
 #[cfg(feature = "json")]
 pub mod from_geojson;
@@ -49,17 +49,17 @@ mod geometry;
 mod make_valid_params;
 mod prepared_geometry;
 mod spatial_index;
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 pub mod to_geo;
 #[cfg(feature = "json")]
 pub mod to_geojson;
 pub use error::{Error, GResult};
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 mod voronoi;
-#[cfg(any(feature = "geo", feature = "dox"))]
+#[cfg(feature = "geo")]
 pub use voronoi::compute_voronoi;
 mod enums;
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 mod geojson_writer;
 mod traits;
 mod wkb_writer;
