@@ -423,7 +423,7 @@ impl Into<c_int> for CapStyle {
 }
 
 /// Validation methods for a [`Geometry`](crate::Geometry) [make_valid_with_params](crate::Geom::make_valid_with_params) operation
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 #[derive(Default, Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum MakeValidMethod {
     /// The ‘linework’ algorithm tries to preserve every edge and vertex in the input.
@@ -433,7 +433,7 @@ pub enum MakeValidMethod {
     Structure,
 }
 
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 impl TryFrom<u32> for MakeValidMethod {
     type Error = crate::error::Error;
 
@@ -448,7 +448,7 @@ impl TryFrom<u32> for MakeValidMethod {
     }
 }
 
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 #[allow(clippy::from_over_into)]
 impl Into<u32> for MakeValidMethod {
     fn into(self) -> u32 {
