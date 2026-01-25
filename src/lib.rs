@@ -29,7 +29,7 @@ pub use functions::{orientation_index, version};
 #[cfg(feature = "v3_10_0")]
 pub use geojson_writer::GeoJSONWriter;
 pub use geometry::{ConstGeometry, Geom, Geometry};
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 pub use make_valid_params::{MakeValidParams, MakeValidParamsBuilder};
 pub use prepared_geometry::PreparedGeometry;
 pub use spatial_index::{STRtree, SpatialIndex};
@@ -45,7 +45,7 @@ pub mod from_geo;
 #[cfg(feature = "json")]
 pub mod from_geojson;
 mod geometry;
-#[cfg(any(feature = "v3_10_0", feature = "dox"))]
+#[cfg(feature = "v3_10_0")]
 mod make_valid_params;
 mod prepared_geometry;
 mod spatial_index;
