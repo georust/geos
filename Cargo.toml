@@ -37,7 +37,6 @@ vlatest = ["v3_14_0"]
 
 [dependencies]
 libc = "0.2"
-num = "0.4"
 geojson = { version = "0.24", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.10.3", optional = true }
