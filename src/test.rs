@@ -425,3 +425,85 @@ fn assert_almost_eq(a: f64, b: f64) {
     assert!(f < 1.0001);
     assert!(f > 0.9999);
 }
+
+#[test]
+#[cfg(feature = "v3_10_0")]
+fn test_make_valid_structure_method() {
+    use crate::{MakeValidMethod, MakeValidParams};
+
+    let invalid_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))")
+        .expect("Failed to create geometry");
+    assert!(!invalid_geom.is_valid().unwrap());
+
+    let params = MakeValidParams::builder()
+        .method(MakeValidMethod::Structure)
+        .build()
+        .expect("Failed to build MakeValidParams");
+
+    let valid_geom = invalid_geom
+        .make_valid_with_params(&params)
+        .expect("make_valid_with_params failed");
+
+    assert!(valid_geom.is_valid().unwrap());
+}
+
+#[test]
+#[cfg(feature = "v3_10_0")]
+fn test_make_valid_linework_method() {
+    use crate::{MakeValidMethod, MakeValidParams};
+
+    let invalid_geom = Geometry::new_from_wkt("POLYGON((0 0, 1 1, 0 1, 1 0, 0 0))")
+        .expect("Failed to create geometry");
+    assert!(!invalid_geom.is_valid().unwrap());
+
+    let params = MakeValidParams::builder()
+        .method(MakeValidMethod::Linework)
+        .build()
+        .expect("Failed to build MakeValidParams");
+
+    let valid_geom = invalid_geom
+        .make_valid_with_params(&params)
+        .expect("make_valid_with_params failed");
+
+    assert!(valid_geom.is_valid().unwrap());
+}
+
+#[test]
+#[cfg(feature = "v3_10_0")]
+fn test_make_valid_keep_collapsed_true() {
+    use crate::MakeValidParams;
+
+    let collapsed_geom =
+        Geometry::new_from_wkt("POLYGON((0 0, 1 0, 1 0, 0 0))").expect("Failed to create geometry");
+
+    let params = MakeValidParams::builder()
+        .keep_collapsed(true)
+        .build()
+        .expect("Failed to build MakeValidParams");
+
+    let valid_geom = collapsed_geom
+        .make_valid_with_params(&params)
+        .expect("make_valid_with_params failed");
+
+    assert!(valid_geom.is_valid().unwrap());
+}
+
+#[test]
+#[cfg(feature = "v3_10_0")]
+fn test_make_valid_keep_collapsed_false() {
+    use crate::MakeValidParams;
+
+    let collapsed_geom =
+        Geometry::new_from_wkt("POLYGON((0 0, 1 0, 1 0, 0 0))").expect("Failed to create geometry");
+
+    let params = MakeValidParams::builder()
+        .keep_collapsed(false)
+        .build()
+        .expect("Failed to build MakeValidParams");
+
+    let valid_geom = collapsed_geom
+        .make_valid_with_params(&params)
+        .expect("make_valid_with_params failed");
+
+    assert!(valid_geom.is_valid().unwrap());
+}
