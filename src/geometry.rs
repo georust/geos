@@ -1718,7 +1718,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     ///
     /// assert!(valid_geom.is_valid().unwrap());
     /// ```
-    #[cfg(any(feature = "v3_10_0", feature = "dox"))]
+    #[cfg(feature = "v3_10_0")]
     fn make_valid_with_params(&self, params: &MakeValidParams) -> GResult<Geometry> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSMakeValidWithParams_r(
