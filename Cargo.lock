@@ -76,7 +76,7 @@ dependencies = [
 
 [[package]]
 name = "geos-sys"
-version = "2.0.7"
+version = "2.0.8"
 dependencies = [
  "geos-src",
  "libc",

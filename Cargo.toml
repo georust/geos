@@ -40,7 +40,7 @@ libc = "0.2"
 geojson = { version = "0.24", optional = true }
 geo-types = { version = "0.7", optional = true }
 wkt = { version = "0.10.3", optional = true }
-geos-sys = { path = "sys", version = "2.0.7" }
+geos-sys = { path = "sys", version = "2.0.8" }
 
 [package.metadata.docs.rs]
 features = ["dox"]
