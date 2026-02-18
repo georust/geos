@@ -149,21 +149,35 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         with_context(|ctx| unsafe {
             let coords = nullcheck!(GEOSGeom_getCoordSeq_r(ctx.as_raw(), self.as_raw()))?;
             let coords = nullcheck!(GEOSCoordSeq_clone_r(ctx.as_raw(), coords.as_ptr()))?;
-            let mut size = 0;
-            let mut dims = 0;
 
+            let mut size = 0;
             errcheck!(GEOSCoordSeq_getSize_r(
                 ctx.as_raw(),
                 coords.as_ptr(),
                 &mut size
             ))?;
-            errcheck!(GEOSCoordSeq_getDimensions_r(
-                ctx.as_raw(),
-                coords.as_ptr(),
-                &mut dims
-            ))?;
 
-            Ok(CoordSeq::new_from_raw(coords, size, dims))
+            #[cfg(not(feature = "v3_14_0"))]
+            {
+                let mut dims = 0;
+                errcheck!(GEOSCoordSeq_getDimensions_r(
+                    ctx.as_raw(),
+                    coords.as_ptr(),
+                    &mut dims
+                ))?;
+                Ok(CoordSeq::new_from_raw(coords, size, dims.try_into()?))
+            }
+            #[cfg(feature = "v3_14_0")]
+            {
+                let has_z = predicate!(GEOSCoordSeq_hasZ_r(ctx.as_raw(), coords.as_ptr()))?;
+                let has_m = predicate!(GEOSCoordSeq_hasM_r(ctx.as_raw(), coords.as_ptr()))?;
+
+                Ok(CoordSeq::new_from_raw(
+                    coords,
+                    size,
+                    CoordType::try_from((has_z, has_m))?,
+                ))
+            }
         })
     }
 
@@ -192,7 +206,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// # Examples
     ///
     /// ```
-    /// use geos::{Geom, Geometry, OutputDimension, WKTWriter};
+    /// use geos::{Geom, Geometry, WKTWriter};
     ///
     /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")
     ///                           .expect("Invalid geometry");
@@ -1415,20 +1429,35 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
                 self.as_raw(),
                 other.as_raw(),
             ))?;
-            let mut size = 0;
-            let mut dims = 0;
 
+            let mut size = 0;
             errcheck!(GEOSCoordSeq_getSize_r(
                 ctx.as_raw(),
                 ptr.as_ptr(),
                 &mut size
             ))?;
-            errcheck!(GEOSCoordSeq_getDimensions_r(
-                ctx.as_raw(),
-                ptr.as_ptr(),
-                &mut dims
-            ))?;
-            Ok(CoordSeq::new_from_raw(ptr, size, dims))
+
+            #[cfg(not(feature = "v3_14_0"))]
+            {
+                let mut dims = 0;
+                errcheck!(GEOSCoordSeq_getDimensions_r(
+                    ctx.as_raw(),
+                    ptr.as_ptr(),
+                    &mut dims
+                ))?;
+                Ok(CoordSeq::new_from_raw(ptr, size, dims.try_into()?))
+            }
+            #[cfg(feature = "v3_14_0")]
+            {
+                let has_z = predicate!(GEOSCoordSeq_hasZ_r(ctx.as_raw(), ptr.as_ptr()))?;
+                let has_m = predicate!(GEOSCoordSeq_hasM_r(ctx.as_raw(), ptr.as_ptr()))?;
+
+                Ok(CoordSeq::new_from_raw(
+                    ptr,
+                    size,
+                    CoordType::try_from((has_z, has_m))?,
+                ))
+            }
         })
     }
 
@@ -1642,19 +1671,19 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geom, Geometry};
+    /// use geos::{DimensionType, Geom, Geometry};
     ///
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                     .expect("Invalid geometry");
     ///
-    /// assert_eq!(geom.get_num_dimensions(), Ok(2));
+    /// assert_eq!(geom.get_dimension_type(), Ok(DimensionType::Surface));
     /// ```
-    fn get_num_dimensions(&self) -> GResult<i32> {
+    fn get_dimension_type(&self) -> GResult<DimensionType> {
         with_context(|ctx| unsafe {
             // Need to skip errcheck as 0 is a valid return values
             // TODO: file a bug report to GEOS
             let ret = GEOSGeom_getDimensions_r(ctx.as_raw(), self.as_raw());
-            Ok(ret as _)
+            DimensionType::try_from(ret)
         })
     }
 
@@ -1677,7 +1706,29 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
                 ctx.as_raw(),
                 self.as_raw(),
             ))?;
-            CoordDimensions::try_from(ret as u32)
+            CoordDimensions::try_from(ret)
+        })
+    }
+
+    /// Return the coordinate type of the geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{CoordType, Geom, Geometry};
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT M (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_coordinate_type() == Ok(CoordType::XYM));
+    ///
+    /// let point_geom = Geometry::new_from_wkt("POINT Z (2.5 2.5 4.0)").expect("Invalid geometry");
+    /// assert!(point_geom.get_coordinate_type() == Ok(CoordType::XYZ));
+    /// ```
+    #[cfg(any(feature = "v3_12_0", feature = "dox"))]
+    fn get_coordinate_type(&self) -> GResult<CoordType> {
+        with_context(|ctx| unsafe {
+            let has_z = predicate!(GEOSHasZ_r(ctx.as_raw(), self.as_raw()))?;
+            let has_m = predicate!(GEOSHasM_r(ctx.as_raw(), self.as_raw()))?;
+            (has_z, has_m).try_into()
         })
     }
 

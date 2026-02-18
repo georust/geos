@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::{CoordDimensions, CoordSeq, Geometry as GGeometry};
+use crate::{CoordSeq, CoordType, Geometry as GGeometry};
 use geo_types::{
     Coord, Geometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon,
     Point, Polygon,
@@ -18,7 +18,7 @@ where
     It: Iterator<Item = &'a Coord<f64>>,
 {
     let mut coord_seq =
-        CoordSeq::new(len as u32, CoordDimensions::TwoD).expect("failed to create CoordSeq");
+        CoordSeq::new(len as u32, CoordType::XY).expect("failed to create CoordSeq");
     for (i, p) in points.enumerate() {
         coord_seq.set_x(i, p.x)?;
         coord_seq.set_y(i, p.y)?;

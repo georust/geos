@@ -420,6 +420,21 @@ fn test_incompatible_types() {
     }
 }
 
+#[test]
+#[cfg(feature = "v3_12_0")]
+fn test_m_coordinates() {
+    use crate::{CoordDimensions, CoordSeq, CoordType};
+
+    let seq = CoordSeq::new_from_buffer(&[1.2, 2.4, 3.6], 1, CoordType::XYM).unwrap();
+    assert_eq!(seq.dimensions(), Ok(CoordDimensions::ThreeD));
+
+    let geom = Geometry::create_point(seq).unwrap();
+    assert_eq!(geom.get_coordinate_dimension(), Ok(CoordDimensions::ThreeD));
+    assert_eq!(geom.has_m(), Ok(true));
+    assert_eq!(geom.has_z(), Ok(false));
+    assert_eq!(geom.get_coordinate_type(), Ok(CoordType::XYM));
+}
+
 fn assert_almost_eq(a: f64, b: f64) {
     let f: f64 = a / b;
     assert!(f < 1.0001);

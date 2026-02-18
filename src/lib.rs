@@ -20,8 +20,8 @@ pub use enums::MakeValidMethod;
 #[cfg(feature = "v3_6_0")]
 pub use enums::Precision;
 pub use enums::{
-    ByteOrder, CapStyle, CoordDimensions, GeometryTypes, JoinStyle, Ordinate, Orientation,
-    OutputDimension,
+    ByteOrder, CapStyle, CoordDimensions, CoordType, DimensionType, GeometryTypes, JoinStyle,
+    Ordinate, Orientation,
 };
 #[cfg(feature = "v3_7_0")]
 pub use functions::segment_intersection;
