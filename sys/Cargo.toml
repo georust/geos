@@ -1,6 +1,6 @@
 [package]
 name = "geos-sys"
-version = "2.0.7"
+version = "2.0.8"
 authors = ["Guillaume Gomez <guillaume1.gomez@gmail.com>"]
 
 description = "GEOS C API bindings"
