@@ -1,6 +1,6 @@
 [package]
 name = "geos-src"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2018"
 links = "geossrc"
 build = "build.rs"
