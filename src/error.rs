@@ -13,11 +13,11 @@ impl std::error::Error for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::GeosError((caller, Some(err))) => write!(f, "{caller} failed with {err}"),
-            Error::GeosError((caller, None)) => write!(f, "{caller} failed"),
-            Error::ImpossibleOperation(ref s) => write!(f, "impossible operation: {s}"),
-            Error::ConversionError(ref s) => write!(f, "impossible to convert geometry: {s}"),
-            Error::GenericError(ref s) => write!(f, "{s}"),
+            Self::GeosError((caller, Some(err))) => write!(f, "{caller} failed with {err}"),
+            Self::GeosError((caller, None)) => write!(f, "{caller} failed"),
+            Self::ImpossibleOperation(ref s) => write!(f, "impossible operation: {s}"),
+            Self::ConversionError(ref s) => write!(f, "impossible to convert geometry: {s}"),
+            Self::GenericError(ref s) => write!(f, "{s}"),
         }
     }
 }

@@ -15,10 +15,10 @@ impl TryFrom<c_int> for CoordDimensions {
 
     fn try_from(dimensions: c_int) -> Result<Self, Self::Error> {
         match dimensions {
-            2 => Ok(CoordDimensions::TwoD),
-            3 => Ok(CoordDimensions::ThreeD),
+            2 => Ok(Self::TwoD),
+            3 => Ok(Self::ThreeD),
             #[cfg(feature = "v3_12_0")]
-            4 => Ok(CoordDimensions::FourD),
+            4 => Ok(Self::FourD),
             #[cfg(not(feature = "v3_12_0"))]
             _ => Err(Self::Error::GenericError(
                 "dimensions must be 2 or 3".into(),
@@ -35,10 +35,10 @@ impl TryFrom<c_int> for CoordDimensions {
 impl Into<c_int> for CoordDimensions {
     fn into(self) -> c_int {
         match self {
-            CoordDimensions::TwoD => 2,
-            CoordDimensions::ThreeD => 3,
+            Self::TwoD => 2,
+            Self::ThreeD => 3,
             #[cfg(feature = "v3_12_0")]
-            CoordDimensions::FourD => 4,
+            Self::FourD => 4,
         }
     }
 }
@@ -55,19 +55,19 @@ pub enum CoordType {
 
 impl CoordType {
     #[cfg(not(feature = "v3_12_0"))]
-    pub fn has_z(&self) -> bool {
+    pub const fn has_z(&self) -> bool {
         matches!(self, Self::XYZ)
     }
     #[cfg(feature = "v3_12_0")]
-    pub fn has_z(&self) -> bool {
+    pub const fn has_z(&self) -> bool {
         matches!(self, Self::XYZ | Self::XYZM)
     }
     #[cfg(not(feature = "v3_12_0"))]
-    pub fn has_m(&self) -> bool {
+    pub const fn has_m(&self) -> bool {
         false
     }
     #[cfg(feature = "v3_12_0")]
-    pub fn has_m(&self) -> bool {
+    pub const fn has_m(&self) -> bool {
         matches!(self, Self::XYM | Self::XYZM)
     }
 }
@@ -111,7 +111,7 @@ impl TryFrom<u32> for CoordType {
 }
 
 impl From<CoordType> for u32 {
-    fn from(c: CoordType) -> u32 {
+    fn from(c: CoordType) -> Self {
         match c {
             CoordType::XY => 2,
             CoordType::XYZ => 3,
@@ -134,8 +134,8 @@ impl TryFrom<c_int> for ByteOrder {
 
     fn try_from(order: c_int) -> Result<Self, Self::Error> {
         match order {
-            0 => Ok(ByteOrder::BigEndian),
-            _ => Ok(ByteOrder::LittleEndian),
+            0 => Ok(Self::BigEndian),
+            _ => Ok(Self::LittleEndian),
         }
     }
 }
@@ -144,8 +144,8 @@ impl TryFrom<c_int> for ByteOrder {
 impl Into<c_int> for ByteOrder {
     fn into(self) -> c_int {
         match self {
-            ByteOrder::BigEndian => 0,
-            ByteOrder::LittleEndian => 1,
+            Self::BigEndian => 0,
+            Self::LittleEndian => 1,
         }
     }
 }
@@ -178,24 +178,24 @@ impl TryFrom<c_int> for GeometryTypes {
 
     fn try_from(type_id: c_int) -> Result<Self, Self::Error> {
         match type_id {
-            0 => Ok(GeometryTypes::Point),
-            1 => Ok(GeometryTypes::LineString),
-            2 => Ok(GeometryTypes::LinearRing),
-            3 => Ok(GeometryTypes::Polygon),
-            4 => Ok(GeometryTypes::MultiPoint),
-            5 => Ok(GeometryTypes::MultiLineString),
-            6 => Ok(GeometryTypes::MultiPolygon),
-            7 => Ok(GeometryTypes::GeometryCollection),
+            0 => Ok(Self::Point),
+            1 => Ok(Self::LineString),
+            2 => Ok(Self::LinearRing),
+            3 => Ok(Self::Polygon),
+            4 => Ok(Self::MultiPoint),
+            5 => Ok(Self::MultiLineString),
+            6 => Ok(Self::MultiPolygon),
+            7 => Ok(Self::GeometryCollection),
             #[cfg(feature = "v3_13_0")]
-            8 => Ok(GeometryTypes::CircularString),
+            8 => Ok(Self::CircularString),
             #[cfg(feature = "v3_13_0")]
-            9 => Ok(GeometryTypes::CompoundCurve),
+            9 => Ok(Self::CompoundCurve),
             #[cfg(feature = "v3_13_0")]
-            10 => Ok(GeometryTypes::CurvePolygon),
+            10 => Ok(Self::CurvePolygon),
             #[cfg(feature = "v3_13_0")]
-            11 => Ok(GeometryTypes::MultiCurve),
+            11 => Ok(Self::MultiCurve),
             #[cfg(feature = "v3_13_0")]
-            12 => Ok(GeometryTypes::MultiSurface),
+            12 => Ok(Self::MultiSurface),
             _ => Err(crate::Error::GenericError(
                 "invalid geometry type id".into(),
             )),
@@ -207,50 +207,50 @@ impl TryFrom<c_int> for GeometryTypes {
 impl Into<c_int> for GeometryTypes {
     fn into(self) -> c_int {
         match self {
-            GeometryTypes::Point => 0,
-            GeometryTypes::LineString => 1,
-            GeometryTypes::LinearRing => 2,
-            GeometryTypes::Polygon => 3,
-            GeometryTypes::MultiPoint => 4,
-            GeometryTypes::MultiLineString => 5,
-            GeometryTypes::MultiPolygon => 6,
-            GeometryTypes::GeometryCollection => 7,
+            Self::Point => 0,
+            Self::LineString => 1,
+            Self::LinearRing => 2,
+            Self::Polygon => 3,
+            Self::MultiPoint => 4,
+            Self::MultiLineString => 5,
+            Self::MultiPolygon => 6,
+            Self::GeometryCollection => 7,
             #[cfg(feature = "v3_13_0")]
-            GeometryTypes::CircularString => 8,
+            Self::CircularString => 8,
             #[cfg(feature = "v3_13_0")]
-            GeometryTypes::CompoundCurve => 9,
+            Self::CompoundCurve => 9,
             #[cfg(feature = "v3_13_0")]
-            GeometryTypes::CurvePolygon => 10,
+            Self::CurvePolygon => 10,
             #[cfg(feature = "v3_13_0")]
-            GeometryTypes::MultiCurve => 11,
+            Self::MultiCurve => 11,
             #[cfg(feature = "v3_13_0")]
-            GeometryTypes::MultiSurface => 12,
+            Self::MultiSurface => 12,
         }
     }
 }
 
 impl GeometryTypes {
     #[cfg(not(feature = "v3_13_0"))]
-    pub fn is_surface(self) -> bool {
+    pub const fn is_surface(self) -> bool {
         matches!(self, Self::Polygon)
     }
     #[cfg(feature = "v3_13_0")]
-    pub fn is_surface(self) -> bool {
+    pub const fn is_surface(self) -> bool {
         matches!(self, Self::Polygon | Self::CurvePolygon)
     }
     #[cfg(not(feature = "v3_13_0"))]
-    pub fn is_curve(self) -> bool {
+    pub const fn is_curve(self) -> bool {
         matches!(self, Self::LineString | Self::LinearRing)
     }
     #[cfg(feature = "v3_13_0")]
-    pub fn is_curve(self) -> bool {
+    pub const fn is_curve(self) -> bool {
         matches!(
             self,
             Self::LineString | Self::LinearRing | Self::CircularString
         )
     }
     #[cfg(not(feature = "v3_13_0"))]
-    pub fn is_collection(self) -> bool {
+    pub const fn is_collection(self) -> bool {
         matches!(
             self,
             Self::GeometryCollection
@@ -260,7 +260,7 @@ impl GeometryTypes {
         )
     }
     #[cfg(feature = "v3_13_0")]
-    pub fn is_collection(self) -> bool {
+    pub const fn is_collection(self) -> bool {
         matches!(
             self,
             Self::GeometryCollection
@@ -288,9 +288,9 @@ impl TryFrom<c_int> for Orientation {
 
     fn try_from(orientation: c_int) -> Result<Self, Self::Error> {
         match orientation {
-            -1 => Ok(Orientation::CounterClockwise),
-            0 => Ok(Orientation::Clockwise),
-            1 => Ok(Orientation::Colinear),
+            -1 => Ok(Self::CounterClockwise),
+            0 => Ok(Self::Clockwise),
+            1 => Ok(Self::Colinear),
             _ => Err(Self::Error::GenericError("value must be -1, 0 or 1".into())),
         }
     }
@@ -300,9 +300,9 @@ impl TryFrom<c_int> for Orientation {
 impl Into<c_int> for Orientation {
     fn into(self) -> c_int {
         match self {
-            Orientation::CounterClockwise => -1,
-            Orientation::Clockwise => 0,
-            Orientation::Colinear => 1,
+            Self::CounterClockwise => -1,
+            Self::Clockwise => 0,
+            Self::Colinear => 1,
         }
     }
 }
@@ -321,11 +321,11 @@ impl TryFrom<size_t> for Ordinate {
 
     fn try_from(ordinate: size_t) -> Result<Self, Self::Error> {
         match ordinate {
-            0 => Ok(Ordinate::X),
-            1 => Ok(Ordinate::Y),
-            2 => Ok(Ordinate::Z),
+            0 => Ok(Self::X),
+            1 => Ok(Self::Y),
+            2 => Ok(Self::Z),
             #[cfg(feature = "v3_14_0")]
-            3 => Ok(Ordinate::M),
+            3 => Ok(Self::M),
             #[cfg(not(feature = "v3_14_0"))]
             _ => Err(Self::Error::GenericError(
                 "ordinate value must be >= 0 and <= 2".into(),
@@ -342,11 +342,11 @@ impl TryFrom<size_t> for Ordinate {
 impl Into<u32> for Ordinate {
     fn into(self) -> u32 {
         match self {
-            Ordinate::X => 0,
-            Ordinate::Y => 1,
-            Ordinate::Z => 2,
+            Self::X => 0,
+            Self::Y => 1,
+            Self::Z => 2,
             #[cfg(feature = "v3_14_0")]
-            Ordinate::M => 3,
+            Self::M => 3,
         }
     }
 }
@@ -365,9 +365,9 @@ impl TryFrom<c_int> for Precision {
 
     fn try_from(order: c_int) -> Result<Self, Self::Error> {
         match order {
-            0 => Ok(Precision::ValidOutput),
-            1 => Ok(Precision::NoTopo),
-            2 => Ok(Precision::KeepCollapsed),
+            0 => Ok(Self::ValidOutput),
+            1 => Ok(Self::NoTopo),
+            2 => Ok(Self::KeepCollapsed),
             _ => Err(Self::Error::GenericError("Unknown precision type".into())),
         }
     }
@@ -378,9 +378,9 @@ impl TryFrom<c_int> for Precision {
 impl Into<c_int> for Precision {
     fn into(self) -> c_int {
         match self {
-            Precision::ValidOutput => 0,
-            Precision::NoTopo => 1,
-            Precision::KeepCollapsed => 2,
+            Self::ValidOutput => 0,
+            Self::NoTopo => 1,
+            Self::KeepCollapsed => 2,
         }
     }
 }
@@ -402,9 +402,9 @@ impl TryFrom<c_int> for JoinStyle {
 
     fn try_from(join_style: c_int) -> Result<Self, Self::Error> {
         match join_style {
-            1 => Ok(JoinStyle::Round),
-            2 => Ok(JoinStyle::Mitre),
-            3 => Ok(JoinStyle::Bevel),
+            1 => Ok(Self::Round),
+            2 => Ok(Self::Mitre),
+            3 => Ok(Self::Bevel),
             _ => Err(Self::Error::GenericError("Unknown join style".into())),
         }
     }
@@ -414,9 +414,9 @@ impl TryFrom<c_int> for JoinStyle {
 impl Into<c_int> for JoinStyle {
     fn into(self) -> c_int {
         match self {
-            JoinStyle::Round => 1,
-            JoinStyle::Mitre => 2,
-            JoinStyle::Bevel => 3,
+            Self::Round => 1,
+            Self::Mitre => 2,
+            Self::Bevel => 3,
         }
     }
 }
@@ -438,9 +438,9 @@ impl TryFrom<c_int> for CapStyle {
 
     fn try_from(cap_style: c_int) -> Result<Self, Self::Error> {
         match cap_style {
-            1 => Ok(CapStyle::Round),
-            2 => Ok(CapStyle::Flat),
-            3 => Ok(CapStyle::Square),
+            1 => Ok(Self::Round),
+            2 => Ok(Self::Flat),
+            3 => Ok(Self::Square),
             _ => Err(Self::Error::GenericError("Unknown cap style".into())),
         }
     }
@@ -450,14 +450,14 @@ impl TryFrom<c_int> for CapStyle {
 impl Into<c_int> for CapStyle {
     fn into(self) -> c_int {
         match self {
-            CapStyle::Round => 1,
-            CapStyle::Flat => 2,
-            CapStyle::Square => 3,
+            Self::Round => 1,
+            Self::Flat => 2,
+            Self::Square => 3,
         }
     }
 }
 
-/// Validation methods for a [`Geometry`](crate::Geometry) [make_valid_with_params](crate::Geom::make_valid_with_params) operation
+/// Validation methods for a [`Geometry`](crate::Geometry) [`make_valid_with_params`](crate::Geom::make_valid_with_params) operation
 #[cfg(feature = "v3_10_0")]
 #[derive(Default, Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub enum MakeValidMethod {
@@ -474,8 +474,8 @@ impl TryFrom<u32> for MakeValidMethod {
 
     fn try_from(method: u32) -> Result<Self, Self::Error> {
         match method {
-            0 => Ok(MakeValidMethod::Linework),
-            1 => Ok(MakeValidMethod::Structure),
+            0 => Ok(Self::Linework),
+            1 => Ok(Self::Structure),
             _ => Err(Self::Error::GenericError(
                 "Unknown make valid method".into(),
             )),
@@ -488,8 +488,8 @@ impl TryFrom<u32> for MakeValidMethod {
 impl Into<u32> for MakeValidMethod {
     fn into(self) -> u32 {
         match self {
-            MakeValidMethod::Linework => 0,
-            MakeValidMethod::Structure => 1,
+            Self::Linework => 0,
+            Self::Structure => 1,
         }
     }
 }

@@ -13,24 +13,20 @@ use std::ptr::NonNull;
 // this has to be checked method by method in geos
 // so we provide 2 method to wrap a char* to a string, one that manage (and thus free) the underlying char*
 // and one that does not free it
-pub(crate) unsafe fn unmanaged_string(ptr: NonNull<c_char>) -> GResult<String> {
+pub unsafe fn unmanaged_string(ptr: NonNull<c_char>) -> GResult<String> {
     CStr::from_ptr(ptr.as_ptr())
         .to_str()
         .map_err(|e| Error::GenericError(format!("unmanaged_string failed with {e}")))
-        .map(|str| str.to_owned())
+        .map(ToOwned::to_owned)
 }
 
-pub(crate) unsafe fn managed_string(ptr: NonNull<c_char>, ctx: &ContextHandle) -> GResult<String> {
+pub unsafe fn managed_string(ptr: NonNull<c_char>, ctx: &ContextHandle) -> GResult<String> {
     let s = unmanaged_string(ptr);
     GEOSFree_r(ctx.as_raw(), ptr.as_ptr().cast());
     s
 }
 
-pub(crate) unsafe fn managed_vec(
-    ptr: NonNull<c_uchar>,
-    size: usize,
-    ctx: &ContextHandle,
-) -> Vec<u8> {
+pub unsafe fn managed_vec(ptr: NonNull<c_uchar>, size: usize, ctx: &ContextHandle) -> Vec<u8> {
     let vec = std::slice::from_raw_parts(ptr.as_ptr(), size).to_vec();
     GEOSFree_r(ctx.as_raw(), ptr.as_ptr().cast());
     vec
@@ -78,11 +74,11 @@ pub(crate) use errcheck;
 pub(crate) use nullcheck;
 pub(crate) use predicate;
 
-pub(crate) fn check_same_geometry_type(geoms: &[Geometry], geom_type: GeometryTypes) -> bool {
+pub fn check_same_geometry_type(geoms: &[Geometry], geom_type: GeometryTypes) -> bool {
     geoms.iter().all(|g| g.geometry_type() == Ok(geom_type))
 }
 
-pub(crate) fn create_multi_geom(
+pub fn create_multi_geom(
     mut geoms: Vec<Geometry>,
     output_type: GeometryTypes,
 ) -> GResult<Geometry> {

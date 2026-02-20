@@ -17,8 +17,7 @@ fn create_coord_seq<'a, It>(points: It, len: usize) -> Result<CoordSeq, Error>
 where
     It: Iterator<Item = &'a Coord<f64>>,
 {
-    let mut coord_seq =
-        CoordSeq::new(len as u32, CoordType::XY).expect("failed to create CoordSeq");
+    let mut coord_seq = CoordSeq::new(len as u32, CoordType::XY)?;
     for (i, p) in points.enumerate() {
         coord_seq.set_x(i, p.x)?;
         coord_seq.set_y(i, p.y)?;
@@ -29,93 +28,93 @@ where
 impl TryFrom<&Point<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &Point<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Point<f64>) -> Result<Self, Self::Error> {
         let coord_seq = create_coord_seq(std::iter::once(&other.0), 1)?;
 
-        GGeometry::create_point(coord_seq)
+        Self::create_point(coord_seq)
     }
 }
 
 impl TryFrom<Point<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: Point<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: Point<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl<T: Borrow<Point<f64>>> TryFrom<&[T]> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &[T]) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &[T]) -> Result<Self, Self::Error> {
         let geom_points = other
             .iter()
             .map(|p| p.borrow().try_into())
             .collect::<Result<Vec<_>, _>>()?;
 
-        GGeometry::create_multipoint(geom_points)
+        Self::create_multipoint(geom_points)
     }
 }
 
 impl TryFrom<&MultiPoint<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &MultiPoint<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiPoint<f64>) -> Result<Self, Self::Error> {
         let points: Vec<_> = other
             .0
             .iter()
             .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
-        GGeometry::create_multipoint(points)
+        Self::create_multipoint(points)
     }
 }
 
 impl TryFrom<MultiPoint<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: MultiPoint<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: MultiPoint<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl TryFrom<&LineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &LineString<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &LineString<f64>) -> Result<Self, Self::Error> {
         let coord_seq = create_coord_seq_from_vec(other.0.as_slice())?;
 
-        GGeometry::create_line_string(coord_seq)
+        Self::create_line_string(coord_seq)
     }
 }
 
 impl TryFrom<LineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: LineString<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: LineString<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl TryFrom<&MultiLineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &MultiLineString<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiLineString<f64>) -> Result<Self, Self::Error> {
         let lines: Vec<_> = other
             .0
             .iter()
             .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
-        GGeometry::create_multiline_string(lines)
+        Self::create_multiline_string(lines)
     }
 }
 
 impl TryFrom<MultiLineString<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: MultiLineString<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: MultiLineString<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
@@ -123,12 +122,12 @@ impl TryFrom<MultiLineString<f64>> for GGeometry {
 
 struct LineRing<'a>(&'a LineString<f64>);
 
-/// Convert a geo_types::LineString to a geos LinearRing
-/// a LinearRing should be closed so cloase the geometry if needed
+/// Convert a `geo_types::LineString` to a geos `LinearRing`
+/// a `LinearRing` should be closed so cloase the geometry if needed
 impl TryFrom<LineRing<'_>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: LineRing<'_>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: LineRing<'_>) -> Result<Self, Self::Error> {
         let points = &(other.0).0;
         let nb_points = points.len();
         if nb_points > 0 && nb_points < 3 {
@@ -149,16 +148,16 @@ impl TryFrom<LineRing<'_>> for GGeometry {
         } else {
             create_coord_seq(points.iter(), nb_points)?
         };
-        GGeometry::create_linear_ring(coord_seq)
+        Self::create_linear_ring(coord_seq)
     }
 }
 
 impl TryFrom<&Polygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &Polygon<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Polygon<f64>) -> Result<Self, Self::Error> {
         let ring = LineRing(other.exterior());
-        let geom_exterior: GGeometry = ring.try_into()?;
+        let geom_exterior: Self = ring.try_into()?;
 
         let interiors: Vec<_> = other
             .interiors()
@@ -166,74 +165,74 @@ impl TryFrom<&Polygon<f64>> for GGeometry {
             .map(|i| LineRing(i).try_into())
             .collect::<Result<_, _>>()?;
 
-        GGeometry::create_polygon(geom_exterior, interiors)
+        Self::create_polygon(geom_exterior, interiors)
     }
 }
 
 impl TryFrom<Polygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: Polygon<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: Polygon<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl TryFrom<&MultiPolygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &MultiPolygon<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &MultiPolygon<f64>) -> Result<Self, Self::Error> {
         let polygons: Vec<_> = other
             .0
             .iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()?;
 
-        GGeometry::create_multipolygon(polygons)
+        Self::create_multipolygon(polygons)
     }
 }
 
 impl TryFrom<MultiPolygon<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: MultiPolygon<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: MultiPolygon<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl TryFrom<&GeometryCollection<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &GeometryCollection<f64>) -> Result<Self, Self::Error> {
         let geoms: Vec<_> = other
             .0
             .iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()?;
 
-        GGeometry::create_geometry_collection(geoms)
+        Self::create_geometry_collection(geoms)
     }
 }
 
 impl TryFrom<GeometryCollection<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: GeometryCollection<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: GeometryCollection<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 
 impl TryFrom<&Geometry<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: &Geometry<f64>) -> Result<GGeometry, Self::Error> {
+    fn try_from(other: &Geometry<f64>) -> Result<Self, Self::Error> {
         match other {
-            Geometry::Point(inner) => GGeometry::try_from(inner),
-            Geometry::MultiPoint(inner) => GGeometry::try_from(inner),
-            Geometry::LineString(inner) => GGeometry::try_from(inner),
-            Geometry::MultiLineString(inner) => GGeometry::try_from(inner),
-            Geometry::Polygon(inner) => GGeometry::try_from(inner),
-            Geometry::MultiPolygon(inner) => GGeometry::try_from(inner),
-            Geometry::GeometryCollection(inner) => GGeometry::try_from(inner),
+            Geometry::Point(inner) => Self::try_from(inner),
+            Geometry::MultiPoint(inner) => Self::try_from(inner),
+            Geometry::LineString(inner) => Self::try_from(inner),
+            Geometry::MultiLineString(inner) => Self::try_from(inner),
+            Geometry::Polygon(inner) => Self::try_from(inner),
+            Geometry::MultiPolygon(inner) => Self::try_from(inner),
+            Geometry::GeometryCollection(inner) => Self::try_from(inner),
             // GEOS has equivalents of the types below, but they aren't subclasses of geos::Geometry
             Geometry::Triangle(_) => Err(Error::ConversionError(
                 "Cannot convert Triangle to GEOS Geometry".to_string(),
@@ -251,8 +250,8 @@ impl TryFrom<&Geometry<f64>> for GGeometry {
 impl TryFrom<Geometry<f64>> for GGeometry {
     type Error = Error;
 
-    fn try_from(other: Geometry<f64>) -> Result<GGeometry, Self::Error> {
-        GGeometry::try_from(&other)
+    fn try_from(other: Geometry<f64>) -> Result<Self, Self::Error> {
+        Self::try_from(&other)
     }
 }
 

@@ -18,10 +18,10 @@ pub struct MakeValidParamsBuilder {
 }
 
 impl MakeValidParams {
-    pub fn new() -> GResult<MakeValidParams> {
+    pub fn new() -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSMakeValidParams_create_r(ctx.as_raw()))?;
-            Ok(MakeValidParams { ptr })
+            Ok(Self { ptr })
         })
     }
 
@@ -71,7 +71,7 @@ unsafe impl Sync for MakeValidParams {}
 impl Drop for MakeValidParams {
     fn drop(&mut self) {
         with_context(|ctx| unsafe {
-            GEOSMakeValidParams_destroy_r(ctx.as_raw(), self.as_raw_mut())
+            GEOSMakeValidParams_destroy_r(ctx.as_raw(), self.as_raw_mut());
         });
     }
 }
@@ -79,12 +79,12 @@ impl Drop for MakeValidParams {
 as_raw_mut_impl!(MakeValidParams, GEOSMakeValidParams);
 
 impl MakeValidParamsBuilder {
-    pub fn method(mut self, method: MakeValidMethod) -> MakeValidParamsBuilder {
+    pub const fn method(mut self, method: MakeValidMethod) -> Self {
         self.method = Some(method);
         self
     }
 
-    pub fn keep_collapsed(mut self, keep_collapsed: bool) -> MakeValidParamsBuilder {
+    pub const fn keep_collapsed(mut self, keep_collapsed: bool) -> Self {
         self.keep_collapsed = Some(keep_collapsed);
         self
     }

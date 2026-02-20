@@ -12,12 +12,16 @@ use std::ptr::NonNull;
 /// # Example
 ///
 /// ```
-/// use geos::{Geometry, GeoJSONWriter};
+/// use geos::{GeoJSONWriter, Geometry};
 ///
-/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-/// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+/// let mut writer = GeoJSONWriter::new()?;
 ///
-/// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[2.5,2.5]}"#);
+/// assert_eq!(
+///     writer.write(&point_geom)?,
+///     r#"{"type":"Point","coordinates":[2.5,2.5]}"#
+/// );
+/// # Ok::<(), geos::Error>(())
 /// ```
 pub struct GeoJSONWriter {
     ptr: NonNull<GEOSGeoJSONWriter>,
@@ -29,31 +33,39 @@ impl GeoJSONWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, GeoJSONWriter};
+    /// use geos::{GeoJSONWriter, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = GeoJSONWriter::new()?;
     ///
-    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[2.5,2.5]}"#);
+    /// assert_eq!(
+    ///     writer.write(&point_geom)?,
+    ///     r#"{"type":"Point","coordinates":[2.5,2.5]}"#
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
-    pub fn new() -> GResult<GeoJSONWriter> {
+    pub fn new() -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSGeoJSONWriter_create_r(ctx.as_raw()))?;
-            Ok(GeoJSONWriter { ptr })
+            Ok(Self { ptr })
         })
     }
 
-    /// Writes out the given `geometry` as GeoJSON format.
+    /// Writes out the given `geometry` as `GeoJSON` format.
     ///
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, GeoJSONWriter};
+    /// use geos::{GeoJSONWriter, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = GeoJSONWriter::new()?;
     ///
-    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[2.5,2.5]}"#);
+    /// assert_eq!(
+    ///     writer.write(&point_geom)?,
+    ///     r#"{"type":"Point","coordinates":[2.5,2.5]}"#
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn write<G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         self.write_formatted(geometry, -1)
@@ -77,16 +89,23 @@ impl GeoJSONWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{CoordDimensions, Geometry, GeoJSONWriter};
+    /// use geos::{CoordDimensions, GeoJSONWriter, Geometry};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)").expect("Invalid geometry");
-    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)")?;
+    /// let mut writer = GeoJSONWriter::new()?;
     ///
     /// writer.set_output_dimension(CoordDimensions::TwoD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2]}"#);
+    /// assert_eq!(
+    ///     writer.write(&point_geom)?,
+    ///     r#"{"type":"Point","coordinates":[1.1,2.2]}"#
+    /// );
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), r#"{"type":"Point","coordinates":[1.1,2.2,3.3]}"#);
+    /// assert_eq!(
+    ///     writer.write(&point_geom)?,
+    ///     r#"{"type":"Point","coordinates":[1.1,2.2,3.3]}"#
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(feature = "v3_14_0")]
     pub fn set_output_dimension(&mut self, dimension: CoordDimensions) {
@@ -96,7 +115,7 @@ impl GeoJSONWriter {
                 self.as_raw_mut(),
                 dimension.into(),
             );
-        })
+        });
     }
 
     /// Returns the number of dimensions to be used when calling [`GeoJSONWriter::write`]. By default,
@@ -107,13 +126,14 @@ impl GeoJSONWriter {
     /// ```
     /// use geos::{CoordDimensions, GeoJSONWriter};
     ///
-    /// let mut writer = GeoJSONWriter::new().expect("Failed to create GeoJSONWriter");
+    /// let mut writer = GeoJSONWriter::new()?;
     ///
     /// writer.set_output_dimension(CoordDimensions::TwoD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::TwoD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::TwoD);
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::ThreeD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::ThreeD);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(feature = "v3_14_0")]
     pub fn get_out_dimension(&self) -> GResult<CoordDimensions> {

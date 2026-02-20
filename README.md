@@ -18,31 +18,27 @@ You can check the examples in the `examples/` directory.
 ```rust
 use geos::Geom;
 
-let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")
-                         .expect("invalid WKT");
-let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")
-                         .expect("invalid WKT");
-let mut gg3 = gg1.difference(&gg2).expect("difference failed");
+let gg1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0))")?;
+let gg2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 1, 1 1))")?;
+let mut gg3 = gg1.difference(&gg2)?;
 // normalize is only used for consistent ordering of vertices
-gg3.normalize().expect("normalize failed");
+gg3.normalize()?;
 assert_eq!(
-    gg3.to_wkt().expect("to_wkt failed"),
+    gg3.to_wkt()?,
     "POLYGON ((0 0, 0 5, 6 6, 6 0, 0 0), (1 1, 5 1, 5 5, 1 3, 1 1))",
 );
+# Ok::<(), geos::Error>(())
 ```
 
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
 ```rust
-let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")
-                        .expect("invalid WKT");
-let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")
-                        .expect("invalid WKT");
+let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")?;
+let g2 = geos::Geometry::new_from_wkt("POLYGON ((1 1, 1 3, 5 5, 5 0, 1 1))")?;
 
-let pg1 = geos::PreparedGeometry::new(&g1)
-                                 .expect("PreparedGeometry::new failed");
-let result = pg1.intersects(&g2).expect("intersects failed");
-assert_eq!(result, true);
+let pg1 = geos::PreparedGeometry::new(&g1)?;
+assert_eq!(pg1.intersects(&g2)?, true);
+# Ok::<(), geos::Error>(())
 ```
 
 ### Conversion from [geo](https://github.com/georust/geo)
@@ -70,9 +66,9 @@ let interiors = vec![
 ];
 let p = Polygon::new(exterior, interiors);
 // and we can create a Geos geometry from this object
-let geom: geos::Geometry = (&p).try_into()
-                               .expect("failed conversion");
+let geom: geos::Geometry = (&p).try_into()?;
 // do some stuff with geom
+# Ok::<(), geos::Error>(())
 ```
 
 ### Voronoi
@@ -92,8 +88,8 @@ let points = vec![
     Point::new(1., 0.),
 ];
 
-let voronoi = compute_voronoi(&points, None, 0., false)
-                  .expect("compute_voronoi failed");
+let voronoi = compute_voronoi(&points, None, 0., false)?;
+# Ok::<(), geos::Error>(())
 ```
 
 ## Static build

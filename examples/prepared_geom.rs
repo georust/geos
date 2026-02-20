@@ -18,10 +18,10 @@ fn fun() -> Result<(), Error> {
     );
     println!("Prepared geometry intersects each geometry from a vec of GeosGeometry :");
     let vec_geoms = vec![
-        Geometry::new_from_wkt("POINT (1.3 2.4)").unwrap(),
-        Geometry::new_from_wkt("POINT (2.1 0.3)").unwrap(),
-        Geometry::new_from_wkt("POINT (3.1 4.7)").unwrap(),
-        Geometry::new_from_wkt("POINT (0.4 4.1)").unwrap(),
+        Geometry::new_from_wkt("POINT (1.3 2.4)")?,
+        Geometry::new_from_wkt("POINT (2.1 0.3)")?,
+        Geometry::new_from_wkt("POINT (3.1 4.7)")?,
+        Geometry::new_from_wkt("POINT (0.4 4.1)")?,
     ];
     for geom in &vec_geoms {
         print!("{:?} ", pg1.intersects(geom)?);

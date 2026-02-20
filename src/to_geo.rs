@@ -18,7 +18,7 @@ fn to_geo<T: Geom>(other: &T) -> Result<Geometry<f64>, Error> {
 impl TryFrom<GGeometry> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: GGeometry) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: GGeometry) -> Result<Self, Self::Error> {
         to_geo(&other)
     }
 }
@@ -26,7 +26,7 @@ impl TryFrom<GGeometry> for Geometry<f64> {
 impl TryFrom<&GGeometry> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: &GGeometry) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: &GGeometry) -> Result<Self, Self::Error> {
         to_geo(other)
     }
 }
@@ -34,7 +34,7 @@ impl TryFrom<&GGeometry> for Geometry<f64> {
 impl TryFrom<ConstGeometry<'_>> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: ConstGeometry<'_>) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: ConstGeometry<'_>) -> Result<Self, Self::Error> {
         to_geo(&other)
     }
 }
@@ -42,7 +42,7 @@ impl TryFrom<ConstGeometry<'_>> for Geometry<f64> {
 impl TryFrom<&ConstGeometry<'_>> for Geometry<f64> {
     type Error = Error;
 
-    fn try_from(other: &ConstGeometry<'_>) -> Result<Geometry<f64>, Self::Error> {
+    fn try_from(other: &ConstGeometry<'_>) -> Result<Self, Self::Error> {
         to_geo(other)
     }
 }

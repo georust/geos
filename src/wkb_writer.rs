@@ -15,16 +15,17 @@ use std::ptr::NonNull;
 /// ```
 /// use geos::{Geom, Geometry, WKBWriter};
 ///
-/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-/// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+/// let mut writer = WKBWriter::new()?;
 ///
 /// // Output as WKB
-/// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-/// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
+/// let v: Vec<u8> = writer.write_wkb(&point_geom)?.into();
+/// assert_eq!(Geometry::new_from_wkb(&v)?.to_wkt()?, "POINT (2.5 2.5)");
 ///
 /// // Output as HEX
-/// let v: Vec<u8> = writer.write_hex(&point_geom).unwrap().into();
-/// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
+/// let v: Vec<u8> = writer.write_hex(&point_geom)?.into();
+/// assert_eq!(Geometry::new_from_hex(&v)?.to_wkt()?, "POINT (2.5 2.5)");
+/// # Ok::<(), geos::Error>(())
 /// ```
 pub struct WKBWriter {
     ptr: NonNull<GEOSWKBWriter>,
@@ -38,17 +39,18 @@ impl WKBWriter {
     /// ```
     /// use geos::{Geom, Geometry, WKBWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKBWriter::new()?;
     ///
-    /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-    /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt().unwrap(), "POINT (2.5 2.5)");
+    /// let v: Vec<u8> = writer.write_wkb(&point_geom)?.into();
+    /// assert_eq!(Geometry::new_from_wkb(&v)?.to_wkt()?, "POINT (2.5 2.5)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(not(feature = "tests"))]
-    pub fn new() -> GResult<WKBWriter> {
+    pub fn new() -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKBWriter_create_r(ctx.as_raw()))?;
-            Ok(WKBWriter { ptr })
+            Ok(Self { ptr })
         })
     }
     #[cfg(feature = "tests")]
@@ -70,12 +72,15 @@ impl WKBWriter {
     /// ```
     /// use geos::{Geometry, WKBWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKBWriter::new()?;
     ///
-    /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-    /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
+    /// let v: Vec<u8> = writer.write_wkb(&point_geom)?.into();
+    /// let expected = vec![
+    ///     1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64,
+    /// ];
     /// assert_eq!(v, expected);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<Vec<u8>> {
         let mut size = 0;
@@ -97,13 +102,16 @@ impl WKBWriter {
     /// ```
     /// use geos::{Geometry, WKBWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKBWriter::new()?;
     ///
-    /// let v: Vec<u8> = writer.write_hex(&point_geom).unwrap().into();
-    /// let expected = vec![48u8,49,48,49,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,48,
-    ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
+    /// let v: Vec<u8> = writer.write_hex(&point_geom)?.into();
+    /// let expected = vec![
+    ///     48u8, 49, 48, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+    ///     48, 52, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 52, 52, 48,
+    /// ];
     /// assert_eq!(v, expected);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<Vec<u8>> {
         let mut size = 0;
@@ -124,20 +132,21 @@ impl WKBWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geom, Geometry, CoordDimensions, WKBWriter, WKTWriter};
+    /// use geos::{CoordDimensions, Geom, Geometry, WKBWriter, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT Z (1.1 2.2 3.3)").unwrap();
-    /// let mut writer = WKBWriter::new().unwrap();
+    /// let point_geom = Geometry::new_from_wkt("POINT Z (1.1 2.2 3.3)")?;
+    /// let mut writer = WKBWriter::new()?;
     /// writer.set_output_dimension(CoordDimensions::TwoD);
     ///
-    /// let v: Vec<u8> = writer.write_wkb(&point_geom).unwrap().into();
-    /// let geom = Geometry::new_from_wkb(&v).unwrap();
-    /// assert_eq!(geom.get_coordinate_dimension().unwrap(), CoordDimensions::TwoD);
+    /// let v: Vec<u8> = writer.write_wkb(&point_geom)?.into();
+    /// let geom = Geometry::new_from_wkb(&v)?;
+    /// assert_eq!(geom.get_coordinate_dimension()?, CoordDimensions::TwoD);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_output_dimension(&mut self, dimension: CoordDimensions) {
         with_context(|ctx| unsafe {
             GEOSWKBWriter_setOutputDimension_r(ctx.as_raw(), self.as_raw_mut(), dimension.into());
-        })
+        });
     }
 
     /// Returns the number of dimensions to be used when calling [`WKBWriter::write_wkb`].
@@ -148,13 +157,14 @@ impl WKBWriter {
     /// ```
     /// use geos::{CoordDimensions, WKBWriter};
     ///
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let mut writer = WKBWriter::new()?;
     ///
     /// writer.set_output_dimension(CoordDimensions::TwoD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::TwoD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::TwoD);
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::ThreeD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::ThreeD);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_out_dimension(&self) -> GResult<CoordDimensions> {
         with_context(|ctx| unsafe {
@@ -170,10 +180,11 @@ impl WKBWriter {
     /// ```
     /// use geos::{ByteOrder, WKBWriter};
     ///
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let mut writer = WKBWriter::new()?;
     ///
     /// writer.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert_eq!(writer.get_wkb_byte_order(), Ok(ByteOrder::LittleEndian));
+    /// assert_eq!(writer.get_wkb_byte_order()?, ByteOrder::LittleEndian);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_wkb_byte_order(&self) -> GResult<ByteOrder> {
         with_context(|ctx| unsafe {
@@ -187,17 +198,18 @@ impl WKBWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{WKBWriter, ByteOrder};
+    /// use geos::{ByteOrder, WKBWriter};
     ///
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let mut writer = WKBWriter::new()?;
     ///
     /// writer.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert_eq!(writer.get_wkb_byte_order(), Ok(ByteOrder::LittleEndian));
+    /// assert_eq!(writer.get_wkb_byte_order()?, ByteOrder::LittleEndian);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) {
         with_context(|ctx| unsafe {
             GEOSWKBWriter_setByteOrder_r(ctx.as_raw(), self.as_raw_mut(), byte_order.into());
-        })
+        });
     }
 
     /// Gets if output will include SRID.
@@ -207,10 +219,11 @@ impl WKBWriter {
     /// ```
     /// use geos::WKBWriter;
     ///
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let mut writer = WKBWriter::new()?;
     ///
     /// writer.set_include_SRID(true);
-    /// assert_eq!(writer.get_include_SRID(), Ok(true));
+    /// assert_eq!(writer.get_include_SRID()?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[allow(non_snake_case)]
     pub fn get_include_SRID(&self) -> GResult<bool> {
@@ -226,16 +239,17 @@ impl WKBWriter {
     /// ```
     /// use geos::WKBWriter;
     ///
-    /// let mut writer = WKBWriter::new().expect("Failed to create WKBWriter");
+    /// let mut writer = WKBWriter::new()?;
     ///
     /// writer.set_include_SRID(true);
-    /// assert_eq!(writer.get_include_SRID(), Ok(true));
+    /// assert_eq!(writer.get_include_SRID()?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[allow(non_snake_case)]
     pub fn set_include_SRID(&mut self, include_SRID: bool) {
         with_context(|ctx| unsafe {
             GEOSWKBWriter_setIncludeSRID_r(ctx.as_raw(), self.as_raw_mut(), include_SRID.into());
-        })
+        });
     }
 }
 
