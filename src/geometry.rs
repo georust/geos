@@ -1676,9 +1676,9 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
     ///                     .expect("Invalid geometry");
     ///
-    /// assert_eq!(geom.get_dimension_type(), Ok(DimensionType::Surface));
+    /// assert_eq!(geom.get_dimension(), Ok(DimensionType::Surface));
     /// ```
-    fn get_dimension_type(&self) -> GResult<DimensionType> {
+    fn get_dimension(&self) -> GResult<DimensionType> {
         with_context(|ctx| unsafe {
             // Need to skip errcheck as 0 is a valid return values
             // TODO: file a bug report to GEOS
