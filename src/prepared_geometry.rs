@@ -14,14 +14,12 @@ use std::ptr::NonNull;
 /// ```
 /// use geos::{Geom, Geometry};
 ///
-/// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-///                      .expect("Invalid geometry");
-/// let mut prepared_geom = geom1.to_prepared_geom()
-///                              .expect("failed to create prepared geom");
-/// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
-///                      .expect("Invalid geometry");
+/// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
+/// let mut prepared_geom = geom1.to_prepared_geom()?;
+/// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
 ///
-/// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
+/// assert_eq!(prepared_geom.contains(&geom2)?, true);
+/// # Ok::<(), geos::Error>(())
 /// ```
 pub struct PreparedGeometry<'a> {
     ptr: NonNull<GEOSPreparedGeometry>,
@@ -36,11 +34,11 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geometry, PreparedGeometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-    ///                      .expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
     /// let prepared_geom = PreparedGeometry::new(&geom1);
+    /// # Ok::<(), geos::Error>(())
     /// ```
-    pub fn new<G: Geom>(g: &'a G) -> GResult<PreparedGeometry<'a>> {
+    pub fn new<G: Geom>(g: &'a G) -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSPrepare_r(ctx.as_raw(), g.as_raw()))?;
             Ok(PreparedGeometry {
@@ -57,15 +55,12 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-    ///                      .expect("Invalid geometry");
-    /// let mut prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
-    ///                      .expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
+    /// let mut prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
     ///
-    /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
+    /// assert_eq!(prepared_geom.contains(&geom2)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn contains<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -84,15 +79,12 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-    ///                      .expect("Invalid geometry");
-    /// let mut prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("failed to create prepared geom");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")
-    ///                      .expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
+    /// let mut prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
     ///
-    /// assert_eq!(prepared_geom.contains_properly(&geom2), Ok(true));
+    /// assert_eq!(prepared_geom.contains_properly(&geom2)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn contains_properly<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -111,20 +103,16 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
-    ///                     .expect("Invalid geometry");
-    /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
-    /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")?;
+    /// let little_geom = geom.buffer(10., 8)?;
+    /// let big_geom = geom.buffer(20., 8)?;
     ///
-    /// let prepared_little_geom = little_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom.to_prepared_geom()?;
+    /// let prepared_big_geom = big_geom.to_prepared_geom()?;
     ///
-    /// assert_eq!(prepared_little_geom.covered_by(&big_geom), Ok(true));
-    /// assert_eq!(prepared_big_geom.covered_by(&little_geom), Ok(false));
+    /// assert_eq!(prepared_little_geom.covered_by(&big_geom)?, true);
+    /// assert_eq!(prepared_big_geom.covered_by(&little_geom)?, false);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn covered_by<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -143,20 +131,16 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT (1 2)")
-    ///                     .expect("Invalid geometry");
-    /// let little_geom = geom.buffer(10., 8).expect("buffer failed");
-    /// let big_geom = geom.buffer(20., 8).expect("buffer failed");
+    /// let geom = Geometry::new_from_wkt("POINT (1 2)")?;
+    /// let little_geom = geom.buffer(10., 8)?;
+    /// let big_geom = geom.buffer(20., 8)?;
     ///
-    /// let prepared_little_geom = little_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let prepared_big_geom = big_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
+    /// let prepared_little_geom = little_geom.to_prepared_geom()?;
+    /// let prepared_big_geom = big_geom.to_prepared_geom()?;
     ///
-    /// assert_eq!(prepared_little_geom.covers(&big_geom), Ok(false));
-    /// assert_eq!(prepared_big_geom.covers(&little_geom), Ok(true));
+    /// assert_eq!(prepared_little_geom.covers(&big_geom)?, false);
+    /// assert_eq!(prepared_big_geom.covers(&little_geom)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn covers<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -175,13 +159,12 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)")
-    ///                      .expect("invalid geometry");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)")
-    ///                      .expect("invalid geometry");
-    /// let prepared_geom = geom1.to_prepared_geom().expect("to_prepared_geom failed");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(1 1,2 2)")?;
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 1,1 2)")?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
     ///
-    /// assert_eq!(prepared_geom.crosses(&geom2), Ok(true));
+    /// assert_eq!(prepared_geom.crosses(&geom2)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn crosses<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -204,18 +187,14 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
-    ///                      .expect("invalid geometry");
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
-    ///                      .expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
-    ///                      .expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")?;
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")?;
     ///
-    /// assert_eq!(prepared_geom.disjoint(&geom2), Ok(true));
-    /// assert_eq!(prepared_geom.disjoint(&geom3), Ok(false));
+    /// assert_eq!(prepared_geom.disjoint(&geom2)?, true);
+    /// assert_eq!(prepared_geom.disjoint(&geom3)?, false);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn disjoint<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -241,18 +220,14 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")
-    ///                      .expect("invalid geometry");
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")
-    ///                      .expect("invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")
-    ///                      .expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(0 0)")?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(2 0, 0 2)")?;
+    /// let geom3 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")?;
     ///
-    /// assert_eq!(prepared_geom.intersects(&geom2), Ok(false));
-    /// assert_eq!(prepared_geom.intersects(&geom3), Ok(true));
+    /// assert_eq!(prepared_geom.intersects(&geom2)?, false);
+    /// assert_eq!(prepared_geom.intersects(&geom3)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn intersects<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -271,23 +246,18 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)")
-    ///                      .expect("invalid geometry");
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)")
-    ///                      .expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT(1 0.5)")?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("LINESTRING(1 0, 1 1, 3 5)")?;
     ///
-    /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(false));
+    /// assert_eq!(prepared_geom.overlaps(&geom2)?, false);
     ///
-    /// let geom1 = geom1.buffer(3., 8).expect("buffer failed");
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let geom2 = geom2.buffer(0.5, 8).expect("buffer failed");
+    /// let geom1 = geom1.buffer(3., 8)?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = geom2.buffer(0.5, 8)?;
     ///
-    /// assert_eq!(prepared_geom.overlaps(&geom2), Ok(true));
+    /// assert_eq!(prepared_geom.overlaps(&geom2)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn overlaps<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -307,18 +277,16 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)")
-    ///                      .expect("invalid geometry");
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let geom2 = Geometry::new_from_wkt("POINT(1 1)").expect("invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("LINESTRING(0 0, 1 1, 0 2)")?;
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// let geom2 = Geometry::new_from_wkt("POINT(1 1)")?;
     ///
-    /// assert_eq!(prepared_geom.touches(&geom2), Ok(false));
+    /// assert_eq!(prepared_geom.touches(&geom2)?, false);
     ///
-    /// let geom2 = Geometry::new_from_wkt("POINT(0 2)").expect("invalid geometry");
+    /// let geom2 = Geometry::new_from_wkt("POINT(0 2)")?;
     ///
-    /// assert_eq!(prepared_geom.touches(&geom2), Ok(true));
+    /// assert_eq!(prepared_geom.touches(&geom2)?, true);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn touches<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -337,21 +305,17 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom = Geometry::new_from_wkt("POINT(50 50)")
-    ///                     .expect("invalid geometry");
-    /// let small_geom = geom.buffer(20., 8).expect("buffer failed");
-    /// let big_geom = geom.buffer(40., 8).expect("buffer failed");
+    /// let geom = Geometry::new_from_wkt("POINT(50 50)")?;
+    /// let small_geom = geom.buffer(20., 8)?;
+    /// let big_geom = geom.buffer(40., 8)?;
     ///
-    /// let small_prepared_geom = small_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// let big_prepared_geom = big_geom
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
+    /// let small_prepared_geom = small_geom.to_prepared_geom()?;
+    /// let big_prepared_geom = big_geom.to_prepared_geom()?;
     ///
-    /// assert_eq!(small_prepared_geom.within(&small_geom), Ok(true));
-    /// assert_eq!(small_prepared_geom.within(&big_geom), Ok(true));
-    /// assert_eq!(big_prepared_geom.within(&small_geom), Ok(false));
+    /// assert_eq!(small_prepared_geom.within(&small_geom)?, true);
+    /// assert_eq!(small_prepared_geom.within(&big_geom)?, true);
+    /// assert_eq!(big_prepared_geom.within(&small_geom)?, false);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn within<G: Geom>(&self, other: &G) -> GResult<bool> {
         with_context(|ctx| unsafe {
@@ -370,15 +334,14 @@ impl<'a> PreparedGeometry<'a> {
     /// ```
     /// use geos::{Geom, Geometry};
     ///
-    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)").expect("Invalid geometry");
-    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)").expect("Invalid geometry");
-    /// let geom3 = Geometry::new_from_wkt("POINT (3 2)").expect("Invalid geometry");
+    /// let geom1 = Geometry::new_from_wkt("POINT (1 2)")?;
+    /// let geom2 = Geometry::new_from_wkt("POINT (2 2)")?;
+    /// let geom3 = Geometry::new_from_wkt("POINT (3 2)")?;
     ///
-    /// let prepared_geom = geom1
-    ///     .to_prepared_geom()
-    ///     .expect("to_prepared_geom failed");
-    /// assert_eq!(prepared_geom.dwithin(&geom2, 1.0), Ok(true));
-    /// assert_eq!(prepared_geom.dwithin(&geom3, 1.0), Ok(false));
+    /// let prepared_geom = geom1.to_prepared_geom()?;
+    /// assert_eq!(prepared_geom.dwithin(&geom2, 1.0)?, true);
+    /// assert_eq!(prepared_geom.dwithin(&geom3, 1.0)?, false);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(feature = "v3_10_0")]
     pub fn dwithin<G: Geom>(&self, other: &G, distance: f64) -> GResult<bool> {
@@ -448,15 +411,12 @@ as_raw_impl!(PreparedGeometry<'_>, GEOSPreparedGeometry);
 ///     pub prep: PreparedGeometry<'static>,
 /// }
 /// let boo = {
-///     let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-///         .expect("Invalid geometry");
-///     let prep = geom
-///         .to_prepared_geom()
-///         .expect("failed to create prepared geom");
+///     let geom = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
+///     let prep = geom.to_prepared_geom()?;
 ///      Boo { geom, prep }
 /// };
-/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-/// assert!(boo.prep.contains(&pt).unwrap());
+/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+/// assert!(boo.prep.contains(&pt)?);
 /// ```
 ///
 /// ```compile_fail
@@ -467,18 +427,15 @@ as_raw_impl!(PreparedGeometry<'_>, GEOSPreparedGeometry);
 /// }
 ///
 /// let boo = {
-///     let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")
-///         .expect("Invalid geometry");
-///     let prep = geom1
-///         .to_prepared_geom()
-///         .expect("failed to create prepared geom");
+///     let geom1 = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 6, 0 6, 0 0))")?;
+///     let prep = geom1.to_prepared_geom()?
 ///
 ///     Boo { prep }
 /// };
 ///
-/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
+/// let pt = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
 ///
-/// assert!(boo.prep.contains(&pt).unwrap());
+/// assert!(boo.prep.contains(&pt)?);
 /// ```
 #[cfg(doctest)]
 pub mod lifetime_checks {}
@@ -488,11 +445,11 @@ pub mod lifetime_checks {}
 ///
 /// ```compile_fail
 /// let prep_geom = {
-///     let geom = crate::Geometry::new_from_wkt("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))").unwrap();
-///     geom.to_prepared_geom().unwrap()
+///     let geom = crate::Geometry::new_from_wkt("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")?;
+///     geom.to_prepared_geom()?
 /// };
 ///
-/// let pt = crate::Geometry::new_from_wkt("POINT(2 2)").unwrap();
+/// let pt = crate::Geometry::new_from_wkt("POINT(2 2)")?;
 /// _ = prep_geom.contains(&pt);
 /// ```
 #[cfg(doctest)]

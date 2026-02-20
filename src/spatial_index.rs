@@ -25,10 +25,10 @@ pub struct STRtree<I> {
 }
 
 impl<I> STRtree<I> {
-    pub fn with_capacity(node_capacity: usize) -> GResult<STRtree<I>> {
+    pub fn with_capacity(node_capacity: usize) -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSSTRtree_create_r(ctx.as_raw(), node_capacity))?;
-            Ok(STRtree {
+            Ok(Self {
                 ptr,
                 item_type: PhantomData,
             })
@@ -68,7 +68,7 @@ impl<I> SpatialIndex<I> for STRtree<I> {
                 Some(callback),
                 closure,
             );
-        })
+        });
     }
 
     #[cfg(feature = "v3_12_0")]

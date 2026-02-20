@@ -25,7 +25,7 @@ thread_local!(
 ///     GEOSGeom_destroy_r(ctx.as_raw, ptr);
 /// })
 /// ```
-pub(crate) fn with_context<R>(f: impl FnOnce(&ContextHandle) -> R) -> R {
+pub fn with_context<R>(f: impl FnOnce(&ContextHandle) -> R) -> R {
     CONTEXT.with(f)
 }
 
@@ -45,7 +45,7 @@ unsafe extern "C" fn message_handler(message: *const c_char, data: *mut c_void) 
     }
 }
 
-pub(crate) struct InnerContext {
+pub struct InnerContext {
     last: Mutex<Option<String>>,
     callback: Mutex<HandlerCallback>,
 }
@@ -70,7 +70,8 @@ impl ContextHandle {
     /// ```
     /// use geos::ContextHandle;
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init()?;
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn init() -> GResult<Self> {
         let ptr = unsafe { GEOS_init_r() };
@@ -103,14 +104,14 @@ impl ContextHandle {
             );
         }
 
-        Ok(ContextHandle {
+        Ok(Self {
             ptr,
-            error_ctx,
             notice_ctx,
+            error_ctx,
         })
     }
 
-    pub(crate) fn as_raw(&self) -> GEOSContextHandle_t {
+    pub(crate) const fn as_raw(&self) -> GEOSContextHandle_t {
         self.ptr.as_ptr()
     }
 
@@ -131,9 +132,10 @@ impl ContextHandle {
     /// ```
     /// use geos::ContextHandle;
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init()?;
     ///
     /// context_handle.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_notice_message_handler(&self, nf: Option<HandlerCallback>) {
         if let Ok(mut callback) = self.get_notice_context().callback.lock() {
@@ -150,9 +152,10 @@ impl ContextHandle {
     /// ```
     /// use geos::ContextHandle;
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init()?;
     ///
     /// context_handle.set_error_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_error_message_handler(&self, ef: Option<HandlerCallback>) {
         if let Ok(mut callback) = self.get_error_context().callback.lock() {
@@ -167,13 +170,14 @@ impl ContextHandle {
     /// ```
     /// use geos::ContextHandle;
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init()?;
     /// // make some functions calls...
     /// if let Some(last_error) = context_handle.get_last_error() {
     ///     println!("We have an error: {}", last_error);
     /// } else {
     ///     println!("No error occurred!");
     /// }
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_last_error(&self) -> Option<String> {
         self.get_error_context().take()
@@ -186,13 +190,14 @@ impl ContextHandle {
     /// ```
     /// use geos::ContextHandle;
     ///
-    /// let context_handle = ContextHandle::init().expect("invalid init");
+    /// let context_handle = ContextHandle::init()?;
     /// // make some functions calls...
     /// if let Some(last_notif) = context_handle.get_last_notification() {
     ///     println!("We have a notification: {}", last_notif);
     /// } else {
     ///     println!("No notifications!");
     /// }
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_last_notification(&self) -> Option<String> {
         self.get_notice_context().take()
@@ -205,10 +210,14 @@ impl ContextHandle {
     /// ```
     /// use geos::{ContextHandle, CoordDimensions};
     ///
-    /// let mut context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init()?;
     ///
     /// context_handle.set_wkb_output_dimensions(CoordDimensions::TwoD);
-    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(CoordDimensions::TwoD));
+    /// assert_eq!(
+    ///     context_handle.get_wkb_output_dimensions()?,
+    ///     CoordDimensions::TwoD
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_wkb_output_dimensions(&self) -> GResult<CoordDimensions> {
         unsafe {
@@ -224,10 +233,14 @@ impl ContextHandle {
     /// ```
     /// use geos::{ContextHandle, CoordDimensions};
     ///
-    /// let mut context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init()?;
     ///
-    /// context_handle.set_wkb_output_dimensions(CoordDimensions::TwoD);
-    /// assert_eq!(context_handle.get_wkb_output_dimensions(), Ok(CoordDimensions::TwoD));
+    /// context_handle.set_wkb_output_dimensions(CoordDimensions::TwoD)?;
+    /// assert_eq!(
+    ///     context_handle.get_wkb_output_dimensions()?,
+    ///     CoordDimensions::TwoD
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_wkb_output_dimensions(
         &mut self,
@@ -247,12 +260,16 @@ impl ContextHandle {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, ByteOrder};
+    /// use geos::{ByteOrder, ContextHandle};
     ///
-    /// let mut context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init()?;
     ///
-    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_wkb_byte_order() == Ok(ByteOrder::LittleEndian));
+    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian)?;
+    /// assert_eq!(
+    ///     context_handle.get_wkb_byte_order()?,
+    ///     ByteOrder::LittleEndian
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_wkb_byte_order(&self) -> GResult<ByteOrder> {
         let out = unsafe { errcheck!(-1, GEOS_getWKBByteOrder_r(self.as_raw()))? };
@@ -264,12 +281,16 @@ impl ContextHandle {
     /// # Example
     ///
     /// ```
-    /// use geos::{ContextHandle, ByteOrder};
+    /// use geos::{ByteOrder, ContextHandle};
     ///
-    /// let mut context_handle = ContextHandle::init().expect("invalid init");
+    /// let mut context_handle = ContextHandle::init()?;
     ///
-    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian);
-    /// assert!(context_handle.get_wkb_byte_order() == Ok(ByteOrder::LittleEndian));
+    /// context_handle.set_wkb_byte_order(ByteOrder::LittleEndian)?;
+    /// assert_eq!(
+    ///     context_handle.get_wkb_byte_order()?,
+    ///     ByteOrder::LittleEndian
+    /// );
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_wkb_byte_order(&mut self, byte_order: ByteOrder) -> GResult<ByteOrder> {
         let out =

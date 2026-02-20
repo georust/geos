@@ -13,10 +13,11 @@ use std::ptr::NonNull;
 /// ```
 /// use geos::{Geometry, WKTWriter};
 ///
-/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-/// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+/// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+/// let mut writer = WKTWriter::new()?;
 ///
-/// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
+/// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.5)");
+/// # Ok::<(), geos::Error>(())
 /// ```
 pub struct WKTWriter {
     ptr: NonNull<GEOSWKTWriter>,
@@ -30,16 +31,17 @@ impl WKTWriter {
     /// ```
     /// use geos::{Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKTWriter::new()?;
     ///
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.5)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(not(all(feature = "tests", not(feature = "v3_12_0"))))]
-    pub fn new() -> GResult<WKTWriter> {
+    pub fn new() -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSWKTWriter_create_r(ctx.as_raw()))?;
-            Ok(WKTWriter { ptr })
+            Ok(Self { ptr })
         })
     }
 
@@ -61,10 +63,11 @@ impl WKTWriter {
     /// ```
     /// use geos::{Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKTWriter::new()?;
     ///
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.5)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn write<G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         with_context(|ctx| unsafe {
@@ -85,20 +88,21 @@ impl WKTWriter {
     /// ```
     /// use geos::{Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.543 2.567)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.543 2.567)")?;
+    /// let mut writer = WKTWriter::new()?;
     ///
     /// writer.set_rounding_precision(2);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.54 2.57)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.54 2.57)");
     ///
     /// writer.set_rounding_precision(1);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.6)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.6)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[cfg(not(all(doctest, feature = "tests", not(feature = "v3_10_0"))))]
     pub fn set_rounding_precision(&mut self, precision: u32) {
         with_context(|ctx| unsafe {
             GEOSWKTWriter_setRoundingPrecision_r(ctx.as_raw(), self.as_raw_mut(), precision as _);
-        })
+        });
     }
 
     /// Sets the number of dimensions to be used when calling [`WKTWriter::write`]. By default, it
@@ -107,22 +111,23 @@ impl WKTWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, CoordDimensions, WKTWriter};
+    /// use geos::{CoordDimensions, Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (1.1 2.2 3.3)")?;
+    /// let mut writer = WKTWriter::new()?;
     /// writer.set_trim(true);
     ///
     /// writer.set_output_dimension(CoordDimensions::TwoD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (1.1 2.2)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (1.1 2.2)");
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT Z (1.1 2.2 3.3)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT Z (1.1 2.2 3.3)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_output_dimension(&mut self, dimension: CoordDimensions) {
         with_context(|ctx| unsafe {
             GEOSWKTWriter_setOutputDimension_r(ctx.as_raw(), self.as_raw_mut(), dimension.into());
-        })
+        });
     }
 
     /// Returns the number of dimensions to be used when calling [`WKTWriter::write`]. By default,
@@ -133,13 +138,14 @@ impl WKTWriter {
     /// ```
     /// use geos::{CoordDimensions, WKTWriter};
     ///
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let mut writer = WKTWriter::new()?;
     ///
     /// writer.set_output_dimension(CoordDimensions::TwoD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::TwoD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::TwoD);
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
-    /// assert_eq!(writer.get_out_dimension(), Ok(CoordDimensions::ThreeD));
+    /// assert_eq!(writer.get_out_dimension()?, CoordDimensions::ThreeD);
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn get_out_dimension(&self) -> GResult<CoordDimensions> {
         with_context(|ctx| unsafe {
@@ -158,19 +164,23 @@ impl WKTWriter {
     /// ```
     /// use geos::{Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5)")?;
+    /// let mut writer = WKTWriter::new()?;
     ///
     /// writer.set_trim(false);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
+    /// assert_eq!(
+    ///     writer.write(&point_geom)?,
+    ///     "POINT (2.5000000000000000 2.5000000000000000)"
+    /// );
     ///
     /// writer.set_trim(true);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.5)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     pub fn set_trim(&mut self, trim: bool) {
         with_context(|ctx| unsafe {
             GEOSWKTWriter_setTrim_r(ctx.as_raw(), self.as_raw_mut(), trim.into());
-        })
+        });
     }
 
     /// Enables/disables old 3D/4D WKT style generation.
@@ -178,24 +188,25 @@ impl WKTWriter {
     /// # Example
     ///
     /// ```
-    /// use geos::{Geometry, CoordDimensions, WKTWriter};
+    /// use geos::{CoordDimensions, Geometry, WKTWriter};
     ///
-    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 2.5)").expect("Invalid geometry");
-    /// let mut writer = WKTWriter::new().expect("Failed to create WKTWriter");
+    /// let point_geom = Geometry::new_from_wkt("POINT (2.5 2.5 2.5)")?;
+    /// let mut writer = WKTWriter::new()?;
     ///
     /// writer.set_output_dimension(CoordDimensions::ThreeD);
     /// writer.set_trim(true);
     ///
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT Z (2.5 2.5 2.5)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT Z (2.5 2.5 2.5)");
     ///
     /// writer.set_old_3D(true);
-    /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5 2.5 2.5)");
+    /// assert_eq!(writer.write(&point_geom)?, "POINT (2.5 2.5 2.5)");
+    /// # Ok::<(), geos::Error>(())
     /// ```
     #[allow(non_snake_case)]
     pub fn set_old_3D(&mut self, use_old_3D: bool) {
         with_context(|ctx| unsafe {
             GEOSWKTWriter_setOld3D_r(ctx.as_raw(), self.as_raw_mut(), use_old_3D.into());
-        })
+        });
     }
 }
 

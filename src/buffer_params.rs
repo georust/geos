@@ -22,10 +22,10 @@ pub struct BufferParamsBuilder {
 }
 
 impl BufferParams {
-    pub fn new() -> GResult<BufferParams> {
+    pub fn new() -> GResult<Self> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSBufferParams_create_r(ctx.as_raw()))?;
-            Ok(BufferParams { ptr })
+            Ok(Self { ptr })
         })
     }
 
@@ -145,23 +145,23 @@ impl Drop for BufferParams {
 as_raw_mut_impl!(BufferParams, GEOSBufferParams);
 
 impl BufferParamsBuilder {
-    pub fn end_cap_style(mut self, style: CapStyle) -> BufferParamsBuilder {
+    pub const fn end_cap_style(mut self, style: CapStyle) -> Self {
         self.end_cap_style = Some(style);
         self
     }
-    pub fn join_style(mut self, style: JoinStyle) -> BufferParamsBuilder {
+    pub const fn join_style(mut self, style: JoinStyle) -> Self {
         self.join_style = Some(style);
         self
     }
-    pub fn mitre_limit(mut self, limit: f64) -> BufferParamsBuilder {
+    pub const fn mitre_limit(mut self, limit: f64) -> Self {
         self.mitre_limit = Some(limit);
         self
     }
-    pub fn quadrant_segments(mut self, quadsegs: i32) -> BufferParamsBuilder {
+    pub const fn quadrant_segments(mut self, quadsegs: i32) -> Self {
         self.quadrant_segments = Some(quadsegs);
         self
     }
-    pub fn single_sided(mut self, is_single_sided: bool) -> BufferParamsBuilder {
+    pub const fn single_sided(mut self, is_single_sided: bool) -> Self {
         self.single_sided = Some(is_single_sided);
         self
     }

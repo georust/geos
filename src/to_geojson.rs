@@ -104,7 +104,7 @@ fn to_geojson<T: Geom>(other: T) -> Result<Geometry, Error> {
 impl TryFrom<GGeometry> for Geometry {
     type Error = Error;
 
-    fn try_from(other: GGeometry) -> Result<Geometry, Self::Error> {
+    fn try_from(other: GGeometry) -> Result<Self, Self::Error> {
         to_geojson(other)
     }
 }
@@ -112,7 +112,7 @@ impl TryFrom<GGeometry> for Geometry {
 impl TryFrom<ConstGeometry<'_>> for Geometry {
     type Error = Error;
 
-    fn try_from(other: ConstGeometry<'_>) -> Result<Geometry, Self::Error> {
+    fn try_from(other: ConstGeometry<'_>) -> Result<Self, Self::Error> {
         to_geojson(other)
     }
 }
