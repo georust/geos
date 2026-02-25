@@ -2557,6 +2557,44 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
             Ok(Geometry::new_from_raw(ptr))
         })
     }
+
+    /// Compute the Maximum Inscribed Circle (MIC) of a polygonal geometry,
+    /// which is the largest circle that fits inside the geometry.
+    /// This is useful to find the most "central" point of a geometry (also called
+    /// the "pole of inaccessibility"), and it is sometimes used
+    /// in cartography for label placement.
+    /// The algorithm is stopped when the search area is smaller than the given tolerance.
+    ///
+    /// Returns a two-point linestring, where the first point is the center of the
+    /// inscribed circle and the second point is on the boundary of the inscribed circle.
+    ///
+    /// # Example
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let poly = Geometry::new_from_wkt("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))")?;
+    /// let mic = poly.maximum_inscribed_circle(1.)?;
+    ///
+    /// let center = mic.get_start_point()?;
+    /// assert_eq!(
+    ///     center.to_wkt_precision(0)?,
+    ///     "POINT (5 5)"
+    /// );
+    ///
+    /// let radius = mic.length()?;
+    /// # Ok::<(), geos::Error>(())
+    /// ```
+    #[cfg(feature = "v3_9_0")]
+    fn maximum_inscribed_circle(&self, tolerance: f64) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSMaximumInscribedCircle_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                tolerance
+            ))?;
+            Ok(Geometry::new_from_raw(ptr))
+        })
+    }
 }
 
 /// Trampoline function helper function to get the trampoline function from the closure.
