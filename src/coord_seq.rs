@@ -557,7 +557,7 @@ impl CoordSeq {
     ///   will be inferred from the number of dimensions on the geometry. A user may want to
     ///   override this for performance because GEOS always stores coordinates internally with 3 or
     ///   4 dimensions. So copying 2-dimensional GEOS coordinates to a 3-dimensional output buffer
-    ///   is slightly faster (a straight `memcpy`) than copying 2-dimensionalal GEOS coordinates to
+    ///   is slightly faster (a straight `memcpy`) than copying 2-dimensional GEOS coordinates to
     ///   a 2-dimensional output buffer (iterating over every coordinate and copying only the XY
     ///   values).
     ///

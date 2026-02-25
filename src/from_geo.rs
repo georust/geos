@@ -123,7 +123,7 @@ impl TryFrom<MultiLineString<f64>> for GGeometry {
 struct LineRing<'a>(&'a LineString<f64>);
 
 /// Convert a `geo_types::LineString` to a geos `LinearRing`
-/// a `LinearRing` should be closed so cloase the geometry if needed
+/// (a `LinearRing` should be closed, so close the geometry if needed)
 impl TryFrom<LineRing<'_>> for GGeometry {
     type Error = Error;
 

@@ -637,7 +637,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// Returns a geometry which represents all points whose distance from `self` is less than or
     /// equal to distance.
     ///
-    /// If the same paramters are used many times it's more efficient to use the
+    /// If the same parameters are used many times it's more efficient to use the
     /// [`buffer_with_params`](crate::Geom::buffer_with_params) operation.
     ///
     /// You can find nice examples and details about the options in this
@@ -761,7 +761,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the minimum bouding box of the given geometry.
+    /// Returns the minimum bounding box of the given geometry.
     ///
     /// # Example
     ///
@@ -1002,7 +1002,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
     /// // No intersection.
     /// assert_eq!(intersection_geom.is_empty()?, true);
     ///
-    /// // We slighty change the linestring so we have an intersection:
+    /// // We slightly change the linestring so we have an intersection:
     /// let mut geom2 = Geometry::new_from_wkt("LINESTRING(0 0, 0 2)")?;
     ///
     /// let intersection_geom = geom1.intersection(&geom2)?;
@@ -1155,7 +1155,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         with_context(|ctx| unsafe { predicate!(GEOSisClosed_r(ctx.as_raw(), self.as_raw())) })
     }
 
-    /// Returns the length of `self`. The unit depends of the SRID.
+    /// Returns the length of `self`. The unit depends on the SRID.
     ///
     /// # Example
     ///
@@ -1175,7 +1175,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// # Example
     ///
@@ -1228,7 +1228,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the indexed distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the indexed distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// Available using the `v3_7_0` feature.
     ///
@@ -1262,7 +1262,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the hausdorff distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// # Example
     ///
@@ -1293,7 +1293,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the hausdorff distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the hausdorff distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// # Example
     ///
@@ -1325,7 +1325,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the frechet distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// Available using the `v3_7_0` feature.
     ///
@@ -1359,7 +1359,7 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
-    /// Returns the frechet distance between `self` and `other`. The unit depends of the SRID.
+    /// Returns the frechet distance between `self` and `other`. The unit depends on the SRID.
     ///
     /// Available using the `v3_7_0` feature.
     ///
@@ -3167,7 +3167,7 @@ impl Geometry {
             Ok(Self::new_from_raw(ptr))
         });
 
-        // We transfered the ownership of the ptr to the new Geometry,
+        // We transferred the ownership of the ptr to the new Geometry,
         // so the old ones need to forget their c ptr to avoid double free.
         std::mem::forget(exterior);
         for interior in interiors {
