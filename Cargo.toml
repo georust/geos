@@ -1,6 +1,6 @@
 [package]
 name = "geos"
-version = "11.0.1"
+version = "11.1.1"
 authors = [
   "Matthieu Viry <matthieu.viry@cnrs.fr>",
   "Adrien Matissart <a.matissart@qwantresearch.com>",
