@@ -504,8 +504,8 @@ pub enum DimensionType {
 impl TryFrom<c_int> for DimensionType {
     type Error = crate::error::Error;
 
-    fn try_from(cap_style: c_int) -> Result<Self, Self::Error> {
-        match cap_style {
+    fn try_from(dimension: c_int) -> Result<Self, Self::Error> {
+        match dimension {
             0 => Ok(Self::Point),
             1 => Ok(Self::Curve),
             2 => Ok(Self::Surface),
