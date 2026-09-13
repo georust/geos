@@ -58,7 +58,7 @@ dependencies = [
 
 [[package]]
 name = "geos"
-version = "11.1.1"
+version = "11.1.2"
 dependencies = [
  "geo-types",
  "geojson",
@@ -69,14 +69,14 @@ dependencies = [
 
 [[package]]
 name = "geos-src"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "cmake",
 ]
 
 [[package]]
 name = "geos-sys"
-version = "2.0.9"
+version = "2.0.10"
 dependencies = [
  "geos-src",
  "libc",
