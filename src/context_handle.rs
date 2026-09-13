@@ -77,19 +77,15 @@ impl ContextHandle {
         let ptr = unsafe { GEOS_init_r() };
         let ptr = NonNull::new(ptr).ok_or(Error::GeosError(("GEOS_init_r", None)))?;
 
-        let error_ctx = unsafe {
-            NonNull::new_unchecked(Box::into_raw(Box::new(InnerContext {
-                last: Mutex::new(None),
-                callback: Mutex::new(Box::new(|_| {})),
-            })))
-        };
+        let error_ctx = NonNull::from(Box::leak(Box::new(InnerContext {
+            last: Mutex::new(None),
+            callback: Mutex::new(Box::new(|_| {})),
+        })));
 
-        let notice_ctx = unsafe {
-            NonNull::new_unchecked(Box::into_raw(Box::new(InnerContext {
-                last: Mutex::new(None),
-                callback: Mutex::new(Box::new(|_| {})),
-            })))
-        };
+        let notice_ctx = NonNull::from(Box::leak(Box::new(InnerContext {
+            last: Mutex::new(None),
+            callback: Mutex::new(Box::new(|_| {})),
+        })));
 
         unsafe {
             GEOSContext_setNoticeMessageHandler_r(

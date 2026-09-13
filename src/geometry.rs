@@ -1724,6 +1724,49 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
+    /// Returns the number of curves inside `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::new_from_wkt("COMPOUNDCURVE(CIRCULARSTRING(0 0, 1 1, 2 0), (2 0, 3 0))")?;
+    ///
+    /// assert_eq!(geom.get_num_curves()?, 2);
+    /// # Ok::<(), geos::Error>(())
+    /// ```
+    #[cfg(feature = "v3_15_0")]
+    fn get_num_curves(&self) -> GResult<usize> {
+        with_context(|ctx| unsafe {
+            let ret = errcheck!(-1, GEOSGetNumCurves_r(ctx.as_raw(), self.as_raw()))?;
+            Ok(ret as _)
+        })
+    }
+
+    /// Returns the nth curve of the given geometry.
+    ///
+    /// The given `Geometry` must be a `LineString``, `CircularString`, or `CompoundCurve` otherwise it'll fail.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::new_from_wkt("COMPOUNDCURVE(CIRCULARSTRING (0 0, 1 1, 2 0), (2 0, 3 0))")?;
+    /// let nth_curve = geom.get_curve_n(0)?;
+    ///
+    /// assert_eq!(nth_curve.to_wkt()?, "CIRCULARSTRING (0 0, 1 1, 2 0)");
+    /// # Ok::<(), geos::Error>(())
+    /// ```
+    #[cfg(feature = "v3_15_0")]
+    fn get_curve_n(&self, n: usize) -> GResult<ConstGeometry<'_>> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSGetCurveN_r(ctx.as_raw(), self.as_raw(), n as _))?;
+            Ok(ConstGeometry::new_from_raw(ptr))
+        })
+    }
+
     /// Returns the number of dimensions used in `self`.
     ///
     /// # Example
@@ -3481,17 +3524,18 @@ impl Geometry {
     /// use geos::{CoordDimensions, CoordSeq, Geom, Geometry};
     ///
     /// let coords = CoordSeq::new_from_vec(&[
-    ///     &[75.15, 29.53],
+    ///     &[75.15, 29.7],
     ///     &[77.2, 29.1],
     ///     &[77.6, 29.5],
-    ///     &[75.15, 29.53],
+    ///     &[77.8, 29.6],
+    ///     &[75.15, 29.7],
     /// ])?;
     ///
     /// let geom = Geometry::create_circular_string(coords)?;
     ///
     /// assert_eq!(
     ///     geom.to_wkt_precision(1)?,
-    ///     "CIRCULARSTRING (75.2 29.5, 77.2 29.1, 77.6 29.5, 75.2 29.5)"
+    ///     "CIRCULARSTRING (75.2 29.7, 77.2 29.1, 77.6 29.5, 77.8 29.6, 75.2 29.7)"
     /// );
     /// # Ok::<(), geos::Error>(())
     /// ```

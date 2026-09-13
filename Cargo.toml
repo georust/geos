@@ -33,7 +33,8 @@ v3_11_0 = ["geos-sys/v3_11_0", "v3_10_0"]
 v3_12_0 = ["geos-sys/v3_12_0", "v3_11_0"]
 v3_13_0 = ["geos-sys/v3_13_0", "v3_12_0"]
 v3_14_0 = ["geos-sys/v3_14_0", "v3_13_0"]
-vlatest = ["v3_14_0"]
+v3_15_0 = ["geos-sys/v3_15_0", "v3_14_0"]
+vlatest = ["v3_15_0"]
 
 [dependencies]
 libc = "0.2"
