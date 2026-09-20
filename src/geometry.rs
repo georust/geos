@@ -2217,6 +2217,30 @@ pub trait Geom: AsRaw<RawType = GEOSGeometry> + Sized + Send + Sync {
         })
     }
 
+    /// Splits a geometry using an edge geometry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use geos::{Geom, Geometry};
+    ///
+    /// let geom = Geometry::new_from_wkt("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")?;
+    /// let edge = Geometry::new_from_wkt("LINESTRING (-5 5, 5 5, 5 -5)")?;
+    /// let expected = Geometry::new_from_wkt(
+    ///     "GEOMETRYCOLLECTION (POLYGON ((0 0, 5 0, 5 5, 0 5, 0 0)), POLYGON ((0 5, 5 5, 5 0, 10 0, 10 10, 0 10, 0 5)))",
+    /// )?;
+    ///
+    /// assert!(geom.split(&edge)?.equals(&expected)?);
+    /// # Ok::<(), geos::Error>(())
+    /// ```
+    #[cfg(feature = "v3_15_0")]
+    fn split<G: Geom>(&self, edge: &G) -> GResult<Geometry> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSSplit_r(ctx.as_raw(), self.as_raw(), edge.as_raw()))?;
+            Ok(Geometry::new_from_raw(ptr))
+        })
+    }
+
     ///  Return an offset line at a given distance and side from an input line. All points of the
     /// returned geometries are not further than the given distance from the input geometry.
     ///
