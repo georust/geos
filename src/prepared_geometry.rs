@@ -1,8 +1,12 @@
 use crate::context_handle::with_context;
 use crate::functions::*;
 use crate::traits::as_raw_impl;
+#[cfg(feature = "v3_13_0")]
+use crate::Error;
 use crate::{AsRaw, GResult, Geom};
 use geos_sys::*;
+#[cfg(feature = "v3_13_0")]
+use std::ffi::CString;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
