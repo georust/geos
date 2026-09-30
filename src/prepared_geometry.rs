@@ -387,6 +387,32 @@ impl<'a> PreparedGeometry<'a> {
             Ok(distance)
         })
     }
+
+    #[cfg(feature = "v3_13_0")]
+    fn relate<G: Geom>(&self, other: &G) -> GResult<String> {
+        with_context(|ctx| unsafe {
+            let ptr = nullcheck!(GEOSPreparedRelate_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw()
+            ))?;
+            managed_string(ptr, ctx)
+        })
+    }
+
+    #[cfg(feature = "v3_13_0")]
+    fn relate_pattern<G: Geom>(&self, other: &G, pattern: &str) -> GResult<bool> {
+        with_context(|ctx| unsafe {
+            let pattern = CString::new(pattern)
+                .map_err(|e| Error::GenericError(format!("Conversion to CString failed: {e}")))?;
+            predicate!(GEOSPreparedRelatePattern_r(
+                ctx.as_raw(),
+                self.as_raw(),
+                other.as_raw(),
+                pattern.as_ptr()
+            ))
+        })
+    }
 }
 
 unsafe impl Send for PreparedGeometry<'_> {}
