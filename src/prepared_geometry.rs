@@ -393,7 +393,7 @@ impl<'a> PreparedGeometry<'a> {
     }
 
     #[cfg(feature = "v3_13_0")]
-    fn relate<G: Geom>(&self, other: &G) -> GResult<String> {
+    pub fn relate<G: Geom>(&self, other: &G) -> GResult<String> {
         with_context(|ctx| unsafe {
             let ptr = nullcheck!(GEOSPreparedRelate_r(
                 ctx.as_raw(),
@@ -405,7 +405,7 @@ impl<'a> PreparedGeometry<'a> {
     }
 
     #[cfg(feature = "v3_13_0")]
-    fn relate_pattern<G: Geom>(&self, other: &G, pattern: &str) -> GResult<bool> {
+    pub fn relate_pattern<G: Geom>(&self, other: &G, pattern: &str) -> GResult<bool> {
         with_context(|ctx| unsafe {
             let pattern = CString::new(pattern)
                 .map_err(|e| Error::GenericError(format!("Conversion to CString failed: {e}")))?;
